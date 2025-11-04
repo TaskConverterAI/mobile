@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.lint)
     alias(libs.plugins.jetbrains.compose)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -63,36 +64,37 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.stdlib)
 
-                // Add KMP dependencies here
+                // Compose Multiplatform (cross-platform)
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(compose.components.uiToolingPreview)
 
-                // Import the Compose BOM
-                implementation(project.dependencies.platform(libs.androidx.compose.bom))
-                implementation(libs.androidx.activity.compose)
-                implementation(libs.androidx.material3)
-                implementation(libs.androidx.ui)
-                implementation(libs.androidx.ui.tooling.preview)
-                implementation(libs.androidx.core.ktx)
-                implementation(libs.androidx.lifecycle.runtime.ktx)
-                implementation(libs.androidx.lifecycle.viewmodel.compose)
+                // Material Icons Extended (cross-platform)
+                implementation(libs.material.icons.extended)
 
-                implementation(libs.coil.compose)
+                // Serialization (cross-platform)
                 implementation(libs.kotlinx.serialization.json)
 
-                // Compose Resources
-                implementation(libs.compose.components.resources)
+                // DataStore Preferences Core (cross-platform)
+                implementation(libs.androidx.datastore.preferences.core)
 
-                //DataStore
-                implementation(libs.androidx.datastore.preferences)
+                // Navigation Compose KMP (cross-platform)
+                implementation(libs.androidx.navigation.compose.kmp)
 
-                //Navigation
-                implementation(libs.androidx.navigation.compose)
+                // Lifecycle ViewModel Compose KMP (cross-platform)
+                implementation(libs.androidx.lifecycle.viewmodel.compose.kmp)
 
-                implementation(libs.androidx.compose.ui)
-                implementation(libs.androidx.compose.ui.graphics)
-                implementation(libs.androidx.compose.ui.tooling.preview)
-                implementation(libs.androidx.compose.material3)
-                implementation(libs.androidx.compiler)
-                implementation(libs.material.icons.extended)
+                // Coil3 for image loading (cross-platform)
+                implementation(libs.coil3.compose)
+                implementation(libs.coil3.network.ktor)
+
+                // Ktor Client for networking (cross-platform alternative to Retrofit)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
             }
         }
 
@@ -108,7 +110,18 @@ kotlin {
                 // commonMain by default and will correctly pull the Android artifacts of any KMP
                 // dependencies declared in commonMain.
 
-                // Retrofit - Android only
+                // Android-specific Compose libraries
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.androidx.core.ktx)
+                implementation(libs.androidx.lifecycle.runtime.ktx)
+
+                // DataStore Android implementation
+                implementation(libs.androidx.datastore.preferences)
+
+                // Ktor Client Android engine
+                implementation(libs.ktor.client.android)
+
+                // Retrofit - Android only (can coexist with Ktor or migrate later)
                 implementation(libs.retrofit2.kotlinx.serialization.converter)
                 implementation(libs.retrofit)
                 implementation(libs.converter.gson)
@@ -129,9 +142,12 @@ kotlin {
             dependencies {
                 // Add iOS-specific dependencies here. This a source set created by Kotlin Gradle
                 // Plugin (KGP) that each specific iOS target (e.g., iosX64) depends on as
-                // part of KMP’s default source set hierarchy. Note that this source set depends
+                // part of KMP's default source set hierarchy. Note that this source set depends
                 // on common by default and will correctly pull the iOS artifacts of any
                 // KMP dependencies declared in commonMain.
+
+                // Ktor Client Darwin engine (for iOS)
+                implementation(libs.ktor.client.darwin)
             }
         }
     }
