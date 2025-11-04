@@ -1,0 +1,9 @@
+<resources>
+    <string name="overview_txt_1">Просто скажи — мы всё запомним за тебя</string>
+    <string name="overview_txt_2">ИИ сам разберётся, что важно, и превратит это в заметку с задачами</string>
+    <string name="overview_txt_3">Назначай, редактируй, отмечай — управляй делами как тебе удобно</string>
+    <string name="next_btn_1">Погнали</string>
+    <string name="next_btn_2">Отлично</string>
+    <string name="next_btn_3">К регистрации</string>
+    <string name="back_btn">Назад</string>
+</resources>

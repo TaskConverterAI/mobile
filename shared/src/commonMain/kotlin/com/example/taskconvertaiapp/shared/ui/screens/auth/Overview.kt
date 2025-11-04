@@ -34,16 +34,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.StringResource
+
 import com.example.taskconvertaiapp.shared.ui.theme.TaskConvertAIAppTheme
+import taskconvertaiapp.shared.generated.resources.Res
+import taskconvertaiapp.shared.generated.resources.*
 
 data class Slide(
-    val imageRes: Int,
-    val text: String
+    val imageRes: DrawableResource,
+    val textRes: StringResource
 )
 
 @Composable
@@ -51,15 +56,15 @@ fun OverviewScreen(
     onCompleteOverviewButtonClicked: () -> Unit
 ) {
     val slides = listOf(
-        Slide(R.drawable.overview_img_1, stringResource(id = R.string.overview_txt_1)),
-        Slide(R.drawable.overview_img_2, stringResource(id = R.string.overview_txt_2)),
-        Slide(R.drawable.overview_img_3, stringResource(id = R.string.overview_txt_3))
+        Slide(Res.drawable.overview_img_1, Res.string.overview_txt_1),
+        Slide(Res.drawable.overview_img_2, Res.string.overview_txt_2),
+        Slide(Res.drawable.overview_img_3, Res.string.overview_txt_3)
     )
 
     val buttonTexts = listOf(
-        stringResource(id = R.string.next_btn_1),
-        stringResource(id = R.string.next_btn_2),
-        stringResource(id = R.string.next_btn_3)
+        Res.string.next_btn_1,
+        Res.string.next_btn_2,
+        Res.string.next_btn_3
     )
 
     var currentSlide by remember { mutableStateOf(0) }
@@ -153,7 +158,7 @@ fun OverviewSlide(slide: Slide) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Image(
-                    painter = painterResource(id = slide.imageRes),
+                    painter = painterResource(slide.imageRes),
                     contentDescription = null,
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier
@@ -161,7 +166,7 @@ fun OverviewSlide(slide: Slide) {
                         .padding(horizontal = 40.dp)
                 )
                 Text(
-                    text = slide.text,
+                    text = stringResource(slide.textRes),
                     style = MaterialTheme.typography.headlineLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -177,7 +182,7 @@ fun OverviewSlide(slide: Slide) {
 fun OverviewButtons(
     currentSlide: Int,
     totalSlides: Int,
-    buttonTexts: List<String>,
+    buttonTexts: List<StringResource>,
     onNextClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
@@ -202,7 +207,7 @@ fun OverviewButtons(
 
 @Composable
 fun MainButton(
-    btnText: String,
+    btnText: StringResource,
     onClick: () -> Unit,
     isLastSlide: Boolean
 ) {
@@ -218,7 +223,7 @@ fun MainButton(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = btnText,
+                text = stringResource(btnText),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.align(Alignment.Center)
             )
@@ -252,7 +257,7 @@ fun ExtraButton(
                 )
             ) {
                 Text(
-                    text = "Назад",
+                    text = stringResource(Res.string.back_btn),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
