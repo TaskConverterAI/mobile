@@ -7,9 +7,14 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/shelf
+/.idea/dictionaries
+/.idea/.name
+/.idea/sonarlint
 .DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+.kotlin/
