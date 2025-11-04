@@ -1,24 +1,27 @@
 package com.example.taskconvertaiapp.shared
 
-import android.app.Application
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
 
 import com.example.taskconvertaiapp.shared.data.AppContainer
 import com.example.taskconvertaiapp.shared.data.DefaultAppContainer
 
-private const val AUTH_PREFERENCES = "auth_preferences"
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
-    name = AUTH_PREFERENCES
-)
+// Expect function to create platform-specific DataStore
+expect fun createDataStore(): DataStore<Preferences>
 
-class TaskConvertAIApplication: Application() {
-    lateinit var container: AppContainer
+// Global singleton for AppContainer
+object AppDependencies {
+    private var _container: AppContainer? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        container = DefaultAppContainer(dataStore)
+    val container: AppContainer
+        get() = _container ?: throw IllegalStateException("AppContainer not initialized. Call initialize() first.")
+
+    fun initialize() {
+        if (_container == null) {
+            val dataStore = createDataStore()
+            _container = DefaultAppContainer(dataStore)
+        }
     }
+
+    fun isInitialized(): Boolean = _container != null
 }

@@ -2,7 +2,6 @@ package com.example.taskconvertaiapp.shared.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -12,7 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-import com.example.taskconvertaiapp.shared.TaskConvertAIApplication
 import com.example.taskconvertaiapp.shared.data.auth.AuthRepository
 
 data class SignUpUiState(
@@ -72,8 +70,8 @@ class AuthViewModel(
 
     fun checkEmail(email: String) {
         var errorMsg = ""
-        val isCorrect =
-            email.isNotEmpty() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        val emailRegex = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$")
+        val isCorrect = email.isNotEmpty() && emailRegex.matches(email)
 
         if (!isCorrect) {
             errorMsg = "Некорректный почтовый адрес"
@@ -211,8 +209,7 @@ class AuthViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = (this[APPLICATION_KEY] as TaskConvertAIApplication)
-                val authRepository = application.container.authRepository
+                val authRepository = com.example.taskconvertaiapp.shared.AppDependencies.container.authRepository
                 AuthViewModel(authRepository = authRepository)
             }
         }
