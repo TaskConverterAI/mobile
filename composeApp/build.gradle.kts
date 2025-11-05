@@ -29,6 +29,13 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            // Retrofit
+            implementation(libs.retrofit2.kotlinx.serialization.converter)
+            implementation(libs.retrofit)
+            implementation(libs.converter.gson)
+            implementation(libs.gson)
+            implementation(libs.okhttp)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -39,6 +46,14 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+
+            // DataStore library
+            implementation(libs.androidx.datastore)
+            // The Preferences DataStore library
+            implementation(libs.androidx.datastore.preferences)
+
+            implementation(libs.material.icons.extended)
+            implementation(libs.navigation.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
