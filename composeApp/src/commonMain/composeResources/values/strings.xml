@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">TaskConvertAIApp</string>
+    <string name="overview_screen">Overview</string>
+    <string name="sign_up_screen">Sign Up</string>
+    <string name="sign_in_screen">Sign In</string>
+    <string name="home_screen">Home</string>
+    <string name="overview_txt_1">Просто скажи — мы всё запомним за тебя</string>
+    <string name="overview_txt_2">ИИ сам разберётся, что важно, и превратит это в заметку с задачами</string>
+    <string name="overview_txt_3">Назначай, редактируй, отмечай — управляй делами как тебе удобно</string>
+    <string name="next_btn_1">Погнали</string>
+    <string name="next_btn_2">Отлично</string>
+    <string name="next_btn_3">К регистрации</string>
+    <string name="back_btn">Назад</string>
+</resources>
