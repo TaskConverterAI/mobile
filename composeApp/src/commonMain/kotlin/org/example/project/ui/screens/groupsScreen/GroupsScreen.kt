@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
-import org.example.project.ui.screens.groupsScreen.states.EmptyScreen
+import org.example.project.ui.screens.groupsScreen.conditionScreens.EmptyScreen
 
 @Composable
 fun GroupsScreen() {

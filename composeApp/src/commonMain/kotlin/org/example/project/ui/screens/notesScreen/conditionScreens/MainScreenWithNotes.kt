@@ -10,15 +10,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 
 import org.example.project.data.commonData.Note
+import org.example.project.ui.viewComponents.commonComponents.BlockType
+import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
 import org.example.project.ui.viewComponents.commonComponents.NotifyItem
-import org.example.project.ui.viewComponents.noteScreenComponents.NoteItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithNotes() {
+fun MainScreenWithNotes(navController: NavController) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
 
@@ -87,7 +89,8 @@ fun MainScreenWithNotes() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 leftColumnNotes.forEach { note ->
-                    NoteItem(note = note)
+//                    NoteItem(note = note)
+                    ColorBlock(blockType = BlockType.ADVANCED_NOTE, note = note, backgroundColor = note.color, navController = navController)
                 }
             }
 
@@ -96,7 +99,8 @@ fun MainScreenWithNotes() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 rightColumnNotes.forEach { note ->
-                    NoteItem(note = note)
+//                    NoteItem(note = note)
+                    ColorBlock(blockType = BlockType.ADVANCED_NOTE, note = note, backgroundColor = note.color, navController = navController)
                 }
             }
         }
@@ -106,7 +110,8 @@ fun MainScreenWithNotes() {
         NotifyItem(
             objectName = "Заметка успешно создана",
             objectDescription = "Извлечённые задачи можешь найти в разделе задач",
-            { showBottomSheet = false })
+            onDismiss = { showBottomSheet = false }
+        )
     }
 }
 

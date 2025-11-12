@@ -1,4 +1,4 @@
-package org.example.project.ui.screens.tasksScreen.states
+package org.example.project.ui.screens.tasksScreen.conditionScreens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

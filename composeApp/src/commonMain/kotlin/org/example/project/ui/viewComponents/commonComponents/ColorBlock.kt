@@ -18,11 +18,25 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import kotlin.time.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
+import kotlinx.datetime.toLocalDateTime
 import org.example.project.data.commonData.Group
 
 import org.example.project.data.commonData.Note
+import org.example.project.data.commonData.Priority
+import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
-
+import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
+import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
+import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
+import org.example.project.ui.viewComponents.taskScreenComponents.HighPriority
+import org.example.project.ui.viewComponents.taskScreenComponents.InProgressStatus
+import org.example.project.ui.viewComponents.taskScreenComponents.LowPriority
+import org.example.project.ui.viewComponents.taskScreenComponents.MediumPriority
+import org.example.project.ui.viewComponents.taskScreenComponents.ToDoStatus
 
 enum class BlockType {
     SIMPLE_NOTE,
@@ -32,16 +46,29 @@ enum class BlockType {
     GROUP
 }
 
+@OptIn(kotlin.time.ExperimentalTime::class)
+fun formatDate(timestamp: Long): String {
+    val instant = Instant.fromEpochMilliseconds(timestamp)
+    val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+
+    val day = localDateTime.day.toString().padStart(2, '0')
+    val month = localDateTime.month.number.toString().padStart(2, '0')
+    val year = localDateTime.year
+    val hour = localDateTime.hour.toString().padStart(2, '0')
+    val minute = localDateTime.minute.toString().padStart(2, '0')
+
+    return "$day.$month.$year $hour:$minute"
+}
+
 @Composable
-fun SimpleNoteBlock(
+private fun SimpleNoteBlock(
     note: Note,
-    backgroundColor: Color? = null,
     modifier: Modifier = Modifier,
     onTitleClick: () -> Unit = {},
     onContentClick: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .padding(16.dp)
             .fillMaxWidth()
     ) {
@@ -50,11 +77,11 @@ fun SimpleNoteBlock(
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.clickable { onTitleClick() }
+            modifier = modifier.clickable { onTitleClick() }
         )
 
         if (note.content.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = modifier.height(8.dp))
 
             Text(
                 text = note.content,
@@ -62,30 +89,61 @@ fun SimpleNoteBlock(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = note.contentMaxLines,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { onContentClick() }
+                modifier = modifier.clickable { onContentClick() }
             )
         }
     }
 }
 
 @Composable
-fun AdvancedNoteBlock(
+private fun AdvancedNoteBlock(
     note: Note,
-    backgroundColor: Color? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNoteClick: () -> Unit = {}
 ) {
+    Column(
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .clickable { onNoteClick() }
+    ) {
+        Text(
+            text = note.title,
+            style = MaterialTheme.typography.headlineMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
+        if (note.content.isNotEmpty()) {
+            Spacer(modifier = modifier.height(8.dp))
+
+            Text(
+                text = note.content,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = note.contentMaxLines,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Spacer(modifier = modifier.height(8.dp))
+
+        Text(
+            text = formatDate(note.creationDate),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        )
+    }
 }
 
 @Composable
-fun SimpleTaskBlock(
+private fun SimpleTaskBlock(
     task: Task,
-    backgroundColor: Color? = null,
     modifier: Modifier = Modifier,
     onTitleClick: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .padding(16.dp)
             .fillMaxWidth()
     ) {
@@ -94,22 +152,64 @@ fun SimpleTaskBlock(
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.clickable { onTitleClick() }
+            modifier = modifier.clickable { onTitleClick() }
         )
     }
 }
 
 @Composable
-fun AdvancedTaskBlock(
+private fun AdvancedTaskBlock(
     task: Task,
-    backgroundColor: Color? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTaskClick: () -> Unit = {}
 ) {
+    Column(
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .clickable { onTaskClick() }
+    ) {
+        Text(
+            text = task.title,
+            style = MaterialTheme.typography.headlineMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
 
+        Spacer(modifier = modifier.height(8.dp))
+
+        Row {
+            when(task.priority) {
+                Priority.LOW -> {
+                    LowPriority()
+                }
+                Priority.MEDIUM -> {
+                    MediumPriority()
+                }
+                Priority.HIGH -> {
+                    HighPriority()
+                }
+            }
+
+            Spacer(modifier = modifier.width(8.dp))
+
+            when(task.status) {
+                Status.TODO -> {
+                    ToDoStatus()
+                }
+                Status.IN_PROGRESS -> {
+                    InProgressStatus()
+                }
+                Status.DONE -> {
+                    DoneStatus()
+                }
+            }
+        }
+    }
 }
 
 @Composable
-fun GroupBlock(
+private fun GroupBlock(
     group: Group,
     backgroundColor: Color? = null,
     modifier: Modifier = Modifier
@@ -125,7 +225,8 @@ fun ColorBlock(
     note: Note? = null,
     group: Group? = null,
     backgroundColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navController: NavController? = null
 ) {
     var showTitleDialog by remember { mutableStateOf(false) }
     var showContentDialog by remember { mutableStateOf(false) }
@@ -170,7 +271,14 @@ fun ColorBlock(
                         showContentDialog = true
                     }
                 )
-                BlockType.ADVANCED_NOTE -> AdvancedNoteBlock(note = note!!)
+                BlockType.ADVANCED_NOTE -> AdvancedNoteBlock(
+                    note = note!!,
+                    onNoteClick = {
+                        navController?.navigate(
+                            DetailNoteScreenArgs(0)
+                        )
+                    }
+                )
 
                 BlockType.SIMPLE_TASK -> SimpleTaskBlock(
                     task = task!!,
@@ -179,7 +287,14 @@ fun ColorBlock(
                         showTitleDialog = true
                     }
                 )
-                BlockType.ADVANCED_TASK -> AdvancedTaskBlock(task = task!!)
+                BlockType.ADVANCED_TASK -> AdvancedTaskBlock(
+                    task = task!!,
+                    onTaskClick = {
+                        navController?.navigate(
+                            DetailTaskScreenArgs(0)
+                        )
+                    }
+                )
 
                 BlockType.GROUP -> GroupBlock(group = group!!)
             }

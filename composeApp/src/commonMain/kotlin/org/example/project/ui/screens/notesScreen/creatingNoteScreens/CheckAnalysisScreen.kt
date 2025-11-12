@@ -32,6 +32,8 @@ import androidx.navigation.NavController
 import kotlin.time.ExperimentalTime
 
 import org.example.project.data.commonData.Note
+import org.example.project.data.commonData.Priority
+import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
@@ -133,7 +135,9 @@ fun CheckAnalysisScreen(navController: NavController) {
                             group = "standart",
                             assignee = "me",
                             dueDate = 0,
-                            geotag = "empty"
+                            geotag = "empty",
+                            priority = Priority.HIGH,
+                            status = Status.IN_PROGRESS
                         ),
                         isEnabled = isEnabled,
                         onEnabledChange = { newValue ->

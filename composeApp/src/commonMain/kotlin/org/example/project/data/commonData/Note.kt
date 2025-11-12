@@ -14,4 +14,5 @@ data class Note @OptIn(ExperimentalTime::class) constructor(
     val comments: List<Comment>,
     val color: Color = PrimaryBase,
     val creationDate: Long = Clock.System.now().toEpochMilliseconds(),
-    val contentMaxLines: Int = Int.MAX_VALUE)
+    val contentMaxLines: Int = Int.MAX_VALUE
+)
