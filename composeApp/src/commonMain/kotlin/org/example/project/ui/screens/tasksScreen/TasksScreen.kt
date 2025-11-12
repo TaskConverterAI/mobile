@@ -5,15 +5,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 
-import org.example.project.ui.screens.tasksScreen.states.EmptyScreen
+import org.example.project.ui.screens.tasksScreen.conditionScreens.MainScreenWithTasks
 
 @Composable
-fun TasksScreen() {
+fun TasksScreen(navController: NavController) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        EmptyScreen()
+        MainScreenWithTasks(navController = navController)
     }
 }
