@@ -5,13 +5,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Comment
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -29,6 +34,7 @@ import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
+import org.example.project.ui.screens.groupsScreen.DetailedGroupScreen.DetailGroupScreenArgs
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
@@ -211,10 +217,75 @@ private fun AdvancedTaskBlock(
 @Composable
 private fun GroupBlock(
     group: Group,
+    onGroupClick: () -> Unit = {},
     backgroundColor: Color? = null,
     modifier: Modifier = Modifier
 ) {
+    Column(
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .clickable { onGroupClick() }
+    ) {
+        Text(
+            text = group.name,
+            style = MaterialTheme.typography.headlineMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = group.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.People,
+                    contentDescription = "Members",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = group.users.size.toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Comment,
+                    contentDescription = "Notes",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = group.noteIds.size.toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }
 
 
@@ -296,7 +367,14 @@ fun ColorBlock(
                     }
                 )
 
-                BlockType.GROUP -> GroupBlock(group = group!!)
+                BlockType.GROUP -> GroupBlock(
+                    group = group!!,
+                    onGroupClick = {
+                        navController?.navigate(
+                            DetailGroupScreenArgs(group.name)
+                        )
+                    }
+                )
             }
         }
     }

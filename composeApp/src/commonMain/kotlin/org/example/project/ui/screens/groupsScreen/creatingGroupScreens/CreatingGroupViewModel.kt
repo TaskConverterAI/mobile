@@ -69,8 +69,6 @@ class CreateGroupViewModel : ViewModel() {
         }
     }
 
-    // --------------- ACTION: CREATE GROUP ---------------
-
     fun createGroup(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             // TODO: логика создания группы

@@ -358,7 +358,7 @@ fun RegistrationPreview() {
 }
 
 @Composable
-fun RegistrationPreviewWithErrors() {
+private fun RegistrationPreviewWithErrors() {
     TaskConvertAIAppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
