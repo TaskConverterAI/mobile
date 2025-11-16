@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.converter.gson)
             implementation(libs.gson)
             implementation(libs.okhttp)
+            //serialization
         }
         commonMain.dependencies {
             implementation(compose.runtime)

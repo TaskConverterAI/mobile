@@ -1,5 +1,6 @@
 package org.example.project.data
 
+import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
 
@@ -16,4 +17,8 @@ actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferenc
             throw NotImplementedError("iOS AuthRepository not yet implemented")
         }
     }
+}
+
+actual fun createTranscribatorRepository(): AnalyzerRepository{
+    return TODO("Provide the return value")
 }
