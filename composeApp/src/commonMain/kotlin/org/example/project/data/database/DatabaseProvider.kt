@@ -9,7 +9,7 @@ object DatabaseProvider {
 
     private var database: AppDatabase? = null
 
-    private fun getDatabase(): AppDatabase {
+    fun getDatabase(): AppDatabase {
         return database ?: getDatabaseBuilder()
             .setDriver(androidx.sqlite.driver.bundled.BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)

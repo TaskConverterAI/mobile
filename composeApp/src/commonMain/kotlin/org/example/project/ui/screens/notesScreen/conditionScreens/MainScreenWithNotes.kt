@@ -16,14 +16,18 @@ import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
 import org.example.project.ui.viewComponents.commonComponents.NotifyItem
+import org.example.project.ui.viewmodels.NotesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithNotes(navController: NavController) {
+fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
 
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    // Получаем заметки из viewModel
+    val notes by viewModel.notes.collectAsState()
 
     Column(
         modifier = Modifier
@@ -63,8 +67,7 @@ fun MainScreenWithNotes(navController: NavController) {
             Text(text = "Test Notify")
         }
 
-        // ToDo: сделать получение заметок в notes из viewModel
-        val notes = emptyList<Note>()
+        // Разделяем заметки на две колонки для отображения
 
         val leftColumnNotes = mutableListOf<Note>()
         val rightColumnNotes = mutableListOf<Note>()
