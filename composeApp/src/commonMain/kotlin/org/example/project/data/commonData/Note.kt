@@ -7,10 +7,11 @@ import kotlin.time.ExperimentalTime
 import org.example.project.ui.theme.PrimaryBase
 
 data class Note @OptIn(ExperimentalTime::class) constructor(
+    val id: Long = 0,
     val title: String,
     val content: String,
     val geotag: String,
-    val group: String,
+    val group: Group,
     val comments: List<Comment>,
     val color: Color = PrimaryBase,
     val creationDate: Long = Clock.System.now().toEpochMilliseconds(),

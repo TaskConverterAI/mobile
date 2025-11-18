@@ -142,7 +142,7 @@ fun DetailNoteScreen(note: Note, navController: NavController) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    note.group,
+                    note.group.name,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )

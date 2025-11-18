@@ -15,7 +15,7 @@ fun NotesScreen(navController: NavController) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // ToDo: switch between different states
+        // ToDo: сделать по количеству заметок в viewModel разное отображение экранов
         MainScreenWithNotes(navController)
     }
 }

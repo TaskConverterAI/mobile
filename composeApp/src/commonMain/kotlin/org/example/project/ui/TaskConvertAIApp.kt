@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -32,16 +31,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 
 import org.example.project.data.commonData.Destination
-import org.example.project.data.commonData.Note
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
-import org.example.project.data.commonData.Task
 import org.example.project.ui.screens.auth.AuthViewModel
 import org.example.project.ui.screens.auth.EnterScreen
 import org.example.project.ui.screens.auth.OverviewScreen
 import org.example.project.ui.screens.auth.RegistrationScreen
 import org.example.project.ui.screens.groupsScreen.GroupsScreen
-import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
@@ -49,7 +43,6 @@ import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnaly
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartTranscribingScreen
 import org.example.project.ui.screens.settingsScreen.SettingsScreen
-import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.screens.tasksScreen.TaskCreateDialog
 import org.example.project.ui.screens.tasksScreen.TasksScreen
@@ -79,97 +72,6 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
             )
         }
         Destination.TASKS.route -> {
-            val allNotes = listOf(
-                Note(
-                    title = "Встреча с командой",
-                    content = "Обсудить планы на следующую неделю",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color.Green,
-                    contentMaxLines = 2
-                ),
-                Note(
-                    title = "Список покупок",
-                    content = "Молоко, хлеб, яйца, масло, сыр, колбаса, овощи и фрукты для недели",
-                    geotag = "Супермаркет",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color.Cyan,
-                    contentMaxLines = 5
-                ),
-                Note(
-                    title = "Идея для проекта",
-                    content = "Реализовать новую функцию в приложении с использованием современных подходов",
-                    geotag = "Дом",
-                    group = "Важные",
-                    comments = emptyList(),
-                    color = Color.Magenta,
-                    contentMaxLines = 3
-                ),
-                Note(
-                    title = "Задача на день",
-                    content = "Закончить отчёт",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color.Yellow,
-                    contentMaxLines = 1
-                ),
-                Note(
-                    title = "Напоминание",
-                    content = "Позвонить врачу и записаться на приём. Не забыть взять медицинскую карту и результаты анализов",
-                    geotag = "Поликлиника",
-                    group = "Важные",
-                    comments = emptyList(),
-                    contentMaxLines = 4
-                ),
-                Note(
-                    title = "Заметка",
-                    content = "Короткий текст",
-                    geotag = "",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color.LightGray,
-                    contentMaxLines = 1
-                ),
-                Note(
-                    title = "План путешествия",
-                    content = "Забронировать отель, купить билеты на самолёт, составить маршрут по городу, проверить погоду и упаковать чемодан",
-                    geotag = "Париж",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color(0xFF8A2BE2),
-                    contentMaxLines = 6
-                ),
-                Note(
-                    title = "Рабочие задачи",
-                    content = "Просмотреть код коллег и оставить комментарии",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color(0xFFFFA500),
-                    contentMaxLines = 2
-                ),
-                Note(
-                    title = "Важное сообщение",
-                    content = "Не забыть отправить отчёт начальнику до конца дня",
-                    geotag = "Офис",
-                    group = "Важные",
-                    comments = emptyList(),
-                    color = Color.Red,
-                    contentMaxLines = 2
-                ),
-                Note(
-                    title = "Личное развитие",
-                    content = "Прочитать главу из книги по саморазвитию и сделать заметки",
-                    geotag = "Библиотека",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color.Blue,
-                    contentMaxLines = 3
-                )
-            )
 
             TaskCreateDialog(
                 onDismiss = onDismiss,
@@ -177,7 +79,7 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
                     onDismiss()
                     navController.navigate(route)
                 },
-                notes = allNotes,
+                notes = emptyList(),
                 navController = navController
             )
         }
@@ -309,36 +211,16 @@ fun TaskConvertAIApp(
                 val detailNoteScreenArgs: DetailNoteScreenArgs = currentBackStackEntry.toRoute()
                 val noteID = detailNoteScreenArgs.noteID
 
-                val note = Note(
-                    title = "Рабочие задачи",
-                    content = "Просмотреть код коллег и оставить комментарии",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color(0xFFFFA500),
-                    contentMaxLines = 2
-                )
-
-                DetailNoteScreen(note, navController)
+                // ToDo: делать получение заметки из viewModel и расскомментировать строку ниже
+//                DetailNoteScreen(note, navController)
             }
 
             composable<DetailTaskScreenArgs> { currentBackStackEntry ->
                 val detailTaskScreenArgs: DetailTaskScreenArgs = currentBackStackEntry.toRoute()
                 val taskID = detailTaskScreenArgs.taskID
 
-                val task = Task(
-                    title = "task 3",
-                    description = "empty",
-                    comments = emptyList(),
-                    group = "standart",
-                    assignee = "me",
-                    dueDate = 0,
-                    geotag = "empty",
-                    priority = Priority.LOW,
-                    status = Status.DONE
-                )
-
-                DetailTaskScreen(task, navController)
+                // ToDo: делать получение задачи из viewModel и расскомментировать строку ниже
+//                DetailTaskScreen(task, navController)
             }
         }
     }

@@ -10,12 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
+
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,7 +54,8 @@ fun MainScreenWithTasks(navController: NavController) {
             )
         }
 
-        val tasks = getSampleTasks(selectedFilter)
+        // ToDo: сделать получение задач из viewModel
+        val tasks = emptyList<Task>()
 
         Column(
             modifier = Modifier
@@ -69,44 +68,4 @@ fun MainScreenWithTasks(navController: NavController) {
             }
         }
     }
-}
-
-fun getSampleTasks(filter: String): List<Task> {
-    val allTasks = listOf(
-        Task(
-            title = "task 1",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.HIGH,
-            status = Status.IN_PROGRESS
-        ),
-        Task(
-            title = "task 2",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.MEDIUM,
-            status = Status.TODO
-        ),
-        Task(
-            title = "task 3",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.LOW,
-            status = Status.DONE
-        )
-    )
-
-    return allTasks
 }

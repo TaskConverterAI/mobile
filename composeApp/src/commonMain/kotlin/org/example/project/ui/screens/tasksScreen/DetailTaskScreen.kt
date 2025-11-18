@@ -152,7 +152,7 @@ fun DetailTaskScreen(task: Task, navController: NavController) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    task.group,
+                    task.group.name,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -167,7 +167,7 @@ fun DetailTaskScreen(task: Task, navController: NavController) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    task.assignee,
+                    task.assignee.email,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )

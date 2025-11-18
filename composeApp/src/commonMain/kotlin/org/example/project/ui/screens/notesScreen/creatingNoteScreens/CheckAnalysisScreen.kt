@@ -21,42 +21,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlin.time.ExperimentalTime
 
-import org.example.project.data.commonData.Note
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
-import org.example.project.data.commonData.Task
 import org.example.project.ui.theme.LightGray
-import org.example.project.ui.theme.PrimaryBase
-import org.example.project.ui.viewComponents.commonComponents.BlockType
-import org.example.project.ui.viewComponents.commonComponents.ColorBlock
-import org.example.project.ui.viewComponents.noteScreenComponents.TaskChoosingItem
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun CheckAnalysisScreen(navController: NavController) {
-    // Состояние для задач (пример данных)
-    var tasks by remember {
-        mutableStateOf(
-            listOf(
-                "Купить продукты в магазине" to true,
-                "Позвонить врачу и записаться на прием" to true,
-                "Сделать домашнее задание по математике" to false,
-                "Отправить отчет руководителю" to true,
-                "Забрать посылку из почтового отделения" to false
-            )
-        )
-    }
-
     Scaffold(
         topBar = {
             Column {
@@ -101,21 +76,11 @@ fun CheckAnalysisScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val testNote = Note(
-                title = "Wasd",
-                content = "Wasd was wasd",
-                geotag = "office",
-                group = "work",
-                comments = emptyList(),
-                color = PrimaryBase,
-                contentMaxLines = 5,
-                creationDate = 0
-            )
-
-            ColorBlock(blockType = BlockType.SIMPLE_NOTE,
-                note = testNote,
-                backgroundColor = testNote.color
-            )
+            // ToDo: в этом экране должно быть отображение новой заметки в ColorBlock и задач к ней в TaskChoosingItem
+//            ColorBlock(blockType = BlockType.SIMPLE_NOTE,
+//                note = testNote,
+//                backgroundColor = testNote.color
+//            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -126,27 +91,28 @@ fun CheckAnalysisScreen(navController: NavController) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                tasks.forEachIndexed { index, (taskTitle, isEnabled) ->
-                    TaskChoosingItem(
-                        task = Task(
-                            title = taskTitle,
-                            description = "empty",
-                            comments = emptyList(),
-                            group = "standart",
-                            assignee = "me",
-                            dueDate = 0,
-                            geotag = "empty",
-                            priority = Priority.HIGH,
-                            status = Status.IN_PROGRESS
-                        ),
-                        isEnabled = isEnabled,
-                        onEnabledChange = { newValue ->
-                            tasks = tasks.toMutableList().apply {
-                                this[index] = taskTitle to newValue
-                            }
-                        }
-                    )
-                }
+
+//                tasks.forEachIndexed { index, (taskTitle, isEnabled) ->
+//                    TaskChoosingItem(
+//                        task = Task(
+//                            title = taskTitle,
+//                            description = "empty",
+//                            comments = emptyList(),
+//                            group = "standart",
+//                            assignee = "me",
+//                            dueDate = 0,
+//                            geotag = "empty",
+//                            priority = Priority.HIGH,
+//                            status = Status.IN_PROGRESS
+//                        ),
+//                        isEnabled = isEnabled,
+//                        onEnabledChange = { newValue ->
+//                            tasks = tasks.toMutableList().apply {
+//                                this[index] = taskTitle to newValue
+//                            }
+//                        }
+//                    )
+//                }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -154,7 +120,7 @@ fun CheckAnalysisScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    // ToDo: Save note and tasks
+                    // ToDo: сохранить заметку и выбранные задачи
                     navController.popBackStack()
                 },
                 modifier = Modifier
