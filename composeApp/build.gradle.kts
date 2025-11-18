@@ -37,7 +37,9 @@ kotlin {
             implementation(libs.converter.gson)
             implementation(libs.gson)
             implementation(libs.okhttp)
-            //serialization
+
+            // FilePicker
+            implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

@@ -9,16 +9,18 @@ import org.example.project.data.auth.UserAuthPreferencesRepository
 
 interface AppContainer {
     val authRepository: AuthRepository
-    val transcribatorRepository: AnalyzerRepository
+    val analyzerRepository: AnalyzerRepository
 }
 
 // Expect function to create platform-specific AuthRepository
 expect fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferencesRepository): AuthRepository
 
-expect fun createTranscribatorRepository(): AnalyzerRepository
+expect fun createAnalyzerRepository(): AnalyzerRepository
 
 class DefaultAppContainer(dataStore: DataStore<Preferences>): AppContainer {
     private val userAuthPreferencesRepository = UserAuthPreferencesRepository(dataStore)
 
     override val authRepository: AuthRepository = createAuthRepository(userAuthPreferencesRepository)
+
+    override val analyzerRepository: AnalyzerRepository = createAnalyzerRepository()
 }

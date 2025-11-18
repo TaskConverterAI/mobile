@@ -10,7 +10,7 @@ import androidx.navigation.NavController
 import org.example.project.ui.screens.notesScreen.conditionScreens.MainScreenWithNotes
 
 @Composable
-fun NotesScreen(navController: NavController) {
+fun NotesScreen(navController: NavController, notesViewModel: NotesViewModel) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

@@ -45,6 +45,7 @@ import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
+import org.example.project.ui.screens.notesScreen.NotesViewModel
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisScreen
@@ -67,7 +68,7 @@ enum class TaskConvertAIAppScreens(val title: StringResource) {
 }
 
 @Composable
-fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navController: NavController) {
+fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navController: NavController, viewModel: TaskConvertAIViewModel) {
     when (currentRoute) {
         Destination.NOTES.route -> {
             NoteCreateDialog(
@@ -194,7 +195,7 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
 
 @Composable
 fun TaskConvertAIApp(
-    viewModel: TaskConvertAIViewModel = viewModel(factory = TaskConvertAIViewModel.Companion.Factory),
+    viewModel: TaskConvertAIViewModel = viewModel(factory = TaskConvertAIViewModel.Factory),
     navController: NavHostController = rememberNavController()
 ) {
 //    HideSystemBarsWithInsetsController()
@@ -204,7 +205,7 @@ fun TaskConvertAIApp(
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {
-        ChooseCreateDialog(currentRoute, { showDialog = false }, navController)
+        ChooseCreateDialog(currentRoute, { showDialog = false }, navController, viewModel)
     }
 
     val shouldShowBottomBar = currentRoute in Destination.entries.map { it.route }
@@ -285,7 +286,7 @@ fun TaskConvertAIApp(
             Destination.entries.forEach { destination ->
                 composable(destination.route) {
                     when (destination) {
-                        Destination.NOTES -> NotesScreen(navController)
+                        Destination.NOTES -> NotesScreen(navController, viewModel(factory = NotesViewModel.Factory))
                         Destination.TASKS -> TasksScreen(navController)
                         Destination.GROUPS -> GroupsScreen()
                         Destination.SETTINGS -> SettingsScreen()

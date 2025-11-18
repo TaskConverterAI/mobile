@@ -19,6 +19,6 @@ actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferenc
     }
 }
 
-actual fun createTranscribatorRepository(): AnalyzerRepository{
+actual fun createAnalyzerRepository(): AnalyzerRepository{
     return TODO("Provide the return value")
 }
