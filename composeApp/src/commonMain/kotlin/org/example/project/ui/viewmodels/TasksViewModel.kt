@@ -1,7 +1,10 @@
 package org.example.project.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -113,7 +116,7 @@ class TasksViewModel(
      * @param taskId - ID задачи
      * @return Task с полными деталями (группа, исполнитель, заметка, комментарии)
      */
-    suspend fun getTaskById(taskId: Long): Task? {
+    suspend fun getTaskById(taskId: Int): Task? {
         return try {
             taskRepository.getTaskById(taskId)
         } catch (e: Exception) {
@@ -222,6 +225,14 @@ class TasksViewModel(
      */
     fun clearError() {
         _error.value = null
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                TasksViewModel()
+            }
+        }
     }
 }
 

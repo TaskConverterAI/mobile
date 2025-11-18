@@ -14,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,11 +32,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 
 import org.example.project.data.commonData.Destination
+import org.example.project.data.commonData.Note
+import org.example.project.data.commonData.Task
 import org.example.project.ui.screens.auth.AuthViewModel
 import org.example.project.ui.screens.auth.EnterScreen
 import org.example.project.ui.screens.auth.OverviewScreen
 import org.example.project.ui.screens.auth.RegistrationScreen
 import org.example.project.ui.screens.groupsScreen.GroupsScreen
+import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
@@ -43,10 +47,13 @@ import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnaly
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartTranscribingScreen
 import org.example.project.ui.screens.settingsScreen.SettingsScreen
+import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.screens.tasksScreen.TaskCreateDialog
 import org.example.project.ui.screens.tasksScreen.TasksScreen
 import org.example.project.ui.viewComponents.commonComponents.BottomNavigationBar
+import org.example.project.ui.viewmodels.NotesViewModel
+import org.example.project.ui.viewmodels.TasksViewModel
 
 import org.jetbrains.compose.resources.StringResource
 import taskconvertaiapp.composeapp.generated.resources.Res
@@ -100,7 +107,8 @@ fun TaskConvertAIApp(
     navController: NavHostController = rememberNavController()
 ) {
 //    HideSystemBarsWithInsetsController()
-
+    val viewModelTasks: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
+    val  viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     var showDialog by remember { mutableStateOf(false) }
@@ -210,17 +218,29 @@ fun TaskConvertAIApp(
             composable<DetailNoteScreenArgs> { currentBackStackEntry ->
                 val detailNoteScreenArgs: DetailNoteScreenArgs = currentBackStackEntry.toRoute()
                 val noteID = detailNoteScreenArgs.noteID
+                var note by remember { mutableStateOf<Note?>(null) }
 
-                // ToDo: делать получение заметки из viewModel и расскомментировать строку ниже
-//                DetailNoteScreen(note, navController)
+                // Загружаем данные в корутине
+                LaunchedEffect(noteID) {
+                    note = viewModelNotes.getNoteById(noteID)
+                }
+
+                DetailNoteScreen(note = note, navController = navController)
             }
+
 
             composable<DetailTaskScreenArgs> { currentBackStackEntry ->
                 val detailTaskScreenArgs: DetailTaskScreenArgs = currentBackStackEntry.toRoute()
-                val taskID = detailTaskScreenArgs.taskID
+                val taskID = detailTaskScreenArgs.taskID;
 
-                // ToDo: делать получение задачи из viewModel и расскомментировать строку ниже
-//                DetailTaskScreen(task, navController)
+                var task by remember { mutableStateOf<Task?>(null) }
+
+                // Загружаем данные в корутине
+                LaunchedEffect(taskID) {
+                    task = viewModelTasks.getTaskById(taskID)
+                }
+
+               DetailTaskScreen(task = task, navController)
             }
         }
     }

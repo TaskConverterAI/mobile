@@ -48,7 +48,8 @@ data class DetailNoteScreenArgs(val noteID: Int)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailNoteScreen(note: Note, navController: NavController) {
+fun DetailNoteScreen(note: Note?, navController: NavController) {
+
     Scaffold(
         topBar = {
             Column {
@@ -104,90 +105,95 @@ fun DetailNoteScreen(note: Note, navController: NavController) {
                 }
             }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Text(note.title, style = MaterialTheme.typography.displayLarge)
+    ) {
+        paddingValues ->
+        if (note == null) {
+            Text("Упс. Что-то пошло не так...", style =MaterialTheme.typography.headlineLarge)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                Text(note.title, style = MaterialTheme.typography.displayLarge)
 
-            Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(30.dp))
 
-            Text("Детали заметки", style = MaterialTheme.typography.headlineLarge)
+                Text("Детали заметки", style = MaterialTheme.typography.headlineLarge)
 
-            Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(15.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Геометка: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    note.geotag,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Группа: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    note.group.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Цвет: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        getColorName(note.color),
-                        style = MaterialTheme.typography.bodyMedium
+                        "Геометка: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.padding(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(
-                                color = note.color,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(end = 8.dp)
+                    Text(
+                        note.geotag,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Группа: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        note.group.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Цвет: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            getColorName(note.color),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(
+                                    color = note.color,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(end = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(30.dp))
+
+                Text("Описание", style = MaterialTheme.typography.headlineLarge)
+
+                Spacer(Modifier.height(15.dp))
+
+                Text(note.content, style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(Modifier.height(30.dp))
+
+                Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
             }
-
-            Spacer(Modifier.height(30.dp))
-
-            Text("Описание", style = MaterialTheme.typography.headlineLarge)
-
-            Spacer(Modifier.height(15.dp))
-
-            Text(note.content, style = MaterialTheme.typography.bodyMedium)
-
-            Spacer(Modifier.height(30.dp))
-
-            Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
         }
     }
 }

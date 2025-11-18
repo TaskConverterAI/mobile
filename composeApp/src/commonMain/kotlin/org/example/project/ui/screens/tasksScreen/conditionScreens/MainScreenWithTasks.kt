@@ -15,10 +15,11 @@ import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
+import org.example.project.ui.viewmodels.TasksViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithTasks(navController: NavController) {
+fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
     var selectedStatus by remember { mutableStateOf("Все статусы") }
@@ -54,8 +55,7 @@ fun MainScreenWithTasks(navController: NavController) {
             )
         }
 
-        // ToDo: сделать получение задач из viewModel
-        val tasks = emptyList<Task>()
+        val tasks by viewModel.tasks.collectAsState()
 
         Column(
             modifier = Modifier

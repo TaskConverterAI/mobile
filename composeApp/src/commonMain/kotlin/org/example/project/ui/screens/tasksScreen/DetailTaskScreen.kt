@@ -39,7 +39,7 @@ data class DetailTaskScreenArgs(val taskID: Int)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailTaskScreen(task: Task, navController: NavController) {
+fun DetailTaskScreen(task: Task?, navController: NavController) {
     Scaffold(
         topBar = {
             Column {
@@ -95,125 +95,132 @@ fun DetailTaskScreen(task: Task, navController: NavController) {
                 }
             }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Text(task.title, style = MaterialTheme.typography.displayLarge)
+    ) {
 
-            Spacer(modifier = Modifier.height(30.dp))
+         paddingValues ->
 
-            Text("Детали задачи", style = MaterialTheme.typography.headlineLarge)
+        if (task == null) {
+            Text("Упс. Что-то пошло не так...", style = MaterialTheme.typography.headlineLarge)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                Text(task.title, style = MaterialTheme.typography.displayLarge)
 
-            Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.height(30.dp))
 
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(
-                    "Приоритет: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(modifier = Modifier.weight(1f)) {
-                    when (task.priority) {
-                        Priority.LOW -> LowPriority()
-                        Priority.MEDIUM -> MediumPriority()
-                        Priority.HIGH -> HighPriority()
+                Text("Детали задачи", style = MaterialTheme.typography.headlineLarge)
+
+                Spacer(modifier = Modifier.height(15.dp))
+
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        "Приоритет: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(modifier = Modifier.weight(1f)) {
+                        when (task.priority) {
+                            Priority.LOW -> LowPriority()
+                            Priority.MEDIUM -> MediumPriority()
+                            Priority.HIGH -> HighPriority()
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(
-                    "Статус: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(modifier = Modifier.weight(1f)) {
-                    when (task.status) {
-                        Status.TODO -> ToDoStatus()
-                        Status.IN_PROGRESS -> ToDoStatus()
-                        Status.DONE -> ToDoStatus()
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        "Статус: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(modifier = Modifier.weight(1f)) {
+                        when (task.status) {
+                            Status.TODO -> ToDoStatus()
+                            Status.IN_PROGRESS -> ToDoStatus()
+                            Status.DONE -> ToDoStatus()
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        "Группа: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        task.group.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        "Исполнитель: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        task.assignee.email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        "Дедлайн (увед): ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        formatDate(task.dueDate),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        "Геометка (увед): ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        task.geotag,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(Modifier.height(30.dp))
+
+                Text("Описание", style = MaterialTheme.typography.headlineLarge)
+
+                Spacer(Modifier.height(15.dp))
+
+                Text(task.description, style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(Modifier.height(30.dp))
+
+                Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(
-                    "Группа: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    task.group.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(
-                    "Исполнитель: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    task.assignee.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(
-                    "Дедлайн (увед): ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    formatDate(task.dueDate),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(
-                    "Геометка (увед): ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    task.geotag,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(Modifier.height(30.dp))
-
-            Text("Описание", style = MaterialTheme.typography.headlineLarge)
-
-            Spacer(Modifier.height(15.dp))
-
-            Text(task.description, style = MaterialTheme.typography.bodyMedium)
-
-            Spacer(Modifier.height(30.dp))
-
-            Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
         }
     }
 }
