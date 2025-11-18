@@ -47,7 +47,7 @@ import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreen
-import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartTranscribingScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisScreen
 import org.example.project.ui.screens.settingsScreen.SettingsScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
@@ -294,7 +294,7 @@ fun TaskConvertAIApp(
             }
 
             composable("start_transcribing_screen") {
-                StartTranscribingScreen(navController = navController)
+                StartAnalysisScreen(navController = navController)
             }
 
             composable("check_transcribing_screen") {

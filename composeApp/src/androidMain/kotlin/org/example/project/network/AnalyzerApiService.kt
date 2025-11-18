@@ -26,6 +26,11 @@ interface AnalyzerApiService {
         @Body text: RequestBody
     ): Response<JobResponse>
 
+    @GET("jobs")
+    suspend fun getAllJobs(
+        @Query("userId") userId: String
+    ): Response<List<AnalysisJob>>
+
     @GET("jobs/{jobId}")
     suspend fun getJobStatus(
         @Path("jobId") jobId: String,

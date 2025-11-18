@@ -13,6 +13,7 @@ import kotlinx.serialization.modules.SerializersModule
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.example.project.model.AnalysisJob
+import org.example.project.model.MeetingSummary
 import org.example.project.model.Phrase
 import org.example.project.model.SignUpUserRequest
 import org.example.project.network.AnalyzerApiService
@@ -20,7 +21,7 @@ import retrofit2.Retrofit
 import java.io.File
 import kotlin.time.ExperimentalTime
 
-class DefaultAnalyzerRepository: AnalyzerRepository {
+class DefaultAnalyzerRepository : AnalyzerRepository {
 
     private val baseAnalyzerUrl = "http://127.0.0.1:8000/"
 
@@ -51,14 +52,11 @@ class DefaultAnalyzerRepository: AnalyzerRepository {
         audioPath: String
     ): Boolean {
         return try {
-
             val file = File(audioPath)
             val requestBody = file.asRequestBody("application/octet-stream".toMediaType())
             val response = analyzerApiService.transcribe(userId, requestBody)
 
             if (response.isSuccessful) {
-                val signInResponse = response.body()
-                //TODO save in database
                 true
             } else {
                 false
@@ -68,16 +66,68 @@ class DefaultAnalyzerRepository: AnalyzerRepository {
         }
     }
 
-    override suspend fun getAllJobs(): List<AnalysisJob> {
-        TODO("Not yet implemented")
+    override suspend fun getAllJobs(
+        userId: String
+    ): List<AnalysisJob>? {
+        return try {
+            val response = analyzerApiService.getAllJobs(userId)
+
+            if (response.isSuccessful) {
+                response.body()
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
-    override suspend fun getJobResult(jobId: Int): List<Phrase> {
-        TODO("Not yet implemented")
+    override suspend fun getTranscribingResult(jobId: String): List<Phrase>? {
+        return try {
+            val response = analyzerApiService.getAudioJobResult(jobId)
+
+            if (response.isSuccessful) {
+                return response.body()
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
-    override suspend fun analyzeText(userId: Int, text: String): Boolean {
-        TODO("Not yet implemented")
+    override suspend fun analyzeText(userId: String, text: String, hints: String): Boolean {
+        return try {
+            val requestMessage = "$hints $text"
+
+            val file = File.createTempFile("analyzed_text", ".txt")
+            file.writeText(requestMessage)
+            val requestBody = file.asRequestBody("text/plain".toMediaType())
+
+            val response = analyzerApiService.analyze(userId, requestBody)
+
+            if (response.isSuccessful) {
+                true
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    override suspend fun getAnalysisResult(jobId: String): MeetingSummary? {
+        return try {
+            val response = analyzerApiService.getTaskJobResult(jobId)
+
+            if (response.isSuccessful) {
+                return response.body()
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
 

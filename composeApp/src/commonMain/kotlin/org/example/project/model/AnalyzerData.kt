@@ -37,11 +37,13 @@ enum class JobType {
     TASK
 }
 
+@Serializable
 data class MeetingSummary (
     val summary: String,
     val tasks: List<TaskItem>
 )
 
+@Serializable
 data class TaskItem (
     val title: String,
     val description: String,

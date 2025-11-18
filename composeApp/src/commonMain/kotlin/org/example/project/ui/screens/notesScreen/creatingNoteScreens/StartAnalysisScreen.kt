@@ -54,7 +54,7 @@ import org.example.project.ui.theme.LightGray
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
-fun StartTranscribingScreen(navController: NavController) {
+fun StartAnalysisScreen(navController: NavController) {
     Scaffold(
         topBar = {
             Column {
