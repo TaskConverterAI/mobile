@@ -16,6 +16,11 @@ actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferenc
             // TODO: Implement iOS-specific network call
             throw NotImplementedError("iOS AuthRepository not yet implemented")
         }
+
+        override suspend fun getUserId(): String {
+            TODO("Not yet implemented")
+        }
+
     }
 }
 

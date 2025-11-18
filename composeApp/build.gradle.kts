@@ -40,6 +40,9 @@ kotlin {
 
             // FilePicker
             implementation(libs.androidx.activity.compose)
+
+            //JWT
+            implementation(libs.java.jwt)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

@@ -16,15 +16,16 @@ import org.example.project.ui.viewComponents.commonComponents.DividerWithText
 
 @Composable
 fun NoteCreateDialog(
+    viewModel: TaskConvertAIViewModel,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
-    viewModel: TaskConvertAIViewModel
+    onConfirm: (String) -> Unit
 ) {
     val selectedFile = viewModel.selectedFileUri.collectAsState()
     val filePicker = createFilePicker {uri -> viewModel.onFileSelected(uri)}
 
     if (selectedFile.value != null) {
-        onConfirm("start_transcribing_screen")
+        viewModel.clearFile()
+        onConfirm("tasks")
     }
 
     Dialog(onDismissRequest = onDismiss) {

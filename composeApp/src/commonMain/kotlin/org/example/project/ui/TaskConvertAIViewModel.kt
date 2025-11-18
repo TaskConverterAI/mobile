@@ -5,12 +5,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import org.example.project.AppDependencies
+import org.example.project.data.analyzer.AnalyzerRepository
+import org.example.project.data.auth.AuthRepository
 
-class TaskConvertAIViewModel(): ViewModel() {
+class TaskConvertAIViewModel(
+    private val authRepository: AuthRepository,
+    private val analyzerRepository: AnalyzerRepository
+) : ViewModel() {
     var showOverview: Boolean by mutableStateOf(true)
         private set
 
@@ -19,15 +27,29 @@ class TaskConvertAIViewModel(): ViewModel() {
 
 
     fun onFileSelected(uri: String?) {
+        if (uri == null)
+            return
         _selectedFileUri.value = uri
+
+        viewModelScope.launch {
+            analyzerRepository.transcribeAudio(authRepository.getUserId(), uri)
+        }
     }
 
+    fun clearFile() {
+        _selectedFileUri.value = null
+    }
 
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TaskConvertAIViewModel()
+                val authRepository = AppDependencies.container.authRepository
+                val analyzerRepository = AppDependencies.container.analyzerRepository
+                TaskConvertAIViewModel(
+                    authRepository = authRepository,
+                    analyzerRepository = analyzerRepository
+                )
             }
         }
     }

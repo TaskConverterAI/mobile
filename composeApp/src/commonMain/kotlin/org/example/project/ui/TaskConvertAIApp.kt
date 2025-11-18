@@ -72,6 +72,7 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
     when (currentRoute) {
         Destination.NOTES.route -> {
             NoteCreateDialog(
+                viewModel = viewModel,
                 onDismiss = onDismiss,
                 onConfirm = { route ->
                     onDismiss()
