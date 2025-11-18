@@ -1,17 +1,23 @@
 package org.example.project.ui.viewComponents.commonComponents
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -29,7 +35,13 @@ import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
+import org.example.project.model.AnalysisJob
+import org.example.project.model.JobType
+import org.example.project.ui.TaskConvertAIViewModel
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisViewModel
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.HighPriority
@@ -43,7 +55,8 @@ enum class BlockType {
     ADVANCED_NOTE,
     SIMPLE_TASK,
     ADVANCED_TASK,
-    GROUP
+    GROUP,
+    JOB
 }
 
 @OptIn(kotlin.time.ExperimentalTime::class)
@@ -179,13 +192,15 @@ private fun AdvancedTaskBlock(
         Spacer(modifier = modifier.height(8.dp))
 
         Row {
-            when(task.priority) {
+            when (task.priority) {
                 Priority.LOW -> {
                     LowPriority()
                 }
+
                 Priority.MEDIUM -> {
                     MediumPriority()
                 }
+
                 Priority.HIGH -> {
                     HighPriority()
                 }
@@ -193,13 +208,15 @@ private fun AdvancedTaskBlock(
 
             Spacer(modifier = modifier.width(8.dp))
 
-            when(task.status) {
+            when (task.status) {
                 Status.TODO -> {
                     ToDoStatus()
                 }
+
                 Status.IN_PROGRESS -> {
                     InProgressStatus()
                 }
+
                 Status.DONE -> {
                     DoneStatus()
                 }
@@ -217,6 +234,117 @@ private fun GroupBlock(
 
 }
 
+@Composable
+private fun JobBlock(
+    job: AnalysisJob,
+    backgroundColor: Color? = null,
+    modifier: Modifier = Modifier,
+    onToJobClick: () -> Unit = {},
+    onCloseErrorClick: () -> Unit = {}
+) {
+    val isInProgress = job.status == org.example.project.model.Status.PENDING ||
+            job.status == org.example.project.model.Status.RUNNING
+    val progress = when (job.status) {
+        org.example.project.model.Status.PENDING -> 0.25f
+        org.example.project.model.Status.RUNNING -> 0.7f
+        else -> 0f
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                color = backgroundColor ?: MaterialTheme.colorScheme.surface,
+            )
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Задача #${job.jobId}",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isInProgress) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            when (job.status) {
+                org.example.project.model.Status.SUCCEEDED -> {
+                    StatusChip(
+                        text = "Done",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                org.example.project.model.Status.FAILED -> {
+                    StatusChip(
+                        text = "Fail",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                else -> {}
+            }
+
+            if (job.status == org.example.project.model.Status.SUCCEEDED) {
+                TextButton(
+                    onClick = { onToJobClick() },
+                    colors = ButtonDefaults.buttonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("к задаче")
+                }
+            }
+
+            if (job.status == org.example.project.model.Status.FAILED) {
+                TextButton(
+                    onClick = { onCloseErrorClick() },
+                    colors = ButtonDefaults.buttonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("закрыть")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(
+    text: String,
+    color: Color
+) {
+    Box(
+        modifier = Modifier
+            .border(
+                width = 1.dp,
+                color = color,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = color
+        )
+    }
+}
+
 
 @Composable
 fun ColorBlock(
@@ -224,9 +352,11 @@ fun ColorBlock(
     task: Task? = null,
     note: Note? = null,
     group: Group? = null,
+    job: AnalysisJob? = null,
     backgroundColor: Color,
     modifier: Modifier = Modifier,
-    navController: NavController? = null
+    navController: NavController? = null,
+    onCloseErrorClick: () -> Unit = {}
 ) {
     var showTitleDialog by remember { mutableStateOf(false) }
     var showContentDialog by remember { mutableStateOf(false) }
@@ -271,6 +401,7 @@ fun ColorBlock(
                         showContentDialog = true
                     }
                 )
+
                 BlockType.ADVANCED_NOTE -> AdvancedNoteBlock(
                     note = note!!,
                     onNoteClick = {
@@ -287,6 +418,7 @@ fun ColorBlock(
                         showTitleDialog = true
                     }
                 )
+
                 BlockType.ADVANCED_TASK -> AdvancedTaskBlock(
                     task = task!!,
                     onTaskClick = {
@@ -297,6 +429,22 @@ fun ColorBlock(
                 )
 
                 BlockType.GROUP -> GroupBlock(group = group!!)
+
+                BlockType.JOB -> JobBlock(
+                    job = job!!,
+                    onToJobClick = {
+                        if (job.type == JobType.AUDIO) {
+                            navController?.navigate(
+                                CheckTranscribingScreenArgs(job.jobId)
+                            )
+                        } else {
+                            navController?.navigate(
+                                CheckAnalysisScreenArgs(job.jobId)
+                            )
+                        }
+                    },
+                    onCloseErrorClick = onCloseErrorClick
+                )
             }
         }
     }

@@ -1,10 +1,12 @@
-package org.example.project.ui.screens.notesScreen.creatingNoteScreens
+package org.example.project.ui.screens.tasksScreen
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -12,38 +14,25 @@ import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
 import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
+import org.example.project.model.AnalysisJob
 
-class CheckTranscribingViewModel(
+class TasksViewModel(
     private val authRepository: AuthRepository,
     private val analyzerRepository: AnalyzerRepository
 ) : ViewModel() {
-    private val _transcription = MutableStateFlow<String>("")
-    val transcription = _transcription.asStateFlow()
+    private val _currentJobs = MutableStateFlow(listOf<AnalysisJob>())
+    val currentJobs = _currentJobs.asStateFlow()
 
-    var jobId: String = ""
-        private set
-
-
-    fun setTranscription(text: String) {
-        _transcription.update { text }
-    }
-
-    fun loadJobResult(jobId: String) {
-        this@CheckTranscribingViewModel.jobId = jobId
-
+    fun startUpdateJobsList() {
         viewModelScope.launch {
-            val response = analyzerRepository.getTranscribingResult(jobId)
+            while (true) {
+                val response = analyzerRepository.getAllJobs(authRepository.getUserId())
 
-            if (response != null) {
-                var text = ""
-
-                response.forEach { item ->
-                    text += "${item.speaker}: ${item.text}\n"
+                if (response != null) {
+                    _currentJobs.update { response }
                 }
 
-                _transcription.update { text }
-            } else {
-                _transcription.update { "ошибка загрузки" }
+                delay(15000)
             }
         }
     }
@@ -53,7 +42,7 @@ class CheckTranscribingViewModel(
             initializer {
                 val authRepository = AppDependencies.container.authRepository
                 val analyzerRepository = AppDependencies.container.analyzerRepository
-                CheckTranscribingViewModel(
+                TasksViewModel(
                     authRepository = authRepository,
                     analyzerRepository = analyzerRepository
                 )

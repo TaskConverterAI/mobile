@@ -10,11 +10,11 @@ import androidx.navigation.NavController
 import org.example.project.ui.screens.tasksScreen.conditionScreens.MainScreenWithTasks
 
 @Composable
-fun TasksScreen(navController: NavController) {
+fun TasksScreen(navController: NavController, viewModel: TasksViewModel) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        MainScreenWithTasks(navController = navController)
+        MainScreenWithTasks(navController = navController, viewModel)
     }
 }

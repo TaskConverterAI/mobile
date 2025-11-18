@@ -14,8 +14,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.example.project.model.AnalysisJob
 import org.example.project.model.MeetingSummary
-import org.example.project.model.Phrase
-import org.example.project.model.SignUpUserRequest
+import org.example.project.model.PublicSpeakerUtterance
+import org.example.project.model.TaskRequest
 import org.example.project.network.AnalyzerApiService
 import retrofit2.Retrofit
 import java.io.File
@@ -23,7 +23,7 @@ import kotlin.time.ExperimentalTime
 
 class DefaultAnalyzerRepository : AnalyzerRepository {
 
-    private val baseAnalyzerUrl = "http://127.0.0.1:8000/"
+    private val baseAnalyzerUrl = "http://192.168.31.79:8080/"
 
     @OptIn(ExperimentalTime::class)
     private val serializersModule = SerializersModule {
@@ -82,7 +82,7 @@ class DefaultAnalyzerRepository : AnalyzerRepository {
         }
     }
 
-    override suspend fun getTranscribingResult(jobId: String): List<Phrase>? {
+    override suspend fun getTranscribingResult(jobId: String): List<PublicSpeakerUtterance>? {
         return try {
             val response = analyzerApiService.getAudioJobResult(jobId)
 
@@ -96,15 +96,12 @@ class DefaultAnalyzerRepository : AnalyzerRepository {
         }
     }
 
-    override suspend fun analyzeText(userId: String, text: String, hints: String): Boolean {
+    override suspend fun analyzeText(
+        userId: String,
+        task: TaskRequest
+    ): Boolean {
         return try {
-            val requestMessage = "$hints $text"
-
-            val file = File.createTempFile("analyzed_text", ".txt")
-            file.writeText(requestMessage)
-            val requestBody = file.asRequestBody("text/plain".toMediaType())
-
-            val response = analyzerApiService.analyze(userId, requestBody)
+            val response = analyzerApiService.analyze(userId, task)
 
             if (response.isSuccessful) {
                 true

@@ -57,7 +57,7 @@ fun TaskCreateDialog(
                 DividerWithText(text = "или")
 
                 OutlinedButton(
-                    onClick = { onConfirm("check_analysis_screen") },
+                    onClick = { onConfirm("tasks") },
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.Transparent,

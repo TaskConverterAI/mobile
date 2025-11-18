@@ -14,13 +14,14 @@ import androidx.navigation.NavController
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
+import org.example.project.ui.screens.tasksScreen.TasksViewModel
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithTasks(navController: NavController) {
+fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
     var selectedStatus by remember { mutableStateOf("Все статусы") }
@@ -32,6 +33,19 @@ fun MainScreenWithTasks(navController: NavController) {
             .windowInsetsPadding(WindowInsets.systemBars)
             .padding(16.dp)
     ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            tasks.forEach { task ->
+                ColorBlock(BlockType.ADVANCED_TASK, task, backgroundColor = MaterialTheme.colorScheme.primary, navController = navController)
+            }
+        }
+
+
         Text(
             text = "Задачи",
             style = MaterialTheme.typography.displayLarge,

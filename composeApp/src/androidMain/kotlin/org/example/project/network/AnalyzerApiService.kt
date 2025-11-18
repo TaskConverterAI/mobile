@@ -4,7 +4,8 @@ import okhttp3.RequestBody
 import org.example.project.model.AnalysisJob
 import org.example.project.model.JobResponse
 import org.example.project.model.MeetingSummary
-import org.example.project.model.Phrase
+import org.example.project.model.PublicSpeakerUtterance
+import org.example.project.model.TaskRequest
 
 import retrofit2.Response
 import retrofit2.http.Body
@@ -23,7 +24,7 @@ interface AnalyzerApiService {
     @POST("task")
     suspend fun analyze(
         @Query("userId") userId: String,
-        @Body text: RequestBody
+        @Body task: TaskRequest
     ): Response<JobResponse>
 
     @GET("jobs")
@@ -39,7 +40,7 @@ interface AnalyzerApiService {
     @GET("jobs/{jobId}/result")
     suspend fun getAudioJobResult(
         @Path("jobId") jobId: String
-    ): Response<List<Phrase>>
+    ): Response<List<PublicSpeakerUtterance>>
 
     @GET("jobs/{jobId}/result")
     suspend fun getTaskJobResult(

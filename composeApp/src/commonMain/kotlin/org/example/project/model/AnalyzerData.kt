@@ -1,6 +1,5 @@
 package org.example.project.model
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 import kotlinx.datetime.Instant
@@ -8,7 +7,7 @@ import kotlinx.serialization.Contextual
 
 
 @Serializable
-data class JobResponse (
+data class JobResponse(
     val jobId: String
 )
 
@@ -38,20 +37,36 @@ enum class JobType {
 }
 
 @Serializable
-data class MeetingSummary (
+data class MeetingSummary(
     val summary: String,
     val tasks: List<TaskItem>
 )
 
 @Serializable
-data class TaskItem (
+data class TaskItem(
     val title: String,
     val description: String,
     val assignee: String?
 )
 
 @Serializable
-data class Phrase(
+data class PublicSpeakerUtterance(
     val speaker: String,
     val text: String
+)
+
+@Serializable
+data class TaskRequest(
+    val description: String,
+    val geo: GeoLocation?,
+    val name: String?,
+    val group: String?,
+    val data: String?,
+    val date: String?
+)
+
+@Serializable
+data class GeoLocation(
+    val latitude: Double,
+    val longitude: Double
 )

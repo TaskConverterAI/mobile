@@ -49,12 +49,21 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.runtime.collectAsState
+import kotlinx.serialization.Serializable
 
 import org.example.project.ui.theme.LightGray
 
+@Serializable
+data class StartAnalysisScreenArgs(
+    val jobId: String,
+    val hints: String,
+    val text: String
+)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
-fun StartAnalysisScreen(navController: NavController) {
+fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisViewModel) {
     Scaffold(
         topBar = {
             Column {
@@ -77,9 +86,11 @@ fun StartAnalysisScreen(navController: NavController) {
             }
         }
     ) { paddingValues ->
-        var title by remember { mutableStateOf("") }
-        var location by remember { mutableStateOf("") }
-        var date by remember { mutableStateOf("") }
+        val title by viewModel.name.collectAsState()
+        val location by viewModel.location.collectAsState()
+        val group by viewModel.group.collectAsState()
+        val date by viewModel.date.collectAsState()
+
         var showMapPicker by remember { mutableStateOf(false) }
         var showDatePicker by remember { mutableStateOf(false) }
         val datePickerState = rememberDatePickerState()
@@ -90,7 +101,6 @@ fun StartAnalysisScreen(navController: NavController) {
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            // Scrollable content
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -112,10 +122,9 @@ fun StartAnalysisScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Название
                 OutlinedTextField(
                     value = title,
-                    onValueChange = { title = it },
+                    onValueChange = { viewModel.updateName(it) },
                     label = { Text("Название") },
                     placeholder = { Text("Например: Встреча с командой") },
                     modifier = Modifier
@@ -128,7 +137,7 @@ fun StartAnalysisScreen(navController: NavController) {
                     ),
                     trailingIcon = {
                         if (title.isNotEmpty()) {
-                            IconButton(onClick = { title = "" }) {
+                            IconButton(onClick = { viewModel.updateName("") }) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Очистить",
@@ -141,7 +150,6 @@ fun StartAnalysisScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Дата
                 OutlinedTextField(
                     value = date,
                     onValueChange = { },
@@ -168,7 +176,7 @@ fun StartAnalysisScreen(navController: NavController) {
                                 )
                             }
                             if (date.isNotEmpty()) {
-                                IconButton(onClick = { date = "" }) {
+                                IconButton(onClick = { viewModel.updateDate("") }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Очистить",
@@ -182,10 +190,10 @@ fun StartAnalysisScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Геометка
+
                 OutlinedTextField(
                     value = location,
-                    onValueChange = { location = it },
+                    onValueChange = { viewModel.updateLocation(it) },
                     label = { Text("Геометка") },
                     placeholder = { Text("Например: Офис, Новосибирск") },
                     modifier = Modifier
@@ -209,7 +217,10 @@ fun StartAnalysisScreen(navController: NavController) {
                                 )
                             }
                             if (location.isNotEmpty()) {
-                                IconButton(onClick = { location = "" }) {
+                                IconButton(onClick = {
+                                    viewModel.updateLocation("")
+                                    viewModel.updateCoords(null, null)
+                                }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Очистить",
@@ -223,12 +234,12 @@ fun StartAnalysisScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
-            //end of scrollable content
+
 
             Button(
                 onClick = {
-                    // ToDo: Handle transcription action
-                    navController.popBackStack()
+                    viewModel.startAnalysis()
+                    navController.navigate("tasks")
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -252,7 +263,7 @@ fun StartAnalysisScreen(navController: NavController) {
                 }
             }
 
-            // DatePicker Dialog
+
             if (showDatePicker) {
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
@@ -262,7 +273,13 @@ fun StartAnalysisScreen(navController: NavController) {
                                 datePickerState.selectedDateMillis?.let { millis ->
                                     val selectedDate = Instant.fromEpochMilliseconds(millis)
                                     val localDate = selectedDate.toLocalDateTime(TimeZone.UTC).date
-                                    date = "${localDate.day.toString().padStart(2, '0')}.${localDate.month.number.toString().padStart(2, '0')}.${localDate.year}"
+                                    val date = "${
+                                        localDate.day.toString().padStart(2, '0')
+                                    }.${
+                                        localDate.month.number.toString().padStart(2, '0')
+                                    }.${localDate.year}"
+
+                                    viewModel.updateDate(date)
                                 }
                                 showDatePicker = false
                             }
@@ -279,9 +296,11 @@ fun StartAnalysisScreen(navController: NavController) {
                         containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
-                    DatePicker(state = datePickerState, colors = DatePickerDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ))
+                    DatePicker(
+                        state = datePickerState, colors = DatePickerDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    )
                 }
             }
 

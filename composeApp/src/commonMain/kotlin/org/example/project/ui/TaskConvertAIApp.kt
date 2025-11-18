@@ -47,13 +47,20 @@ import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
 import org.example.project.ui.screens.notesScreen.NotesViewModel
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisViewModel
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingViewModel
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisViewModel
 import org.example.project.ui.screens.settingsScreen.SettingsScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.screens.tasksScreen.TaskCreateDialog
 import org.example.project.ui.screens.tasksScreen.TasksScreen
+import org.example.project.ui.screens.tasksScreen.TasksViewModel
 import org.example.project.ui.viewComponents.commonComponents.BottomNavigationBar
 
 import org.jetbrains.compose.resources.StringResource
@@ -68,7 +75,12 @@ enum class TaskConvertAIAppScreens(val title: StringResource) {
 }
 
 @Composable
-fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navController: NavController, viewModel: TaskConvertAIViewModel) {
+fun ChooseCreateDialog(
+    currentRoute: String?,
+    onDismiss: () -> Unit,
+    navController: NavController,
+    viewModel: TaskConvertAIViewModel
+) {
     when (currentRoute) {
         Destination.NOTES.route -> {
             NoteCreateDialog(
@@ -80,6 +92,7 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
                 }
             )
         }
+
         Destination.TASKS.route -> {
             val allNotes = listOf(
                 Note(
@@ -183,10 +196,12 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
                 navController = navController
             )
         }
+
         Destination.GROUPS.route -> {
             // Show create group dialog
             onDismiss()
         }
+
         else -> {
             // Do nothing or show a default dialog
             onDismiss()
@@ -287,24 +302,47 @@ fun TaskConvertAIApp(
             Destination.entries.forEach { destination ->
                 composable(destination.route) {
                     when (destination) {
-                        Destination.NOTES -> NotesScreen(navController, viewModel(factory = NotesViewModel.Factory))
-                        Destination.TASKS -> TasksScreen(navController)
+                        Destination.NOTES -> NotesScreen(
+                            navController,
+                            viewModel(factory = NotesViewModel.Factory)
+                        )
+
+                        Destination.TASKS -> TasksScreen(
+                            navController,
+                            viewModel(factory = TasksViewModel.Factory)
+                        )
+
                         Destination.GROUPS -> GroupsScreen()
                         Destination.SETTINGS -> SettingsScreen()
                     }
                 }
             }
 
-            composable("start_transcribing_screen") {
-                StartAnalysisScreen(navController = navController)
+            composable<CheckTranscribingScreenArgs> { currentBackStackEntry ->
+                val args: CheckTranscribingScreenArgs = currentBackStackEntry.toRoute()
+                val viewModel: CheckTranscribingViewModel =
+                    viewModel(factory = CheckTranscribingViewModel.Factory)
+                viewModel.loadJobResult(args.jobId)
+
+                CheckTranscribingScreen(navController = navController, viewModel)
             }
 
-            composable("check_transcribing_screen") {
-                CheckTranscribingScreen(navController = navController)
+            composable<StartAnalysisScreenArgs> { currentBackStackEntry ->
+                val args: StartAnalysisScreenArgs = currentBackStackEntry.toRoute()
+                val viewModel: StartAnalysisViewModel =
+                    viewModel(factory = StartAnalysisViewModel.Factory)
+                viewModel.loadArgs(args.jobId, args.text, args.hints)
+
+                StartAnalysisScreen(navController = navController, viewModel)
             }
 
-            composable("check_analysis_screen") {
-                CheckAnalysisScreen(navController = navController)
+            composable<CheckAnalysisScreenArgs> { currentBackStackEntry ->
+                val args: CheckAnalysisScreenArgs = currentBackStackEntry.toRoute()
+                val viewModel: CheckAnalysisViewModel =
+                    viewModel(factory = CheckAnalysisViewModel.Factory)
+                viewModel.loadJobResult(args.jobId)
+
+                CheckAnalysisScreen(navController = navController, viewModel = viewModel)
             }
 
             composable<DetailNoteScreenArgs> { currentBackStackEntry ->
