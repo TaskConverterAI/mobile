@@ -143,10 +143,11 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
+            //end of scrollable content
 
             Button(
                 onClick = {
-                    // ToDo: Save note and tasks
+                    // ToDo: сохранить заметку и выбранные задачи
                     navController.popBackStack()
                 },
                 modifier = Modifier

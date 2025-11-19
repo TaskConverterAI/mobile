@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,18 +14,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 import org.example.project.data.commonData.Note
 import org.example.project.ui.viewComponents.commonComponents.DividerWithText
+import org.example.project.ui.viewmodels.NotesViewModel
 
 @Composable
 fun TaskCreateDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
-    notes: List<Note>,
     navController: NavController
 ) {
+    val viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
+    val notes by viewModelNotes.notes.collectAsState()
     var showChooseNoteDialog by remember { mutableStateOf(false) }
 
     if (!showChooseNoteDialog) {
@@ -57,7 +61,7 @@ fun TaskCreateDialog(
                 DividerWithText(text = "или")
 
                 OutlinedButton(
-                    onClick = { onConfirm("tasks") },
+                    onClick = { onConfirm("create_manual_task") },
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.Transparent,

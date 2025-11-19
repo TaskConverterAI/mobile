@@ -406,7 +406,7 @@ fun ColorBlock(
                     note = note!!,
                     onNoteClick = {
                         navController?.navigate(
-                            DetailNoteScreenArgs(0)
+                            DetailNoteScreenArgs(noteID = note.id.toInt(), isEditMode = false)
                         )
                     }
                 )
@@ -423,7 +423,7 @@ fun ColorBlock(
                     task = task!!,
                     onTaskClick = {
                         navController?.navigate(
-                            DetailTaskScreenArgs(0)
+                            DetailTaskScreenArgs(taskID = task.id, isEditMode = false)
                         )
                     }
                 )

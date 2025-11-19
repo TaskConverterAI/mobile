@@ -18,16 +18,17 @@ import org.example.project.ui.screens.tasksScreen.TasksViewModel
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
+import org.example.project.ui.viewmodels.TasksViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel) {
+fun MainScreenWithTasks(navController: NavController, taskJob: org.example.project.ui.screens.tasksScreen.TasksViewModel, allTasks: org.example.project.ui.viewmodels.TasksViewModel) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
     var selectedStatus by remember { mutableStateOf("Все статусы") }
     val statusOptions = listOf("Все статусы")
 
-    val jobs by viewModel.currentJobs.collectAsState()
+    val jobs by taskJob.currentJobs.collectAsState()
 
     Column(
         modifier = Modifier
@@ -49,7 +50,7 @@ fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel)
                     backgroundColor = MaterialTheme.colorScheme.surface,
                     navController = navController,
                     onCloseErrorClick = {
-                        viewModel.closeErrorMsg(job)
+                        taskJob.closeErrorMsg(job)
                     }
                 )
             }
@@ -80,7 +81,7 @@ fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel)
             )
         }
 
-        val tasks = getSampleTasks(selectedFilter)
+        val tasks by allTasks.tasks.collectAsState()
 
         Column(
             modifier = Modifier
@@ -98,44 +99,4 @@ fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel)
             }
         }
     }
-}
-
-fun getSampleTasks(filter: String): List<Task> {
-    val allTasks = listOf(
-        Task(
-            title = "task 1",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.HIGH,
-            status = Status.IN_PROGRESS
-        ),
-        Task(
-            title = "task 2",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.MEDIUM,
-            status = Status.TODO
-        ),
-        Task(
-            title = "task 3",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.LOW,
-            status = Status.DONE
-        )
-    )
-
-    return allTasks
 }

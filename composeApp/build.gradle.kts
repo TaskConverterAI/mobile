@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 kotlin {
@@ -66,6 +68,8 @@ kotlin {
             implementation(libs.coil.compose)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -102,5 +106,25 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
+// Fix task dependency issue between KSP and Compose resource generation
+tasks.configureEach {
+    if (name.startsWith("ksp") && name.contains("Kotlin")) {
+        val resGenTasks = tasks.matching { task ->
+            task.name.startsWith("generateResourceAccessorsFor") ||
+            task.name.startsWith("generateActualResourceCollectorsFor") ||
+            task.name.startsWith("generateExpectResourceCollectorsFor") ||
+            task.name == "generateComposeResClass"
+        }
+        dependsOn(resGenTasks)
+    }
 }
 
