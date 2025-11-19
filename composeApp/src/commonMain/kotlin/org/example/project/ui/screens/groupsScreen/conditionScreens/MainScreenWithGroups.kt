@@ -1,4 +1,4 @@
-package org.example.project.ui.screens.groupsScreen.states
+package org.example.project.ui.screens.groupsScreen.conditionScreens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

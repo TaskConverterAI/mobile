@@ -11,17 +11,17 @@ interface GroupApiService {
 
     suspend fun getAllGroups(): Result<List<GroupDto>>
 
-    suspend fun getGroupById(groupId: String): Result<GroupDetailsDto>;
+    suspend fun getGroupById(groupId: String): Result<GroupDetailsDto>
 
-    suspend fun createGroup(createGroupRequest: CreateGroupRequest): Result<GroupDto>;
+    suspend fun createGroup(createGroupRequest: CreateGroupRequest): Result<GroupDto>
 
-    suspend fun updateGroup(groupId: String, updateGroupRequest: UpdateGroupRequest): Result<GroupDto>;
+    suspend fun updateGroup(groupId: String, updateGroupRequest: UpdateGroupRequest): Result<GroupDto>
 
-    suspend fun deleteGroup(groupId: String): Result<Unit>;
+    suspend fun deleteGroup(groupId: String): Result<Unit>
 
     suspend fun addMemberInGroup(groupId: String, addMemberRequest: AddMemberRequest): Result<GroupMemberDto>
 
-    suspend fun removeMemberFromGroup(groupId: String, userId: String): Result<Unit>;
+    suspend fun removeMemberFromGroup(groupId: String, userId: String): Result<Unit>
 
-    suspend fun leaveGroup(groupId: String): Result<Unit>;
+    suspend fun leaveGroup(groupId: String): Result<Unit>
 }

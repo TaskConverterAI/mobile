@@ -4,7 +4,7 @@ import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.network.NoteApiService
-import org.example.project.data.groups.GroupRepository
+import org.example.project.data.network.GroupApiService
 
 // Temporary iOS implementation - you'll need to implement a proper iOS networking solution
 actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferencesRepository): AuthRepository {
@@ -37,6 +37,6 @@ actual fun createNoteApiService(): NoteApiService? {
     // return IosNoteApiService() // раскомментируйте когда будет реализация
 }
 
-actual fun createGroupRepository(): GroupRepository {
+actual fun createGroupApiService(): GroupApiService? {
     TODO("Not yet implemented")
 }

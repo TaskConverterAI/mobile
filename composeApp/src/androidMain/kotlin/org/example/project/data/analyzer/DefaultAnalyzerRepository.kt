@@ -15,7 +15,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.example.project.model.AnalysisJob
 import org.example.project.model.MeetingSummary
@@ -26,11 +25,13 @@ import retrofit2.Retrofit
 import java.io.File
 import kotlin.time.ExperimentalTime
 import androidx.core.net.toUri
+
 private var appContext: Context? = null
 
 fun initAnalyzerRepository(context: Context) {
     appContext = context.applicationContext
 }
+
 class DefaultAnalyzerRepository() : AnalyzerRepository {
 
     private val baseAnalyzerUrl = "http://192.168.31.79:8080/"
@@ -107,7 +108,7 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
                     Pair(null, null)
                 }
             } ?: Pair(null, null)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Pair(null, null)
         }
     }

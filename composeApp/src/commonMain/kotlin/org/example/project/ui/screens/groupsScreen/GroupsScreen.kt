@@ -10,8 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 
 import org.example.project.ui.screens.groupsScreen.conditionScreens.EmptyScreen
-import org.example.project.ui.screens.groupsScreen.states.GroupsViewModel
-import org.example.project.ui.screens.groupsScreen.states.MainScreenWithGroups
+import org.example.project.ui.screens.groupsScreen.conditionScreens.GroupsViewModel
+import org.example.project.ui.screens.groupsScreen.conditionScreens.MainScreenWithGroups
 
 @Composable
 fun GroupsScreen(navController: NavController, viewModel: GroupsViewModel) {

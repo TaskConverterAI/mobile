@@ -24,9 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.example.project.data.commonData.User
-import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupUiState
-import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupViewModel
 import org.example.project.ui.theme.LightGray
 
 @Composable

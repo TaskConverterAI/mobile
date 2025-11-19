@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 

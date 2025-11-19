@@ -3,9 +3,7 @@ package org.example.project.data.auth
 import android.util.Log
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.last
 import org.example.project.model.SignInUserRequest
 import org.example.project.model.SignUpUserRequest
 import org.example.project.network.AuthApiService

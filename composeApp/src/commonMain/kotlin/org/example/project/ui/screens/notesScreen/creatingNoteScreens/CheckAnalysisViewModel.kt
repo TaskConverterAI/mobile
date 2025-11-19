@@ -1,10 +1,8 @@
 package org.example.project.ui.screens.notesScreen.creatingNoteScreens
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +12,6 @@ import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
 import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
-import org.example.project.model.MeetingSummary
 import org.example.project.model.TaskItem
 
 data class TaskCell(

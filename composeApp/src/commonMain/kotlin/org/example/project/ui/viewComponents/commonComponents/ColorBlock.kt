@@ -41,12 +41,10 @@ import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.model.AnalysisJob
 import org.example.project.model.JobType
-import org.example.project.ui.TaskConvertAIViewModel
-import org.example.project.ui.screens.groupsScreen.DetailedGroupScreen.DetailGroupScreenArgs
+import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailGroupScreenArgs
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreenArgs
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreenArgs
-import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisViewModel
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.HighPriority
@@ -277,7 +275,7 @@ private fun GroupBlock(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = group.users.size.toString(),
+                    text = group.members.size.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -295,7 +293,7 @@ private fun GroupBlock(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = group.noteIds.size.toString(),
+                    text = group.memberCount.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -34,18 +33,16 @@ import androidx.navigation.toRoute
 
 import org.example.project.data.commonData.Destination
 import org.example.project.data.commonData.Note
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.ui.screens.auth.AuthViewModel
 import org.example.project.ui.screens.auth.EnterScreen
 import org.example.project.ui.screens.auth.OverviewScreen
 import org.example.project.ui.screens.auth.RegistrationScreen
-import org.example.project.ui.screens.groupsScreen.DetailedGroupScreen.DetailGroupScreen
-import org.example.project.ui.screens.groupsScreen.DetailedGroupScreen.DetailGroupScreenArgs
-import org.example.project.ui.screens.groupsScreen.DetailedGroupScreen.DetailedGroupViewModel
+import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailGroupScreen
+import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailGroupScreenArgs
+import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailedGroupViewModel
 import org.example.project.ui.screens.groupsScreen.GroupsScreen
-import org.example.project.ui.screens.groupsScreen.states.GroupsViewModel
+import org.example.project.ui.screens.groupsScreen.conditionScreens.GroupsViewModel
 import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog

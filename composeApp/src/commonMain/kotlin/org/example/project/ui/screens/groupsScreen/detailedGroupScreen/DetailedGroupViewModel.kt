@@ -1,6 +1,5 @@
-package org.example.project.ui.screens.groupsScreen.DetailedGroupScreen
+package org.example.project.ui.screens.groupsScreen.detailedGroupScreen
 
-import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
@@ -11,21 +10,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.example.project.AppDependencies
 import org.example.project.data.commonData.User
-import org.example.project.data.groups.GroupRepository
-import org.example.project.ui.screens.auth.AuthViewModel
+import org.example.project.data.database.repository.GroupRepository
 
-data class groupUiDetails (
+data class GroupUiDetails (
     val name: String = "",
     val showLeaveDialog: Boolean = false,
     val isAdmin: Boolean = false,
     val users: List<User> = listOf()
 )
+
 open class DetailedGroupViewModel(
     private val groupRepository: GroupRepository
 ) : ViewModel() {
 
-    private val _groupDetails = MutableStateFlow(groupUiDetails())
-    val groupDetails: StateFlow<groupUiDetails> = _groupDetails.asStateFlow()
+    private val _groupDetails = MutableStateFlow(GroupUiDetails())
+    val groupDetails: StateFlow<GroupUiDetails> = _groupDetails.asStateFlow()
 
 
     fun setGroup(groupName: String) {

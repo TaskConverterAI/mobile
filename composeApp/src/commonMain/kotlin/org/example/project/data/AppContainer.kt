@@ -11,8 +11,7 @@ import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.database.repository.NoteRepository
 import org.example.project.data.database.repository.TaskRepository
-import org.example.project.data.commonData.Group
-import org.example.project.data.groups.GroupRepository
+import org.example.project.data.database.repository.GroupRepository
 
 interface AppContainer {
     val authRepository: AuthRepository
@@ -30,7 +29,8 @@ expect fun createAnalyzerRepository(): AnalyzerRepository
 // Expect function to create platform-specific NoteApiService (optional - can be null if offline only)
 expect fun createNoteApiService(): org.example.project.data.network.NoteApiService?
 
-expect fun createGroupRepository(): GroupRepository
+expect fun createGroupApiService(): org.example.project.data.network.GroupApiService?
+
 class DefaultAppContainer(
     dataStore: DataStore<Preferences>,
     database: org.example.project.data.database.AppDatabase
@@ -70,5 +70,5 @@ class DefaultAppContainer(
         syncManager?.let { noteRepository.setSyncManager(it) }
     }
 
-    override val groupRepository: GroupRepository = createGroupRepository()
+    override val groupRepository: GroupRepository = GroupRepository(createGroupApiService())
 }
