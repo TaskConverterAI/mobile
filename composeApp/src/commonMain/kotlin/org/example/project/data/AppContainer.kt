@@ -11,12 +11,15 @@ import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.database.repository.NoteRepository
 import org.example.project.data.database.repository.TaskRepository
+import org.example.project.data.commonData.Group
+import org.example.project.data.groups.GroupRepository
 
 interface AppContainer {
     val authRepository: AuthRepository
     val analyzerRepository: AnalyzerRepository
     val noteRepository: NoteRepository
     val taskRepository: TaskRepository
+    val groupRepository: GroupRepository
 }
 
 // Expect function to create platform-specific AuthRepository
@@ -27,6 +30,7 @@ expect fun createAnalyzerRepository(): AnalyzerRepository
 // Expect function to create platform-specific NoteApiService (optional - can be null if offline only)
 expect fun createNoteApiService(): org.example.project.data.network.NoteApiService?
 
+expect fun createGroupRepository(): GroupRepository
 class DefaultAppContainer(
     dataStore: DataStore<Preferences>,
     database: org.example.project.data.database.AppDatabase
@@ -65,4 +69,6 @@ class DefaultAppContainer(
         // Установить sync manager в репозиторий если он доступен
         syncManager?.let { noteRepository.setSyncManager(it) }
     }
+
+    override val groupRepository: GroupRepository = createGroupRepository()
 }
