@@ -2,6 +2,8 @@ package org.example.project.network
 
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
+import org.example.project.data.network.GroupApiService
+import org.example.project.data.network.NetworkGroupApiService
 import org.example.project.data.network.NoteApiService
 import org.example.project.data.network.NetworkNoteApiService
 import retrofit2.Retrofit
@@ -37,11 +39,19 @@ object RetrofitClient {
         retrofit.create(RetrofitNoteApiService::class.java)
     }
 
+    val retrofitGroupApiService: RetrofitGroupApiService by lazy {
+        retrofit.create(RetrofitGroupApiService::class.java)
+    }
+
     /**
      * Создать NoteApiService для использования в репозиториях
      */
     fun createNoteApiService(): NoteApiService {
         return NetworkNoteApiService(retrofitNoteApiService)
+    }
+
+    fun createGroupApiService() : GroupApiService {
+        return NetworkGroupApiService(retrofitGroupApiService)
     }
 }
 
