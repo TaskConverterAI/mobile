@@ -16,7 +16,7 @@ import org.example.project.ui.screens.tasksScreen.conditionScreens.MainScreenWit
 import org.example.project.ui.viewmodels.TasksViewModel
 
 @Composable
-fun TasksScreen(navController: NavController, jobView: TasksViewModel) {
+fun TasksScreen(navController: NavController, jobView: org.example.project.ui.screens.tasksScreen.TasksViewModel) {
     val viewModel: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
 
     // Собираем состояния из ViewModel

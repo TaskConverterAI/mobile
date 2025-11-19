@@ -227,6 +227,21 @@ class TasksViewModel(
         _error.value = null
     }
 
+    /**
+     * Добавить тестовые данные (для разработки)
+     */
+    fun insertSampleData() {
+        viewModelScope.launch {
+            try {
+                taskRepository.insertSampleData()
+                println("TasksViewModel: Sample data inserted successfully")
+            } catch (e: Exception) {
+                _error.value = "Ошибка при добавлении тестовых данных: ${e.message}"
+                println("TasksViewModel: Error inserting sample data: ${e.message}")
+            }
+        }
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

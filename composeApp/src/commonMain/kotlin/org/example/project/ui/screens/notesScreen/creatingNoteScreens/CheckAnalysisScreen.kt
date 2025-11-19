@@ -23,9 +23,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
@@ -33,10 +30,13 @@ import androidx.navigation.NavController
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 
+import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Priority
+import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
+import org.example.project.data.commonData.User
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.viewComponents.commonComponents.BlockType
@@ -100,7 +100,14 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                 title = "Заметка",
                 content = uiData.summary,
                 geotag = "office",
-                group = "work",
+                group = Group(
+                    id = "work",
+                    name = "Work",
+                    description = "",
+                    ownerId = "",
+                    memberCount = 0,
+                    createdAt = ""
+                ),
                 comments = emptyList(),
                 color = PrimaryBase,
                 contentMaxLines = 5,
@@ -127,8 +134,20 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                             title = taskCell.task.title,
                             description = taskCell.task.description,
                             comments = emptyList(),
-                            group = "standart",
-                            assignee = taskCell.task.assignee ?: ""  ,
+                            group = Group(
+                                id = "standard",
+                                name = "Standard",
+                                description = "",
+                                ownerId = "",
+                                memberCount = 0,
+                                createdAt = ""
+                            ),
+                            assignee = User(
+                                id = taskCell.task.assignee ?: "",
+                                email = "",
+                                username = taskCell.task.assignee ?: "",
+                                privileges = Privileges.member
+                            ),
                             dueDate = 0,
                             geotag = "empty",
                             priority = Priority.MEDIUM,

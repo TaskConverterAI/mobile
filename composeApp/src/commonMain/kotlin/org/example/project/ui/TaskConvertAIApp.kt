@@ -43,7 +43,6 @@ import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
-import org.example.project.ui.screens.notesScreen.NotesViewModel
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreenArgs
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisViewModel
@@ -58,7 +57,6 @@ import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.screens.tasksScreen.TaskCreateDialog
 import org.example.project.ui.screens.tasksScreen.TasksScreen
-import org.example.project.ui.screens.tasksScreen.TasksViewModel
 import org.example.project.ui.viewComponents.commonComponents.BottomNavigationBar
 import org.example.project.ui.viewmodels.NotesViewModel
 import org.example.project.ui.viewmodels.TasksViewModel
@@ -174,8 +172,8 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
-//            startDestination = Destination.NOTES.route
+//            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
+            startDestination = Destination.NOTES.route
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
@@ -219,13 +217,12 @@ fun TaskConvertAIApp(
                 composable(destination.route) {
                     when (destination) {
                         Destination.NOTES -> NotesScreen(
-                            navController,
-                            viewModel(factory = NotesViewModel.Factory)
+                            navController
                         )
 
                         Destination.TASKS -> TasksScreen(
                             navController,
-                            viewModel(factory = TasksViewModel.Factory)
+                            viewModel(factory = org.example.project.ui.screens.tasksScreen.TasksViewModel.Factory)
                         )
 
                         Destination.GROUPS -> GroupsScreen()

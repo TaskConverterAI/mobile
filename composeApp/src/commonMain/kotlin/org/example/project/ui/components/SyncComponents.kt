@@ -3,7 +3,6 @@ package org.example.project.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Sync

@@ -1,7 +1,6 @@
 package org.example.project.network
 
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import org.example.project.model.AnalysisJob
 import org.example.project.model.JobResponse
 import org.example.project.model.MeetingSummary

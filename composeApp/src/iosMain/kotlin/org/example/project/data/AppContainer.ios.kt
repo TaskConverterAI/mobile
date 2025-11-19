@@ -4,7 +4,6 @@ import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.network.NoteApiService
-import org.example.project.data.network.IosNoteApiService
 
 // Temporary iOS implementation - you'll need to implement a proper iOS networking solution
 actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferencesRepository): AuthRepository {

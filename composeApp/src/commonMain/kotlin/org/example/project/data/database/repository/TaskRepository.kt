@@ -2,6 +2,7 @@ package org.example.project.data.database.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
 import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
@@ -239,6 +240,99 @@ class TaskRepository(private val database: AppDatabase) {
             userDao.insert(newUser)
             return newUser.id
         }
+    }
+
+    /**
+     * Вставить тестовые данные для разработки
+     */
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    suspend fun insertSampleData() {
+        // Создать тестовую группу
+        val testGroup = org.example.project.data.commonData.Group(
+            id = "test-group-1",
+            name = "Рабочая группа",
+            description = "Тестовая группа для разработки",
+            ownerId = "user-1",
+            memberCount = 3,
+            createdAt = "2024-01-01",
+            taskCount = 2
+        )
+        groupDao.insert(testGroup.toEntity())
+
+        // Создать тестовых пользователей
+        val testUser1 = org.example.project.data.commonData.User(
+            id = "user-1",
+            email = "ivan@test.com",
+            username = "Иван",
+            privileges = org.example.project.data.commonData.Privileges.owner
+        )
+        val testUser2 = org.example.project.data.commonData.User(
+            id = "user-2",
+            email = "maria@test.com",
+            username = "Мария",
+            privileges = org.example.project.data.commonData.Privileges.member
+        )
+        userDao.insert(testUser1.toEntity())
+        userDao.insert(testUser2.toEntity())
+
+        // Создать тестовые задачи
+        val task1 = Task(
+            id = "task-1",
+            title = "Разработать UI",
+            description = "Создать интерфейс для экрана задач",
+            comments = listOf(
+                Comment(
+                    author = "Иван",
+                    content = "Начал работу над дизайном",
+                    timestamp = Clock.System.now().toEpochMilliseconds() - 86400000
+                )
+            ),
+            group = testGroup,
+            assignee = testUser1,
+            dueDate = Clock.System.now().toEpochMilliseconds() + 172800000, // +2 дня
+            geotag = "Офис",
+            priority = Priority.HIGH,
+            status = Status.IN_PROGRESS
+        )
+
+        val task2 = Task(
+            id = "task-2",
+            title = "Написать тесты",
+            description = "Добавить unit-тесты для репозиториев",
+            comments = listOf(
+                Comment(
+                    author = "Мария",
+                    content = "Подготовила список тестов",
+                    timestamp = Clock.System.now().toEpochMilliseconds() - 43200000
+                )
+            ),
+            group = testGroup,
+            assignee = testUser2,
+            dueDate = Clock.System.now().toEpochMilliseconds() + 259200000, // +3 дня
+            geotag = "Удалённо",
+            priority = Priority.MEDIUM,
+            status = Status.TODO
+        )
+
+        val task3 = Task(
+            id = "task-3",
+            title = "Провести код-ревью",
+            description = "Проверить код перед релизом",
+            comments = emptyList(),
+            group = testGroup,
+            assignee = testUser1,
+            dueDate = Clock.System.now().toEpochMilliseconds() + 345600000, // +4 дня
+            geotag = "Офис",
+            priority = Priority.LOW,
+            status = Status.TODO
+        )
+
+        // Вставить задачи
+        insertTask(task1)
+        insertTask(task2)
+        insertTask(task3)
+
+        println("TaskRepository: Sample data inserted - 3 tasks, 1 group, 2 users")
     }
 }
 

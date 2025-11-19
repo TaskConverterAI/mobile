@@ -17,7 +17,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
-import org.example.project.data.commonData.Note
 import org.example.project.ui.viewComponents.commonComponents.DividerWithText
 import org.example.project.ui.viewmodels.NotesViewModel
 
