@@ -258,8 +258,8 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-//            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
-            startDestination = Destination.NOTES.route
+            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
+//            startDestination = Destination.NOTES.route
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
@@ -274,7 +274,7 @@ fun TaskConvertAIApp(
                 RegistrationScreen(
                     authViewModel = viewModel(factory = AuthViewModel.Factory),
                     onSuccessSignUp = {
-                        navController.navigate(TaskConvertAIAppScreens.SignIn.name)
+                        navController.navigate(Destination.NOTES.route)
                     },
                     onMoveToSignInClicked = {
                         navController.navigate(TaskConvertAIAppScreens.SignIn.name)

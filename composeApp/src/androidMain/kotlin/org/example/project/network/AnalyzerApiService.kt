@@ -1,5 +1,6 @@
 package org.example.project.network
 
+import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import org.example.project.model.AnalysisJob
 import org.example.project.model.JobResponse
@@ -10,26 +11,29 @@ import org.example.project.model.TaskRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface AnalyzerApiService {
+    @Multipart
     @POST("audio")
     suspend fun transcribe(
-        @Query("userId") userId: String,
-        @Body file: RequestBody
+        @Query("userID") userID: String,
+        @Part audio: MultipartBody.Part
     ): Response<JobResponse>
 
     @POST("task")
     suspend fun analyze(
-        @Query("userId") userId: String,
+        @Query("userID") userID: String,
         @Body task: TaskRequest
     ): Response<JobResponse>
 
     @GET("jobs")
     suspend fun getAllJobs(
-        @Query("userId") userId: String
+        @Query("userID") userID: String
     ): Response<List<AnalysisJob>>
 
     @GET("jobs/{jobId}")

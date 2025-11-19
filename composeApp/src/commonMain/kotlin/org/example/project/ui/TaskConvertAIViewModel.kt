@@ -31,7 +31,6 @@ class TaskConvertAIViewModel(
         if (uri == null)
             return
         _selectedFileUri.value = uri
-
         viewModelScope.launch {
             analyzerRepository.transcribeAudio(authRepository.getUserId(), uri)
         }
@@ -39,12 +38,6 @@ class TaskConvertAIViewModel(
 
     fun clearFile() {
         _selectedFileUri.value = null
-    }
-
-    fun closeErrorMsg(jobId: String) {
-        viewModelScope.launch {
-            val response = analyzerRepository.getAnalysisResult(jobId)
-        }
     }
 
 

@@ -27,6 +27,8 @@ fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel)
     var selectedStatus by remember { mutableStateOf("Все статусы") }
     val statusOptions = listOf("Все статусы")
 
+    val jobs by viewModel.currentJobs.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -40,8 +42,16 @@ fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            tasks.forEach { task ->
-                ColorBlock(BlockType.ADVANCED_TASK, task, backgroundColor = MaterialTheme.colorScheme.primary, navController = navController)
+            jobs.forEach { job ->
+                ColorBlock(
+                    BlockType.JOB,
+                    job = job,
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    navController = navController,
+                    onCloseErrorClick = {
+                        viewModel.closeErrorMsg(job)
+                    }
+                )
             }
         }
 
@@ -79,7 +89,12 @@ fun MainScreenWithTasks(navController: NavController, viewModel: TasksViewModel)
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             tasks.forEach { task ->
-                ColorBlock(BlockType.ADVANCED_TASK, task, backgroundColor = MaterialTheme.colorScheme.primary, navController = navController)
+                ColorBlock(
+                    BlockType.ADVANCED_TASK,
+                    task,
+                    backgroundColor = MaterialTheme.colorScheme.primary,
+                    navController = navController
+                )
             }
         }
     }

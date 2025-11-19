@@ -1,9 +1,11 @@
 package org.example.project.data.auth
 
+import android.util.Log
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
 import org.example.project.model.SignInUserRequest
 import org.example.project.model.SignUpUserRequest
 import org.example.project.network.AuthApiService
@@ -27,8 +29,9 @@ class NetworkAuthRepository(
     private suspend fun parseAndSaveJWT(token: String) {
         try {
             val decodedJWT: DecodedJWT = JWT.decode(token)
-            val userId = decodedJWT.getClaim("id").asString()
-            userAuthPreferencesRepository.saveUserId(userId)
+            val userId = decodedJWT.getClaim("id").asInt()?.toString()
+            Log.i("MY_APP_TAG","userId is ${userId}")
+            userAuthPreferencesRepository.saveUserId(userId ?: "")
         } catch (e: Exception) {
             println("Ошибка при парсинге токена: ${e.message}")
         }
@@ -78,6 +81,7 @@ class NetworkAuthRepository(
     }
 
     override suspend fun getUserId(): String {
+        Log.i("MY_APP_TAG", userAuthPreferencesRepository.userId.first())
         return userAuthPreferencesRepository.userId.first()
     }
 }

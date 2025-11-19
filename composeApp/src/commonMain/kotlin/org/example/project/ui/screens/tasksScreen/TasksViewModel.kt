@@ -37,6 +37,19 @@ class TasksViewModel(
         }
     }
 
+    fun closeErrorMsg(job: AnalysisJob) {
+
+        _currentJobs.update { currentState ->
+            currentState.toMutableList().apply {
+                this.remove(job)
+            }
+        }
+
+        viewModelScope.launch {
+            val response = analyzerRepository.getAnalysisResult(job.jobId)
+        }
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
