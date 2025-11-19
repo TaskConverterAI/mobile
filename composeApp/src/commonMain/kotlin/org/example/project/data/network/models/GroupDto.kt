@@ -39,7 +39,7 @@ data class UpdateGroupRequest (
 @Serializable
 data class AddMemberRequest (
     val usernameOrEmail: String,
-    val role: String = "member"
+    val role: String
 )
 
 @Serializable

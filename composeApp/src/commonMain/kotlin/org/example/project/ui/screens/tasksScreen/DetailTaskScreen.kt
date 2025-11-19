@@ -93,7 +93,7 @@ fun DetailTaskScreen(
         availableUsers.firstOrNull() ?: User(
             id = "",
             email = "Не назначен",
-            privileges = org.example.project.data.commonData.Privileges.PART
+            privileges = org.example.project.data.commonData.Privileges.member
         )
     }
 

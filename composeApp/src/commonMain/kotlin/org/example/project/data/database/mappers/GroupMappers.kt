@@ -22,7 +22,7 @@ fun GroupWithUsers.toGroup(): Group {
         id = group.id,
         name = group.name,
         description = group.description,
-        users = users.map { it.toUser() }
+        members = users.map { it.toUser() }
     )
 }
 
