@@ -46,7 +46,10 @@ fun NoteCreateDialog(
             DividerWithText(text = "или")
 
             OutlinedButton(
-                onClick = { onConfirm("check_analysis_screen") },
+                onClick = {
+                    // Navigate to DetailNoteScreen with null noteID to create a new note
+                    onConfirm("create_manual_note")
+                },
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.Transparent,

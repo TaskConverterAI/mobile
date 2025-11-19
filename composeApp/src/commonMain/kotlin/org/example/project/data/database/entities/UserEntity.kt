@@ -6,8 +6,8 @@ import org.example.project.data.commonData.Privileges
 
 @Entity(tableName = "users")
 class UserEntity (
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val id: String,
     val email: String,
     val privileges: Privileges
 )

@@ -113,7 +113,7 @@ class NotesViewModel(
      * Загрузить заметки конкретной группы
      * @param groupId - ID группы
      */
-    fun getNotesByGroup(groupId: Long) {
+    fun getNotesByGroup(groupId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             noteRepository.getNotesByGroup(groupId)

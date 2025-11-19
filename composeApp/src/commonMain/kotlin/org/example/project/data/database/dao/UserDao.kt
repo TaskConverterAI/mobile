@@ -9,7 +9,7 @@ import org.example.project.data.database.entities.UserWithGroups
 interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(user: UserEntity): Long
+    suspend fun insert(user: UserEntity)
 
     @Update
     suspend fun update(user: UserEntity)
@@ -18,7 +18,7 @@ interface UserDao {
     suspend fun delete(user: UserEntity)
 
     @Query("SELECT * FROM users WHERE id = :id")
-    suspend fun getById(id: Long): UserEntity?
+    suspend fun getById(id: String): UserEntity?
 
     @Query("SELECT * FROM users WHERE email = :email")
     suspend fun getByEmail(email: String): UserEntity?
@@ -29,7 +29,7 @@ interface UserDao {
     // Получение пользователя со всеми его группами
     @Transaction
     @Query("SELECT * FROM users WHERE id = :userId")
-    suspend fun getUserWithGroups(userId: Long): UserWithGroups?
+    suspend fun getUserWithGroups(userId: String): UserWithGroups?
 
     @Transaction
     @Query("SELECT * FROM users")

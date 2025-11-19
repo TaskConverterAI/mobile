@@ -9,7 +9,7 @@ import org.example.project.data.database.entities.NoteEntity
 import org.example.project.data.database.entities.NoteWithTasks
 
 // Convert Note to NoteEntity (только для вставки/обновления)
-fun Note.toEntity(id: Long = 0, groupId: Long? = null): NoteEntity {
+fun Note.toEntity(id: Long = 0, groupId: String? = null): NoteEntity {
     return NoteEntity(
         id = id,
         title = title,
@@ -30,7 +30,7 @@ fun NoteWithTasks.toNote(comments: List<Comment> = emptyList()): Note {
         content = note.content,
         geotag = note.geotag,
         group = group?.toGroup() ?: Group(
-            id = 0,
+            id = "",
             name = "Без группы",
             description = "",
             users = emptyList()

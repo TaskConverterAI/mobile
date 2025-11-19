@@ -13,7 +13,7 @@ enum class Status {
 }
 
 data class Task(
-    val id: Long = 0,
+    val id: String = "",
     val title: String,
     val description: String,
     val comments: List<Comment>,

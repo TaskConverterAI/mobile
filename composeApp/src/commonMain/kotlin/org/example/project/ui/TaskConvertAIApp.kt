@@ -74,19 +74,25 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
                 onDismiss = onDismiss,
                 onConfirm = { route ->
                     onDismiss()
-                    navController.navigate(route)
+                    if (route == "create_manual_note") {
+                        navController.navigate(DetailNoteScreenArgs(noteID = null, isEditMode = true))
+                    } else {
+                        navController.navigate(route)
+                    }
                 }
             )
         }
         Destination.TASKS.route -> {
-
             TaskCreateDialog(
                 onDismiss = onDismiss,
                 onConfirm = { route ->
                     onDismiss()
-                    navController.navigate(route)
+                    if (route == "create_manual_task") {
+                        navController.navigate(DetailTaskScreenArgs(taskID = null, isEditMode = true))
+                    } else {
+                        navController.navigate(route)
+                    }
                 },
-                notes = emptyList(),
                 navController = navController
             )
         }
@@ -218,29 +224,74 @@ fun TaskConvertAIApp(
             composable<DetailNoteScreenArgs> { currentBackStackEntry ->
                 val detailNoteScreenArgs: DetailNoteScreenArgs = currentBackStackEntry.toRoute()
                 val noteID = detailNoteScreenArgs.noteID
+                val isEditMode = detailNoteScreenArgs.isEditMode
+
                 var note by remember { mutableStateOf<Note?>(null) }
 
-                // Загружаем данные в корутине
+                // Загружаем данные в корутине, если noteID не null
                 LaunchedEffect(noteID) {
-                    note = viewModelNotes.getNoteById(noteID)
+                    note = if (noteID != null) {
+                        viewModelNotes.getNoteById(noteID.toLong())
+                    } else {
+                        null
+                    }
                 }
 
-                DetailNoteScreen(note = note, navController = navController)
+                DetailNoteScreen(
+                    note = note,
+                    navController = navController,
+                    isEditMode = isEditMode,
+                    availableGroups = emptyList(),
+                    onSave = { updatedNote ->
+                        if (updatedNote.id == 0L || noteID == null) {
+                            // Создание новой заметки
+                            viewModelNotes.addNote(updatedNote)
+                        } else {
+                            // Обновление существующей заметки
+                            viewModelNotes.updateNote(updatedNote.id, updatedNote)
+                        }
+                    },
+                    onDelete = { noteToDelete ->
+                        viewModelNotes.deleteNote(noteToDelete.id)
+                    }
+                )
             }
-
 
             composable<DetailTaskScreenArgs> { currentBackStackEntry ->
                 val detailTaskScreenArgs: DetailTaskScreenArgs = currentBackStackEntry.toRoute()
-                val taskID = detailTaskScreenArgs.taskID;
+                val taskID = detailTaskScreenArgs.taskID
+                val isEditMode = detailTaskScreenArgs.isEditMode
 
                 var task by remember { mutableStateOf<Task?>(null) }
 
-                // Загружаем данные в корутине
+                // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
-                    task = viewModelTasks.getTaskById(taskID)
+                    task = if (taskID != null) {
+                        viewModelTasks.getTaskById(taskID)
+                    } else {
+                        null
+                    }
                 }
 
-               DetailTaskScreen(task = task, navController)
+                DetailTaskScreen(
+                    task = task,
+                    navController = navController,
+                    isEditMode = isEditMode,
+                    availableGroups = emptyList(),
+                    availableUsers = emptyList(),
+                    onSave = { updatedTask ->
+                        if (updatedTask.id.isEmpty() || taskID == null) {
+                            // Создание новой задачи
+                            viewModelTasks.addTask(updatedTask)
+                        } else {
+                            // Обновление существующей задачи
+                            viewModelTasks.updateTask(updatedTask.id, updatedTask)
+                        }
+                    },
+                    onDelete = { taskToDelete ->
+                        viewModelTasks.deleteTask(taskToDelete.id)
+                    }
+                )
             }
         }
     }

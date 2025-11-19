@@ -56,7 +56,7 @@ class NoteRepository(
     /**
      * Получить заметки по группе
      */
-    fun getNotesByGroup(groupId: Long): Flow<List<Note>> {
+    fun getNotesByGroup(groupId: String): Flow<List<Note>> {
         return noteDao.getNotesByGroupWithTasks(groupId).map { notesWithTasks ->
             notesWithTasks.map { noteWithTasks ->
                 val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
@@ -124,20 +124,20 @@ class NoteRepository(
      * Найти группу по имени или создать новую
      * @return ID группы
      */
-    private suspend fun findOrCreateGroup(group: org.example.project.data.commonData.Group): Long? {
+    private suspend fun findOrCreateGroup(group: org.example.project.data.commonData.Group): String? {
         // Если группа дефолтная
-        if (group.name == "Без группы" || group.id == 0L && group.name.isEmpty()) {
+        if (group.name == "Без группы" || group.id.isEmpty() && group.name.isEmpty()) {
             return null
         }
 
         // Если у группы уже есть ID, используем его
-        if (group.id != 0L) {
+        if (group.id.isNotEmpty()) {
             return group.id
         }
 
         // Ищем группу по имени
         val allGroups = groupDao.getAllGroups()
-        var groupId: Long? = null
+        var groupId: String? = null
 
         allGroups.collect { groups ->
             groupId = groups.find { it.name == group.name }?.id
@@ -145,7 +145,9 @@ class NoteRepository(
 
         // Если группа не найдена, создаём новую
         if (groupId == null) {
-            groupId = groupDao.insert(group.toEntity())
+            val newGroup = group.toEntity()
+            groupDao.insert(newGroup)
+            groupId = newGroup.id
         }
 
         return groupId

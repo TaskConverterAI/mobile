@@ -36,7 +36,7 @@ class TaskRepository(private val database: AppDatabase) {
     /**
      * Получить задачу по ID с полными деталями
      */
-    suspend fun getTaskById(taskId: Long): Task? {
+    suspend fun getTaskById(taskId: String): Task? {
         val taskWithDetails = taskDao.getTaskWithDetails(taskId) ?: return null
         val comments = taskDao.getCommentsForTask(taskId).map { it.toComment() }
         return taskWithDetails.toTask(comments)
@@ -45,7 +45,7 @@ class TaskRepository(private val database: AppDatabase) {
     /**
      * Получить задачи по группе
      */
-    fun getTasksByGroup(groupId: Long): Flow<List<Task>> {
+    fun getTasksByGroup(groupId: String): Flow<List<Task>> {
         return taskDao.getTasksByGroupWithDetails(groupId).map { tasksWithDetails ->
             tasksWithDetails.map { taskWithDetails ->
                 val comments = taskDao.getCommentsForTask(taskWithDetails.task.id)
@@ -58,7 +58,7 @@ class TaskRepository(private val database: AppDatabase) {
     /**
      * Получить задачи по исполнителю
      */
-    fun getTasksByAssignee(assigneeId: Long): Flow<List<Task>> {
+    fun getTasksByAssignee(assigneeId: String): Flow<List<Task>> {
         return taskDao.getTasksByAssigneeWithDetails(assigneeId).map { tasksWithDetails ->
             tasksWithDetails.map { taskWithDetails ->
                 val comments = taskDao.getCommentsForTask(taskWithDetails.task.id)
@@ -112,9 +112,8 @@ class TaskRepository(private val database: AppDatabase) {
      * Вставить новую задачу
      * @param task - задача с группой, исполнителем (объекты будут преобразованы в ID)
      * @param noteId - опциональный ID заметки, к которой относится задача
-     * @return ID новой задачи
      */
-    suspend fun insertTask(task: Task, noteId: Long? = null): Long {
+    suspend fun insertTask(task: Task, noteId: Long? = null) {
         // Найти или создать группу
         val groupId = findOrCreateGroup(task.group)
 
@@ -127,20 +126,18 @@ class TaskRepository(private val database: AppDatabase) {
             assigneeId = assigneeId,
             noteId = noteId
         )
-        val taskId = taskDao.insertTask(taskEntity)
+        taskDao.insertTask(taskEntity)
 
         // Вставить комментарии
         task.comments.forEach { comment ->
-            taskDao.insertComment(comment.toTaskCommentEntity(taskId))
+            taskDao.insertComment(comment.toTaskCommentEntity(taskEntity.id))
         }
-
-        return taskId
     }
 
     /**
      * Обновить задачу
      */
-    suspend fun updateTask(taskId: Long, task: Task) {
+    suspend fun updateTask(taskId: String, task: Task) {
         // Найти или создать группу
         val groupId = findOrCreateGroup(task.group)
 
@@ -163,21 +160,21 @@ class TaskRepository(private val database: AppDatabase) {
     /**
      * Удалить задачу
      */
-    suspend fun deleteTask(taskId: Long) {
+    suspend fun deleteTask(taskId: String) {
         taskDao.deleteTaskById(taskId)
     }
 
     /**
      * Добавить комментарий к задаче
      */
-    suspend fun addCommentToTask(taskId: Long, comment: Comment) {
+    suspend fun addCommentToTask(taskId: String, comment: Comment) {
         taskDao.insertComment(comment.toTaskCommentEntity(taskId))
     }
 
     /**
      * Получить комментарии для задачи
      */
-    suspend fun getCommentsForTask(taskId: Long): List<Comment> {
+    suspend fun getCommentsForTask(taskId: String): List<Comment> {
         return taskDao.getCommentsForTask(taskId).map { it.toComment() }
     }
 
@@ -185,20 +182,21 @@ class TaskRepository(private val database: AppDatabase) {
      * Найти группу по имени или создать новую
      * @return ID группы
      */
-    private suspend fun findOrCreateGroup(group: org.example.project.data.commonData.Group): Long? {
+    private suspend fun findOrCreateGroup(group: org.example.project.data.commonData.Group): String? {
         // Если группа дефолтная
-        if (group.name == "Без группы" || group.id == 0L && group.name.isEmpty()) {
+        val groupIdStr: String = group.id
+        if (group.name == "Без группы" || groupIdStr.isEmpty() && group.name.isEmpty()) {
             return null
         }
 
         // Если у группы уже есть ID, используем его
-        if (group.id != 0L) {
-            return group.id
+        if (groupIdStr.isNotEmpty()) {
+            return groupIdStr
         }
 
         // Ищем группу по имени
         val allGroups = groupDao.getAllGroups()
-        var groupId: Long? = null
+        var groupId: String? = null
 
         allGroups.collect { groups ->
             groupId = groups.find { it.name == group.name }?.id
@@ -206,7 +204,9 @@ class TaskRepository(private val database: AppDatabase) {
 
         // Если группа не найдена, создаём новую
         if (groupId == null) {
-            groupId = groupDao.insert(group.toEntity())
+            val newGroup = group.toEntity()
+            groupDao.insert(newGroup)
+            groupId = newGroup.id
         }
 
         return groupId
@@ -216,22 +216,29 @@ class TaskRepository(private val database: AppDatabase) {
      * Найти пользователя по email или создать нового
      * @return ID пользователя
      */
-    private suspend fun findOrCreateUser(user: org.example.project.data.commonData.User): Long? {
+    private suspend fun findOrCreateUser(user: org.example.project.data.commonData.User): String? {
         // Если пользователь дефолтный
-        if (user.email == "Не назначен" || user.id == 0L && user.email.isEmpty()) {
+        val userIdStr: String = user.id
+        if (user.email == "Не назначен" || userIdStr.isEmpty() && user.email.isEmpty()) {
             return null
         }
 
         // Если у пользователя уже есть ID, используем его
-        if (user.id != 0L) {
-            return user.id
+        if (userIdStr.isNotEmpty()) {
+            return userIdStr
         }
 
         // Ищем пользователя по email
         val existingUser = userDao.getByEmail(user.email)
 
         // Если пользователь не найден, создаём нового
-        return existingUser?.id ?: userDao.insert(user.toEntity())
+        if (existingUser != null) {
+            return existingUser.id
+        } else {
+            val newUser = user.toEntity()
+            userDao.insert(newUser)
+            return newUser.id
+        }
     }
 }
 

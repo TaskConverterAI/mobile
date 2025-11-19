@@ -22,11 +22,11 @@ interface TaskDao {
     fun getAllTasks(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE id = :taskId")
-    suspend fun getTaskById(taskId: Long): TaskEntity?
+    suspend fun getTaskById(taskId: String): TaskEntity?
 
     @Transaction
     @Query("SELECT * FROM tasks WHERE id = :taskId")
-    suspend fun getTaskWithComments(taskId: Long): TaskWithComments?
+    suspend fun getTaskWithComments(taskId: String): TaskWithComments?
 
     @Transaction
     @Query("SELECT * FROM tasks ORDER BY dueDate ASC")
@@ -35,7 +35,7 @@ interface TaskDao {
     // Получение задачи с деталями (группа + исполнитель)
     @Transaction
     @Query("SELECT * FROM tasks WHERE id = :taskId")
-    suspend fun getTaskWithDetails(taskId: Long): TaskWithDetails?
+    suspend fun getTaskWithDetails(taskId: String): TaskWithDetails?
 
     @Transaction
     @Query("SELECT * FROM tasks ORDER BY dueDate ASC")
@@ -43,19 +43,19 @@ interface TaskDao {
 
     // Поиск по группе (используем groupId вместо group)
     @Query("SELECT * FROM tasks WHERE groupId = :groupId ORDER BY dueDate ASC")
-    fun getTasksByGroup(groupId: Long): Flow<List<TaskEntity>>
+    fun getTasksByGroup(groupId: String): Flow<List<TaskEntity>>
 
     @Transaction
     @Query("SELECT * FROM tasks WHERE groupId = :groupId ORDER BY dueDate ASC")
-    fun getTasksByGroupWithDetails(groupId: Long): Flow<List<TaskWithDetails>>
+    fun getTasksByGroupWithDetails(groupId: String): Flow<List<TaskWithDetails>>
 
     // Поиск по исполнителю
     @Query("SELECT * FROM tasks WHERE assigneeId = :assigneeId ORDER BY dueDate ASC")
-    fun getTasksByAssignee(assigneeId: Long): Flow<List<TaskEntity>>
+    fun getTasksByAssignee(assigneeId: String): Flow<List<TaskEntity>>
 
     @Transaction
     @Query("SELECT * FROM tasks WHERE assigneeId = :assigneeId ORDER BY dueDate ASC")
-    fun getTasksByAssigneeWithDetails(assigneeId: Long): Flow<List<TaskWithDetails>>
+    fun getTasksByAssigneeWithDetails(assigneeId: String): Flow<List<TaskWithDetails>>
 
     // Поиск по заметке
     @Query("SELECT * FROM tasks WHERE noteId = :noteId ORDER BY dueDate ASC")
@@ -72,7 +72,7 @@ interface TaskDao {
     fun getTasksByPriority(priority: Priority): Flow<List<TaskEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTask(task: TaskEntity): Long
+    suspend fun insertTask(task: TaskEntity)
 
     @Update
     suspend fun updateTask(task: TaskEntity)
@@ -81,12 +81,12 @@ interface TaskDao {
     suspend fun deleteTask(task: TaskEntity)
 
     @Query("DELETE FROM tasks WHERE id = :taskId")
-    suspend fun deleteTaskById(taskId: Long)
+    suspend fun deleteTaskById(taskId: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComment(comment: CommentEntity): Long
 
     @Query("SELECT * FROM comments WHERE taskId = :taskId ORDER BY timestamp DESC")
-    suspend fun getCommentsForTask(taskId: Long): List<CommentEntity>
+    suspend fun getCommentsForTask(taskId: String): List<CommentEntity>
 }
 

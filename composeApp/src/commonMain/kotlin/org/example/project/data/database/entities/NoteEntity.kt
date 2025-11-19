@@ -25,7 +25,7 @@ data class NoteEntity(
     val title: String,
     val content: String,
     val geotag: String,
-    val groupId: Long? = null,  // Ссылка на группу (может быть null)
+    val groupId: String? = null,  // Ссылка на группу (может быть null)
     val colorArgb: Long,
     val creationDate: Long,
     val contentMaxLines: Int

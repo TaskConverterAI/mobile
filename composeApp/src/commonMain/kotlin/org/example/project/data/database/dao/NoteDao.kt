@@ -51,11 +51,11 @@ interface NoteDao {
 
     // Поиск по группе (используем groupId вместо group)
     @Query("SELECT * FROM notes WHERE groupId = :groupId ORDER BY creationDate DESC")
-    fun getNotesByGroup(groupId: Long): Flow<List<NoteEntity>>
+    fun getNotesByGroup(groupId: String): Flow<List<NoteEntity>>
 
     @Transaction
     @Query("SELECT * FROM notes WHERE groupId = :groupId ORDER BY creationDate DESC")
-    fun getNotesByGroupWithTasks(groupId: Long): Flow<List<NoteWithTasks>>
+    fun getNotesByGroupWithTasks(groupId: String): Flow<List<NoteWithTasks>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: NoteEntity): Long

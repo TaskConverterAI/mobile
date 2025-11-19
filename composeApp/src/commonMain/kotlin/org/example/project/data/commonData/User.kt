@@ -6,7 +6,7 @@ enum class Privileges {
 }
 
 data class User(
-    val id: Long = 0,
+    val id: String = "",
     val email: String,
     val privileges: Privileges
 )
