@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,13 +37,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.collect
+import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 
 import org.example.project.ui.theme.LightGray
 
+@Serializable
+data class CheckTranscribingScreenArgs(val jobId: String)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
-fun CheckTranscribingScreen(navController: NavController) {
+fun CheckTranscribingScreen(navController: NavController, viewModel: CheckTranscribingViewModel) {
     Scaffold(
         topBar = {
             Column {
@@ -65,8 +71,9 @@ fun CheckTranscribingScreen(navController: NavController) {
             }
         }
     ) { paddingValues ->
+
         var explanation by remember { mutableStateOf("") }
-        var text by remember { mutableStateOf("") }
+        val text by viewModel.transcription.collectAsState()
 
         Column(
             modifier = Modifier
@@ -128,7 +135,7 @@ fun CheckTranscribingScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = text,
-                    onValueChange = { text = it },
+                    onValueChange = { viewModel.setTranscription(it) },
                     label = { Text("Текст") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -140,7 +147,7 @@ fun CheckTranscribingScreen(navController: NavController) {
                     ),
                     trailingIcon = {
                         if (text.isNotEmpty()) {
-                            IconButton(onClick = { text = "" }) {
+                            IconButton(onClick = { viewModel.setTranscription("") }) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Очистить",
@@ -153,12 +160,12 @@ fun CheckTranscribingScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
-            //end of scrollable content
 
             Button(
                 onClick = {
-                    // ToDo: Start analysis process
-                    navController.popBackStack()
+                    navController.navigate(
+                        StartAnalysisScreenArgs(viewModel.jobId,explanation, text)
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -171,7 +178,7 @@ fun CheckTranscribingScreen(navController: NavController) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "Анализировать",
+                        "Указать детали",
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Icon(

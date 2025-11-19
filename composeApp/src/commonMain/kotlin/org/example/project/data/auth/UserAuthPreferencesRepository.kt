@@ -32,6 +32,16 @@ class UserAuthPreferencesRepository(
             preferences[REFRESH_TOKEN] ?: ""
         }
 
+    val userId: Flow<String> = dataStore.data
+        .catch { exception ->
+            // Log error and emit empty preferences
+            println("Error reading refresh token preferences: ${exception.message}")
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[USER_ID] ?: ""
+        }
+
 
     suspend fun saveAccessToken(accessToken: String) {
         dataStore.edit { preferences ->
@@ -45,9 +55,17 @@ class UserAuthPreferencesRepository(
         }
     }
 
+    suspend fun saveUserId(userId: String) {
+        dataStore.edit { preferences ->
+            preferences[USER_ID] = userId
+        }
+    }
+
     private companion object {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
+
+        val USER_ID = stringPreferencesKey("user_id")
 
         const val TAG = "UserAuthPreferencesRepo"
     }

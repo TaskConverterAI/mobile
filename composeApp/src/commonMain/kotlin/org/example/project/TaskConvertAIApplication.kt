@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 
 import org.example.project.data.AppContainer
 import org.example.project.data.DefaultAppContainer
+import org.example.project.data.database.DatabaseProvider
 
 // Expect function to create platform-specific DataStore
 expect fun createDataStore(): DataStore<Preferences>
@@ -19,7 +20,7 @@ object AppDependencies {
     fun initialize() {
         if (_container == null) {
             val dataStore = createDataStore()
-            _container = DefaultAppContainer(dataStore)
+            _container = DefaultAppContainer(dataStore, DatabaseProvider.getDatabase())
         }
     }
 

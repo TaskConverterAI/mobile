@@ -1,7 +1,5 @@
 package org.example.project.data.commonData
 
-import kotlinx.serialization.Serializable
-
 enum class Priority {
     HIGH,
     MEDIUM,
@@ -15,11 +13,12 @@ enum class Status {
 }
 
 data class Task(
+    val id: String = "",
     val title: String,
     val description: String,
     val comments: List<Comment>,
-    val group: String,
-    val assignee: String,
+    val group: Group,
+    val assignee: User,
     val dueDate: Long,
     val geotag: String,
     val priority: Priority,

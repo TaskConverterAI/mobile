@@ -2,37 +2,53 @@ package org.example.project.ui.screens.notesScreen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
@@ -44,16 +60,66 @@ import org.example.project.ui.theme.SecondaryLight
 import org.example.project.ui.theme.DarkGray
 
 @Serializable
-data class DetailNoteScreenArgs(val noteID: Int)
+data class DetailNoteScreenArgs(val noteID: Int?, val isEditMode: Boolean = false)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailNoteScreen(note: Note, navController: NavController) {
+fun DetailNoteScreen(
+    note: Note?,
+    navController: NavController,
+    isEditMode: Boolean = false,
+    availableGroups: List<Group> = emptyList(), // Передайте список доступных групп
+    onSave: (Note) -> Unit = {}, // Callback для сохранения
+    onDelete: (Note) -> Unit = {} // Callback для удаления
+) {
+    // Default group для новых заметок
+    val defaultGroup = remember {
+        availableGroups.firstOrNull() ?: Group(
+            id = "",
+            name = "Без группы",
+            description = "",
+            ownerId = "",
+            memberCount = 0,
+            members = mutableListOf(),
+            createdAt = "",
+            taskCount = 0
+        )
+    }
+
+    // Состояния для редактируемых полей
+    var editableTitle by remember { mutableStateOf("") }
+    var editableContent by remember { mutableStateOf("") }
+    var editableGeotag by remember { mutableStateOf("") }
+    var editableGroup by remember { mutableStateOf(defaultGroup) }
+    var editableColor by remember { mutableStateOf(PrimaryBase) }
+
+    // Инициализируем isNewNote на основе параметра isEditMode, если он true и note == null
+    val isNewNote = remember(note, isEditMode) { isEditMode && note == null }
+    var isInEditMode by remember { mutableStateOf(isEditMode) }
+
+    // Обновляем поля при загрузке заметки
+    androidx.compose.runtime.LaunchedEffect(note) {
+        if (note != null) {
+            editableTitle = note.title
+            editableContent = note.content
+            editableGeotag = note.geotag
+            editableGroup = note.group
+            editableColor = note.color
+        }
+    }
+
     Scaffold(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Назад", color = MaterialTheme.colorScheme.primary) },
+                    title = {
+                        Text(
+                            if (isNewNote) "Новая заметка"
+                            else if (isInEditMode) "Редактирование"
+                            else "Назад",
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
@@ -74,32 +140,98 @@ fun DetailNoteScreen(note: Note, navController: NavController) {
             Column {
                 Row(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { /* TODO: Implement edit */ },
-                        modifier = Modifier.padding(end = 8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text("Редактировать")
-                    }
-                    OutlinedButton(
-                        onClick = { /* TODO: Implement delete */ },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("Удалить")
+                    if (isInEditMode) {
+                        Button(
+                            onClick = {
+                                @OptIn(ExperimentalTime::class)
+                                val updatedNote = Note(
+                                    id = note?.id ?: 0,
+                                    title = editableTitle,
+                                    content = editableContent,
+                                    geotag = editableGeotag,
+                                    group = editableGroup,
+                                    comments = note?.comments ?: emptyList(),
+                                    color = editableColor,
+                                    creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds()
+                                )
+                                onSave(updatedNote)
+                                if (!isNewNote) {
+                                    isInEditMode = false
+                                } else {
+                                    navController.popBackStack()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            enabled = editableTitle.isNotBlank()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(if (isNewNote) "Создать" else "Сохранить")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                if (isNewNote) {
+                                    navController.popBackStack()
+                                } else if (note != null) {
+                                    // Сброс изменений
+                                    editableTitle = note.title
+                                    editableContent = note.content
+                                    editableGeotag = note.geotag
+                                    editableGroup = note.group
+                                    editableColor = note.color
+                                    isInEditMode = false
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Text("Отмена")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { isInEditMode = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Редактировать")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                note?.let { onDelete(it) }
+                                navController.popBackStack()
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Удалить")
+                        }
                     }
                 }
             }
@@ -112,7 +244,19 @@ fun DetailNoteScreen(note: Note, navController: NavController) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            Text(note.title, style = MaterialTheme.typography.displayLarge)
+            // Заголовок
+            if (isInEditMode) {
+                OutlinedTextField(
+                    value = editableTitle,
+                    onValueChange = { editableTitle = it },
+                    label = { Text("Название заметки") },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.displayLarge,
+                    singleLine = true
+                )
+            } else {
+                Text(editableTitle, style = MaterialTheme.typography.displayLarge)
+            }
 
             Spacer(modifier = Modifier.height(30.dp))
 
@@ -120,60 +264,202 @@ fun DetailNoteScreen(note: Note, navController: NavController) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Геометка: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
+            // Геометка
+            if (isInEditMode) {
+                OutlinedTextField(
+                    value = editableGeotag,
+                    onValueChange = { editableGeotag = it },
+                    label = { Text("Геометка") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
-                Text(
-                    note.geotag,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Группа: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    note.group,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Цвет: ",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        getColorName(note.color),
-                        style = MaterialTheme.typography.bodyMedium
+                        "Геометка: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.padding(4.dp))
+                    Text(
+                        editableGeotag,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Группа
+            if (isInEditMode) {
+                var groupExpanded by remember { mutableStateOf(false) }
+
+                Box {
+                    OutlinedTextField(
+                        value = editableGroup.name,
+                        onValueChange = { },
+                        label = { Text("Группа") },
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = true
+                    )
+
+                    // Transparent clickable overlay
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(
-                                color = note.color,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(end = 8.dp)
+                            .matchParentSize()
+                            .clickable { groupExpanded = true }
                     )
+
+                    DropdownMenu(
+                        expanded = groupExpanded,
+                        onDismissRequest = { groupExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        availableGroups.forEach { group ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = group.name,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = {
+                                    editableGroup = group
+                                    groupExpanded = false
+                                },
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Группа: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        editableGroup.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Цвет
+            if (isInEditMode) {
+                var colorExpanded by remember { mutableStateOf(false) }
+                val availableColors = listOf(
+                    PrimaryBase to "Синий",
+                    PrimaryDark to "Тёмно-синий",
+                    PrimaryLight to "Светло-синий",
+                    SecondaryBase to "Жёлтый",
+                    SecondaryDark to "Тёмно-жёлтый",
+                    SecondaryLight to "Светло-жёлтый",
+                    DarkGray to "Тёмно-серый",
+                    LightGray to "Светло-серый",
+                    Color.Red to "Красный",
+                    Color.Green to "Зелёный"
+                )
+
+                Text(
+                    "Цвет:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { colorExpanded = true }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            getColorName(editableColor),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(
+                                    color = editableColor,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = colorExpanded,
+                        onDismissRequest = { colorExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        availableColors.forEach { (color, name) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = name,
+                                            modifier = Modifier.weight(1f),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .background(
+                                                    color = color,
+                                                    shape = RoundedCornerShape(4.dp)
+                                                )
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    editableColor = color
+                                    colorExpanded = false
+                                },
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Цвет: ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            getColorName(editableColor),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(
+                                    color = editableColor,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(end = 8.dp)
+                        )
+                    }
                 }
             }
 
@@ -183,16 +469,41 @@ fun DetailNoteScreen(note: Note, navController: NavController) {
 
             Spacer(Modifier.height(15.dp))
 
-            Text(note.content, style = MaterialTheme.typography.bodyMedium)
+            // Содержимое
+            if (isInEditMode) {
+                OutlinedTextField(
+                    value = editableContent,
+                    onValueChange = { editableContent = it },
+                    label = { Text("Содержимое заметки") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    maxLines = 10
+                )
+            } else {
+                Text(editableContent, style = MaterialTheme.typography.bodyMedium)
+            }
 
             Spacer(Modifier.height(30.dp))
 
-            Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
+            if (!isNewNote && note != null) {
+                Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
+                Spacer(Modifier.height(15.dp))
+                // Здесь можно добавить отображение комментариев
+                if (note.comments.isEmpty()) {
+                    Text(
+                        "Комментариев пока нет",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
         }
     }
 }
 
-private fun getColorName(color: Color): String {
+internal fun getColorName(color: Color): String {
     return when (color) {
         PrimaryBase -> "Синий"
         PrimaryDark -> "Тёмно-синий"

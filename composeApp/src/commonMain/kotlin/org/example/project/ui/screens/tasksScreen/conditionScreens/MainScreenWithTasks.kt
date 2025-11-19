@@ -11,33 +11,50 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
-import org.example.project.data.commonData.Task
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithTasks(navController: NavController) {
+fun MainScreenWithTasks(navController: NavController, taskJob: org.example.project.ui.screens.tasksScreen.TasksViewModel, allTasks: org.example.project.ui.viewmodels.TasksViewModel) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
     var selectedStatus by remember { mutableStateOf("Все статусы") }
     val statusOptions = listOf("Все статусы")
+
+    val jobs by taskJob.currentJobs.collectAsState()
+    val tasks by allTasks.tasks.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.systemBars)
             .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // Jobs section
+        jobs.forEach { job ->
+            ColorBlock(
+                BlockType.JOB,
+                job = job,
+                backgroundColor = MaterialTheme.colorScheme.surface,
+                navController = navController,
+                onCloseErrorClick = {
+                    taskJob.closeErrorMsg(job)
+                }
+            )
+        }
+
+        // Tasks section header
         Text(
             text = "Задачи",
             style = MaterialTheme.typography.displayLarge,
-            modifier = Modifier.padding(bottom = 5.dp, start = 10.dp).scale(1.1F)
+            modifier = Modifier.padding(bottom = 5.dp, start = 10.dp, top = 16.dp).scale(1.1F)
         )
 
+        // Filters
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -56,57 +73,14 @@ fun MainScreenWithTasks(navController: NavController) {
             )
         }
 
-        val tasks = getSampleTasks(selectedFilter)
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            tasks.forEach { task ->
-                ColorBlock(BlockType.ADVANCED_TASK, task, backgroundColor = MaterialTheme.colorScheme.primary, navController = navController)
-            }
+        // Tasks list
+        tasks.forEach { task ->
+            ColorBlock(
+                BlockType.ADVANCED_TASK,
+                task,
+                backgroundColor = MaterialTheme.colorScheme.primary,
+                navController = navController
+            )
         }
     }
-}
-
-fun getSampleTasks(filter: String): List<Task> {
-    val allTasks = listOf(
-        Task(
-            title = "task 1",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.HIGH,
-            status = Status.IN_PROGRESS
-        ),
-        Task(
-            title = "task 2",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.MEDIUM,
-            status = Status.TODO
-        ),
-        Task(
-            title = "task 3",
-            description = "empty",
-            comments = emptyList(),
-            group = "standart",
-            assignee = "me",
-            dueDate = 0,
-            geotag = "empty",
-            priority = Priority.LOW,
-            status = Status.DONE
-        )
-    )
-
-    return allTasks
 }

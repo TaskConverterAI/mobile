@@ -14,13 +14,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -33,8 +33,6 @@ import androidx.navigation.toRoute
 
 import org.example.project.data.commonData.Destination
 import org.example.project.data.commonData.Note
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.ui.screens.auth.AuthViewModel
 import org.example.project.ui.screens.auth.EnterScreen
@@ -46,14 +44,22 @@ import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisViewModel
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreen
-import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartTranscribingScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckTranscribingViewModel
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisScreen
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisScreenArgs
+import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnalysisViewModel
 import org.example.project.ui.screens.settingsScreen.SettingsScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
 import org.example.project.ui.screens.tasksScreen.TaskCreateDialog
 import org.example.project.ui.screens.tasksScreen.TasksScreen
 import org.example.project.ui.viewComponents.commonComponents.BottomNavigationBar
+import org.example.project.ui.viewmodels.NotesViewModel
+import org.example.project.ui.viewmodels.TasksViewModel
 
 import org.jetbrains.compose.resources.StringResource
 import taskconvertaiapp.composeapp.generated.resources.Res
@@ -67,124 +73,48 @@ enum class TaskConvertAIAppScreens(val title: StringResource) {
 }
 
 @Composable
-fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navController: NavController) {
+fun ChooseCreateDialog(
+    currentRoute: String?,
+    onDismiss: () -> Unit,
+    navController: NavController,
+    viewModel: TaskConvertAIViewModel
+) {
     when (currentRoute) {
         Destination.NOTES.route -> {
             NoteCreateDialog(
+                viewModel = viewModel,
                 onDismiss = onDismiss,
                 onConfirm = { route ->
                     onDismiss()
-                    navController.navigate(route)
+                    if (route == "create_manual_note") {
+                        navController.navigate(DetailNoteScreenArgs(noteID = null, isEditMode = true))
+                    } else {
+                        navController.navigate(route)
+                    }
                 }
             )
         }
-        Destination.TASKS.route -> {
-            val allNotes = listOf(
-                Note(
-                    title = "Встреча с командой",
-                    content = "Обсудить планы на следующую неделю",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color.Green,
-                    contentMaxLines = 2
-                ),
-                Note(
-                    title = "Список покупок",
-                    content = "Молоко, хлеб, яйца, масло, сыр, колбаса, овощи и фрукты для недели",
-                    geotag = "Супермаркет",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color.Cyan,
-                    contentMaxLines = 5
-                ),
-                Note(
-                    title = "Идея для проекта",
-                    content = "Реализовать новую функцию в приложении с использованием современных подходов",
-                    geotag = "Дом",
-                    group = "Важные",
-                    comments = emptyList(),
-                    color = Color.Magenta,
-                    contentMaxLines = 3
-                ),
-                Note(
-                    title = "Задача на день",
-                    content = "Закончить отчёт",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color.Yellow,
-                    contentMaxLines = 1
-                ),
-                Note(
-                    title = "Напоминание",
-                    content = "Позвонить врачу и записаться на приём. Не забыть взять медицинскую карту и результаты анализов",
-                    geotag = "Поликлиника",
-                    group = "Важные",
-                    comments = emptyList(),
-                    contentMaxLines = 4
-                ),
-                Note(
-                    title = "Заметка",
-                    content = "Короткий текст",
-                    geotag = "",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color.LightGray,
-                    contentMaxLines = 1
-                ),
-                Note(
-                    title = "План путешествия",
-                    content = "Забронировать отель, купить билеты на самолёт, составить маршрут по городу, проверить погоду и упаковать чемодан",
-                    geotag = "Париж",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color(0xFF8A2BE2),
-                    contentMaxLines = 6
-                ),
-                Note(
-                    title = "Рабочие задачи",
-                    content = "Просмотреть код коллег и оставить комментарии",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color(0xFFFFA500),
-                    contentMaxLines = 2
-                ),
-                Note(
-                    title = "Важное сообщение",
-                    content = "Не забыть отправить отчёт начальнику до конца дня",
-                    geotag = "Офис",
-                    group = "Важные",
-                    comments = emptyList(),
-                    color = Color.Red,
-                    contentMaxLines = 2
-                ),
-                Note(
-                    title = "Личное развитие",
-                    content = "Прочитать главу из книги по саморазвитию и сделать заметки",
-                    geotag = "Библиотека",
-                    group = "Личные",
-                    comments = emptyList(),
-                    color = Color.Blue,
-                    contentMaxLines = 3
-                )
-            )
 
+        Destination.TASKS.route -> {
             TaskCreateDialog(
                 onDismiss = onDismiss,
                 onConfirm = { route ->
                     onDismiss()
-                    navController.navigate(route)
+                    if (route == "create_manual_task") {
+                        navController.navigate(DetailTaskScreenArgs(taskID = null, isEditMode = true))
+                    } else {
+                        navController.navigate(route)
+                    }
                 },
-                notes = allNotes,
                 navController = navController
             )
         }
+
         Destination.GROUPS.route -> {
             // Show create group dialog
             onDismiss()
         }
+
         else -> {
             // Do nothing or show a default dialog
             onDismiss()
@@ -194,17 +124,18 @@ fun ChooseCreateDialog(currentRoute: String?, onDismiss: () -> Unit, navControll
 
 @Composable
 fun TaskConvertAIApp(
-    viewModel: TaskConvertAIViewModel = viewModel(factory = TaskConvertAIViewModel.Companion.Factory),
+    viewModel: TaskConvertAIViewModel = viewModel(factory = TaskConvertAIViewModel.Factory),
     navController: NavHostController = rememberNavController()
 ) {
 //    HideSystemBarsWithInsetsController()
-
+    val viewModelTasks: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
+    val  viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {
-        ChooseCreateDialog(currentRoute, { showDialog = false }, navController)
+        ChooseCreateDialog(currentRoute, { showDialog = false }, navController, viewModel)
     }
 
     val shouldShowBottomBar = currentRoute in Destination.entries.map { it.route }
@@ -257,7 +188,7 @@ fun TaskConvertAIApp(
                 RegistrationScreen(
                     authViewModel = viewModel(factory = AuthViewModel.Factory),
                     onSuccessSignUp = {
-                        navController.navigate(TaskConvertAIAppScreens.SignIn.name)
+                        navController.navigate(Destination.NOTES.route)
                     },
                     onMoveToSignInClicked = {
                         navController.navigate(TaskConvertAIAppScreens.SignIn.name)
@@ -285,60 +216,119 @@ fun TaskConvertAIApp(
             Destination.entries.forEach { destination ->
                 composable(destination.route) {
                     when (destination) {
-                        Destination.NOTES -> NotesScreen(navController)
-                        Destination.TASKS -> TasksScreen(navController)
+                        Destination.NOTES -> NotesScreen(
+                            navController
+                        )
+
+                        Destination.TASKS -> TasksScreen(
+                            navController,
+                            viewModel(factory = org.example.project.ui.screens.tasksScreen.TasksViewModel.Factory)
+                        )
+
                         Destination.GROUPS -> GroupsScreen()
                         Destination.SETTINGS -> SettingsScreen()
                     }
                 }
             }
 
-            composable("start_transcribing_screen") {
-                StartTranscribingScreen(navController = navController)
+            composable<CheckTranscribingScreenArgs> { currentBackStackEntry ->
+                val args: CheckTranscribingScreenArgs = currentBackStackEntry.toRoute()
+                val viewModel: CheckTranscribingViewModel =
+                    viewModel(factory = CheckTranscribingViewModel.Factory)
+                viewModel.loadJobResult(args.jobId)
+
+                CheckTranscribingScreen(navController = navController, viewModel)
             }
 
-            composable("check_transcribing_screen") {
-                CheckTranscribingScreen(navController = navController)
+            composable<StartAnalysisScreenArgs> { currentBackStackEntry ->
+                val args: StartAnalysisScreenArgs = currentBackStackEntry.toRoute()
+                val viewModel: StartAnalysisViewModel =
+                    viewModel(factory = StartAnalysisViewModel.Factory)
+                viewModel.loadArgs(args.jobId, args.text, args.hints)
+
+                StartAnalysisScreen(navController = navController, viewModel)
             }
 
-            composable("check_analysis_screen") {
-                CheckAnalysisScreen(navController = navController)
+            composable<CheckAnalysisScreenArgs> { currentBackStackEntry ->
+                val args: CheckAnalysisScreenArgs = currentBackStackEntry.toRoute()
+                val viewModel: CheckAnalysisViewModel =
+                    viewModel(factory = CheckAnalysisViewModel.Factory)
+                viewModel.loadJobResult(args.jobId)
+
+                CheckAnalysisScreen(navController = navController, viewModel = viewModel)
             }
 
             composable<DetailNoteScreenArgs> { currentBackStackEntry ->
                 val detailNoteScreenArgs: DetailNoteScreenArgs = currentBackStackEntry.toRoute()
                 val noteID = detailNoteScreenArgs.noteID
+                val isEditMode = detailNoteScreenArgs.isEditMode
 
-                val note = Note(
-                    title = "Рабочие задачи",
-                    content = "Просмотреть код коллег и оставить комментарии",
-                    geotag = "Офис",
-                    group = "Работа",
-                    comments = emptyList(),
-                    color = Color(0xFFFFA500),
-                    contentMaxLines = 2
+                var note by remember { mutableStateOf<Note?>(null) }
+
+                // Загружаем данные в корутине, если noteID не null
+                LaunchedEffect(noteID) {
+                    note = if (noteID != null) {
+                        viewModelNotes.getNoteById(noteID.toLong())
+                    } else {
+                        null
+                    }
+                }
+
+                DetailNoteScreen(
+                    note = note,
+                    navController = navController,
+                    isEditMode = isEditMode,
+                    availableGroups = emptyList(),
+                    onSave = { updatedNote ->
+                        if (updatedNote.id == 0L || noteID == null) {
+                            // Создание новой заметки
+                            viewModelNotes.addNote(updatedNote)
+                        } else {
+                            // Обновление существующей заметки
+                            viewModelNotes.updateNote(updatedNote.id, updatedNote)
+                        }
+                    },
+                    onDelete = { noteToDelete ->
+                        viewModelNotes.deleteNote(noteToDelete.id)
+                    }
                 )
-
-                DetailNoteScreen(note, navController)
             }
 
             composable<DetailTaskScreenArgs> { currentBackStackEntry ->
                 val detailTaskScreenArgs: DetailTaskScreenArgs = currentBackStackEntry.toRoute()
                 val taskID = detailTaskScreenArgs.taskID
+                val isEditMode = detailTaskScreenArgs.isEditMode
 
-                val task = Task(
-                    title = "task 3",
-                    description = "empty",
-                    comments = emptyList(),
-                    group = "standart",
-                    assignee = "me",
-                    dueDate = 0,
-                    geotag = "empty",
-                    priority = Priority.LOW,
-                    status = Status.DONE
+                var task by remember { mutableStateOf<Task?>(null) }
+
+                // Загружаем данные в корутине, если taskID не null
+                LaunchedEffect(taskID) {
+                    task = if (taskID != null) {
+                        viewModelTasks.getTaskById(taskID)
+                    } else {
+                        null
+                    }
+                }
+
+                DetailTaskScreen(
+                    task = task,
+                    navController = navController,
+                    isEditMode = isEditMode,
+                    availableGroups = emptyList(),
+                    availableUsers = emptyList(),
+                    onSave = { updatedTask ->
+                        if (updatedTask.id.isEmpty() || taskID == null) {
+                            // Создание новой задачи
+                            viewModelTasks.addTask(updatedTask)
+                        } else {
+                            // Обновление существующей задачи
+                            viewModelTasks.updateTask(updatedTask.id, updatedTask)
+                        }
+                    },
+                    onDelete = { taskToDelete ->
+                        viewModelTasks.deleteTask(taskToDelete.id)
+                    }
                 )
-
-                DetailTaskScreen(task, navController)
             }
         }
     }

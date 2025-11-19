@@ -21,41 +21,36 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 
+import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Priority
+import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
+import org.example.project.data.commonData.User
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.noteScreenComponents.TaskChoosingItem
 
+@Serializable
+data class CheckAnalysisScreenArgs(val jobId: String)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
-fun CheckAnalysisScreen(navController: NavController) {
-    // Состояние для задач (пример данных)
-    var tasks by remember {
-        mutableStateOf(
-            listOf(
-                "Купить продукты в магазине" to true,
-                "Позвонить врачу и записаться на прием" to true,
-                "Сделать домашнее задание по математике" to false,
-                "Отправить отчет руководителю" to true,
-                "Забрать посылку из почтового отделения" to false
-            )
-        )
-    }
+fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisViewModel) {
+    val tasks by viewModel.tasks.collectAsState()
+    val uiData by viewModel.uiData.collectAsState()
 
     Scaffold(
         topBar = {
@@ -102,10 +97,17 @@ fun CheckAnalysisScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
 
             val testNote = Note(
-                title = "Wasd",
-                content = "Wasd was wasd",
+                title = "Заметка",
+                content = uiData.summary,
                 geotag = "office",
-                group = "work",
+                group = Group(
+                    id = "work",
+                    name = "Work",
+                    description = "",
+                    ownerId = "",
+                    memberCount = 0,
+                    createdAt = ""
+                ),
                 comments = emptyList(),
                 color = PrimaryBase,
                 contentMaxLines = 5,
@@ -126,24 +128,34 @@ fun CheckAnalysisScreen(navController: NavController) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                tasks.forEachIndexed { index, (taskTitle, isEnabled) ->
+                tasks.forEachIndexed { index, taskCell ->
                     TaskChoosingItem(
                         task = Task(
-                            title = taskTitle,
-                            description = "empty",
+                            title = taskCell.task.title,
+                            description = taskCell.task.description,
                             comments = emptyList(),
-                            group = "standart",
-                            assignee = "me",
+                            group = Group(
+                                id = "standard",
+                                name = "Standard",
+                                description = "",
+                                ownerId = "",
+                                memberCount = 0,
+                                createdAt = ""
+                            ),
+                            assignee = User(
+                                id = taskCell.task.assignee ?: "",
+                                email = "",
+                                username = taskCell.task.assignee ?: "",
+                                privileges = Privileges.member
+                            ),
                             dueDate = 0,
                             geotag = "empty",
-                            priority = Priority.HIGH,
+                            priority = Priority.MEDIUM,
                             status = Status.IN_PROGRESS
                         ),
-                        isEnabled = isEnabled,
+                        isEnabled = taskCell.isUsed,
                         onEnabledChange = { newValue ->
-                            tasks = tasks.toMutableList().apply {
-                                this[index] = taskTitle to newValue
-                            }
+                            viewModel.updateTaskUsing(index, newValue)
                         }
                     )
                 }
@@ -154,7 +166,7 @@ fun CheckAnalysisScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    // ToDo: Save note and tasks
+                    // ToDo: сохранить заметку и выбранные задачи
                     navController.popBackStack()
                 },
                 modifier = Modifier

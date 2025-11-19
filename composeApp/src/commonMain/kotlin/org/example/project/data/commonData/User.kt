@@ -1,11 +1,14 @@
 package org.example.project.data.commonData
 
 enum class Privileges {
-    FULL,
-    PART
+    member,
+    owner,
+    admin
 }
 
 data class User(
-    val email: String,
+    val id: String = "",
+    val email: String = "",
+    val username: String = "",
     val privileges: Privileges
 )
