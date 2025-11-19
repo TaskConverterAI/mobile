@@ -85,7 +85,11 @@ fun DetailTaskScreen(
             id = "",
             name = "Без группы",
             description = "",
-            users = emptyList()
+            ownerId = "",
+            memberCount = 0,
+            members = mutableListOf(),
+            createdAt = "",
+            taskCount = 0
         )
     }
 
@@ -93,6 +97,7 @@ fun DetailTaskScreen(
         availableUsers.firstOrNull() ?: User(
             id = "",
             email = "Не назначен",
+            username = "Не назначен",
             privileges = org.example.project.data.commonData.Privileges.member
         )
     }

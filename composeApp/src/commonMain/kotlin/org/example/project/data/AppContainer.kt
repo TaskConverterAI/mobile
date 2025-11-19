@@ -50,7 +50,8 @@ class DefaultAppContainer(
             noteRepository = noteRepository,
             noteApiService = noteApiService,
             syncPreferences = syncPreferences,
-            coroutineScope = syncScope
+            coroutineScope = syncScope,
+            autoStart = false
         )
     } else null
 

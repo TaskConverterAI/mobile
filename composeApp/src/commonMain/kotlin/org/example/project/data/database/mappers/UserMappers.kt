@@ -10,6 +10,7 @@ fun UserEntity.toUser(): User {
     return User(
         id = id,
         email = email,
+        username = username,
         privileges = privileges
     )
 }
@@ -20,6 +21,7 @@ fun User.toEntity(): UserEntity {
     return UserEntity(
         id = id.ifEmpty { Uuid.random().toString() },
         email = email,
+        username = username,
         privileges = privileges
     )
 }

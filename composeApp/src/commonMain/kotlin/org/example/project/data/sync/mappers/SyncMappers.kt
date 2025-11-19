@@ -47,7 +47,11 @@ fun NoteDto.toNote(): Note {
             id = groupIdOrEmpty,
             name = this.groupName ?: "Без группы",
             description = this.groupDescription ?: "",
-            users = emptyList()
+            ownerId = "",
+            memberCount = 0,
+            members = mutableListOf(),
+            createdAt = "",
+            taskCount = 0
         ),
         comments = this.comments.map { it.toComment() },
         color = Color(this.colorArgb.toULong()),

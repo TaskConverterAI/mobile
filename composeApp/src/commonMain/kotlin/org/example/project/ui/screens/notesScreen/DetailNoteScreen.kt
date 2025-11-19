@@ -78,7 +78,11 @@ fun DetailNoteScreen(
             id = "",
             name = "Без группы",
             description = "",
-            users = emptyList()
+            ownerId = "",
+            memberCount = 0,
+            members = mutableListOf(),
+            createdAt = "",
+            taskCount = 0
         )
     }
 

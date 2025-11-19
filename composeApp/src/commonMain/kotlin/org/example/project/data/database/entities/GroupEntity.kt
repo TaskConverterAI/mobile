@@ -8,5 +8,9 @@ data class GroupEntity (
     @PrimaryKey
     val id: String,
     val name: String,
-    val description: String
+    val description: String,
+    val ownerId: String,
+    val memberCount: Int,
+    val createdAt: String,
+    val taskCount: Int = 0
 )

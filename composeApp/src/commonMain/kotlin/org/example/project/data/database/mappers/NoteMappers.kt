@@ -33,7 +33,11 @@ fun NoteWithTasks.toNote(comments: List<Comment> = emptyList()): Note {
             id = "",
             name = "Без группы",
             description = "",
-            users = emptyList()
+            ownerId = "",
+            memberCount = 0,
+            members = mutableListOf(),
+            createdAt = "",
+            taskCount = 0
         ),
         comments = comments,
         color = Color(note.colorArgb.toULong()),

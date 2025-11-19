@@ -28,7 +28,8 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                             description = group.description,
                             ownerId = group.ownerId,
                             memberCount = group.memberCount,
-                            createdAt = group.createdAt
+                            createdAt = group.createdAt,
+                            taskCount = 0
                         )
                     )
                 }
@@ -65,7 +66,8 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     ownerId = response.ownerId,
                     memberCount = response.members.size,
                     members = memberList,
-                    createdAt = response.createdAt
+                    createdAt = response.createdAt,
+                    taskCount = 0
                 )
                 group
             },
@@ -93,7 +95,8 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     description = response.description,
                     ownerId = response.ownerId,
                     memberCount = response.memberCount,
-                    createdAt = response.createdAt
+                    createdAt = response.createdAt,
+                    taskCount = 0
                 )
             },
             onFailure = { error ->
@@ -115,7 +118,8 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     description = response.description,
                     ownerId = response.ownerId,
                     memberCount = response.memberCount,
-                    createdAt = response.createdAt
+                    createdAt = response.createdAt,
+                    taskCount = 0
                 )
                 group
             },

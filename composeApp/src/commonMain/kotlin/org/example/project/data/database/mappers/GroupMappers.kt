@@ -12,7 +12,11 @@ fun GroupEntity.toGroup(): Group {
         id = id,
         name = name,
         description = description,
-        users = emptyList()  // Пользователи не загружены
+        ownerId = ownerId,
+        memberCount = memberCount,
+        members = mutableListOf(),  // Пользователи не загружены
+        createdAt = createdAt,
+        taskCount = taskCount
     )
 }
 
@@ -22,7 +26,11 @@ fun GroupWithUsers.toGroup(): Group {
         id = group.id,
         name = group.name,
         description = group.description,
-        members = users.map { it.toUser() }
+        ownerId = group.ownerId,
+        memberCount = group.memberCount,
+        members = users.map { it.toUser() }.toMutableList(),
+        createdAt = group.createdAt,
+        taskCount = group.taskCount
     )
 }
 
@@ -32,7 +40,11 @@ fun Group.toEntity(): GroupEntity {
     return GroupEntity(
         id = id.ifEmpty { Uuid.random().toString() },
         name = name,
-        description = description
+        description = description,
+        ownerId = ownerId,
+        memberCount = memberCount,
+        createdAt = createdAt,
+        taskCount = taskCount
     )
 }
 

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import org.example.project.data.database.migrations.MIGRATION_1_2
+import org.example.project.data.database.migrations.MIGRATION_2_3
 
 private lateinit var appContext: Context
 
@@ -16,5 +17,5 @@ actual fun getDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
     return Room.databaseBuilder<AppDatabase>(
         context = appContext,
         name = dbFile.absolutePath
-    ).addMigrations(MIGRATION_1_2)
+    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
 }

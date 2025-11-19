@@ -43,12 +43,17 @@ fun TaskWithDetails.toTask(comments: List<Comment> = emptyList()): Task {
             id = "",
             name = "Без группы",
             description = "",
-            users = emptyList()
+            ownerId = "",
+            memberCount = 0,
+            members = mutableListOf(),
+            createdAt = "",
+            taskCount = 0
         ),
         assignee = assignee?.toUser() ?: User(
             id = "",
             email = "Не назначен",
-            privileges = org.example.project.data.commonData.Privileges.PART
+            username = "Не назначен",
+            privileges = org.example.project.data.commonData.Privileges.member
         ),
         dueDate = task.dueDate,
         geotag = task.geotag,

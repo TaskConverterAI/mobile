@@ -5,9 +5,10 @@ import androidx.room.PrimaryKey
 import org.example.project.data.commonData.Privileges
 
 @Entity(tableName = "users")
-class UserEntity (
+data class UserEntity (
     @PrimaryKey
     val id: String,
     val email: String,
+    val username: String,
     val privileges: Privileges
 )

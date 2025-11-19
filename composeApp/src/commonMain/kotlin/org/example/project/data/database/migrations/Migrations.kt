@@ -154,3 +154,35 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+/**
+ * Миграция с версии 2 на версию 3
+ * Добавление новых колонок:
+ * - groups: ownerId, memberCount, createdAt, taskCount
+ * - users: username
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        // Добавляем новые колонки в таблицу groups
+        connection.execSQL("""
+            ALTER TABLE groups ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''
+        """.trimIndent())
+
+        connection.execSQL("""
+            ALTER TABLE groups ADD COLUMN memberCount INTEGER NOT NULL DEFAULT 0
+        """.trimIndent())
+
+        connection.execSQL("""
+            ALTER TABLE groups ADD COLUMN createdAt TEXT NOT NULL DEFAULT ''
+        """.trimIndent())
+
+        connection.execSQL("""
+            ALTER TABLE groups ADD COLUMN taskCount INTEGER NOT NULL DEFAULT 0
+        """.trimIndent())
+
+        // Добавляем новую колонку в таблицу users
+        connection.execSQL("""
+            ALTER TABLE users ADD COLUMN username TEXT NOT NULL DEFAULT ''
+        """.trimIndent())
+    }
+}
+
