@@ -1,5 +1,7 @@
 package org.example.project.data.database.mappers
 
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import org.example.project.data.commonData.User
 import org.example.project.data.database.entities.UserEntity
 
@@ -13,9 +15,10 @@ fun UserEntity.toUser(): User {
 }
 
 // Convert User to UserEntity (только для вставки/обновления)
+@OptIn(ExperimentalUuidApi::class)
 fun User.toEntity(): UserEntity {
     return UserEntity(
-        id = id,
+        id = id.ifEmpty { Uuid.random().toString() },
         email = email,
         privileges = privileges
     )

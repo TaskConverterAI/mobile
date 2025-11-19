@@ -13,6 +13,8 @@ object DatabaseProvider {
         return database ?: getDatabaseBuilder()
             .setDriver(androidx.sqlite.driver.bundled.BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
+            // Раскомментируйте следующую строку для разработки, если нужно удалить старую БД при ошибке миграции
+            // .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
             .also { database = it }
     }

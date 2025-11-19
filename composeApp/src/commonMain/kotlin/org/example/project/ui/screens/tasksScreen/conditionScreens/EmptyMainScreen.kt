@@ -20,7 +20,7 @@ import org.example.project.ui.theme.DarkGray
 import taskconvertaiapp.composeapp.generated.resources.Res
 
 @Composable
-fun EmptyScreen() {
+fun EmptyMainScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()

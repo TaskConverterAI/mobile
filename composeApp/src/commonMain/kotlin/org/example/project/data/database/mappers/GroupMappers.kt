@@ -1,5 +1,7 @@
 package org.example.project.data.database.mappers
 
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import org.example.project.data.commonData.Group
 import org.example.project.data.database.entities.GroupEntity
 import org.example.project.data.database.entities.GroupWithUsers
@@ -25,9 +27,10 @@ fun GroupWithUsers.toGroup(): Group {
 }
 
 // Convert Group to GroupEntity (только для вставки/обновления)
+@OptIn(ExperimentalUuidApi::class)
 fun Group.toEntity(): GroupEntity {
     return GroupEntity(
-        id = id,
+        id = id.ifEmpty { Uuid.random().toString() },
         name = name,
         description = description
     )

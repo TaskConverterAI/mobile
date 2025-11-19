@@ -1,5 +1,7 @@
 package org.example.project.data.database.mappers
 
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Task
@@ -9,14 +11,15 @@ import org.example.project.data.database.entities.TaskEntity
 import org.example.project.data.database.entities.TaskWithDetails
 
 // Convert Task to TaskEntity (только для вставки/обновления)
+@OptIn(ExperimentalUuidApi::class)
 fun Task.toEntity(
-    id: Long = 0,
-    groupId: Long? = null,
-    assigneeId: Long? = null,
+    id: String = "",
+    groupId: String? = null,
+    assigneeId: String? = null,
     noteId: Long? = null
 ): TaskEntity {
     return TaskEntity(
-        id = id,
+        id = id.ifEmpty { Uuid.random().toString() },
         title = title,
         description = description,
         groupId = groupId,  // Используем переданный groupId
@@ -37,13 +40,13 @@ fun TaskWithDetails.toTask(comments: List<Comment> = emptyList()): Task {
         description = task.description,
         comments = comments,
         group = group?.toGroup() ?: Group(
-            id = 0,
+            id = "",
             name = "Без группы",
             description = "",
             users = emptyList()
         ),
         assignee = assignee?.toUser() ?: User(
-            id = 0,
+            id = "",
             email = "Не назначен",
             privileges = org.example.project.data.commonData.Privileges.PART
         ),
@@ -55,7 +58,7 @@ fun TaskWithDetails.toTask(comments: List<Comment> = emptyList()): Task {
 }
 
 // Convert Comment to CommentEntity for Task
-fun Comment.toTaskCommentEntity(taskId: Long): CommentEntity {
+fun Comment.toTaskCommentEntity(taskId: String): CommentEntity {
     return CommentEntity(
         id = id,
         taskId = taskId,

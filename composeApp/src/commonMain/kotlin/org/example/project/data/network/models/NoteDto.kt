@@ -8,7 +8,7 @@ data class NoteDto(
     val title: String,
     val content: String,
     val geotag: String,
-    val groupId: Long? = null,
+    val groupId: String? = null,
     val groupName: String? = null,
     val groupDescription: String? = null,
     val colorArgb: Long,

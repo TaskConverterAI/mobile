@@ -26,7 +26,7 @@ import org.example.project.data.database.entities.UserEntity
         UserEntity::class,
         GroupUserCrossRef::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)

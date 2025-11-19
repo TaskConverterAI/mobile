@@ -10,10 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import org.example.project.data.commonData.Task
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
-
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
 import org.example.project.ui.viewmodels.TasksViewModel
 

@@ -11,11 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import org.example.project.ui.screens.notesScreen.conditionScreens.EmptyMainScreen
-import org.example.project.ui.screens.notesScreen.conditionScreens.MainScreenWithNotes
-
+import org.example.project.ui.screens.tasksScreen.conditionScreens.EmptyMainScreen
 import org.example.project.ui.screens.tasksScreen.conditionScreens.MainScreenWithTasks
-import org.example.project.ui.viewmodels.NotesViewModel
 import org.example.project.ui.viewmodels.TasksViewModel
 
 @Composable
