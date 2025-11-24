@@ -4,9 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.People
@@ -20,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -156,7 +155,8 @@ private fun AdvancedNoteBlock(
 private fun SimpleTaskBlock(
     task: Task,
     modifier: Modifier = Modifier,
-    onTitleClick: () -> Unit = {}
+    onTitleClick: () -> Unit = {},
+    onDescriptionClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -170,6 +170,19 @@ private fun SimpleTaskBlock(
             overflow = TextOverflow.Ellipsis,
             modifier = modifier.clickable { onTitleClick() }
         )
+
+        if (task.description.isNotEmpty()) {
+            Spacer(modifier = modifier.height(8.dp))
+
+            Text(
+                text = task.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = modifier.clickable { onDescriptionClick() }
+            )
+        }
     }
 }
 
@@ -424,12 +437,14 @@ fun ColorBlock(
     backgroundColor: Color,
     modifier: Modifier = Modifier,
     navController: NavController? = null,
-    onCloseErrorClick: () -> Unit = {}
+    onCloseErrorClick: () -> Unit = {},
+    onTitleEdit: ((String) -> Unit)? = null,
+    onContentEdit: ((String) -> Unit)? = null
 ) {
     var showTitleDialog by remember { mutableStateOf(false) }
     var showContentDialog by remember { mutableStateOf(false) }
-    var dialogTitle by remember { mutableStateOf("") }
-    var dialogContent by remember { mutableStateOf("") }
+    var editedTitle by remember { mutableStateOf("") }
+    var editedContent by remember { mutableStateOf("") }
 
     Box(
         modifier = modifier
@@ -461,11 +476,11 @@ fun ColorBlock(
                 BlockType.SIMPLE_NOTE -> SimpleNoteBlock(
                     note = note!!,
                     onTitleClick = {
-                        dialogTitle = note.title
+                        editedTitle = note.title
                         showTitleDialog = true
                     },
                     onContentClick = {
-                        dialogContent = note.content
+                        editedContent = note.content
                         showContentDialog = true
                     }
                 )
@@ -482,8 +497,12 @@ fun ColorBlock(
                 BlockType.SIMPLE_TASK -> SimpleTaskBlock(
                     task = task!!,
                     onTitleClick = {
-                        dialogTitle = task.title
+                        editedTitle = task.title
                         showTitleDialog = true
+                    },
+                    onDescriptionClick = {
+                        editedContent = task.description
+                        showContentDialog = true
                     }
                 )
 
@@ -529,22 +548,32 @@ fun ColorBlock(
             onDismissRequest = { showTitleDialog = false },
             title = {
                 Text(
-                    text = "Полное название",
+                    text = "Редактировать название",
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Box(
-                    modifier = Modifier
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(text = dialogTitle)
-                }
+                OutlinedTextField(
+                    value = editedTitle,
+                    onValueChange = { editedTitle = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Введите название") },
+                    maxLines = 3
+                )
             },
             confirmButton = {
+                TextButton(
+                    onClick = {
+                        onTitleEdit?.invoke(editedTitle)
+                        showTitleDialog = false
+                    }
+                ) {
+                    Text("Сохранить")
+                }
+            },
+            dismissButton = {
                 TextButton(onClick = { showTitleDialog = false }) {
-                    Text("OK")
+                    Text("Отмена")
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
@@ -556,22 +585,34 @@ fun ColorBlock(
             onDismissRequest = { showContentDialog = false },
             title = {
                 Text(
-                    text = "Полное описание",
+                    text = "Редактировать описание",
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Box(
+                OutlinedTextField(
+                    value = editedContent,
+                    onValueChange = { editedContent = it },
                     modifier = Modifier
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(text = dialogContent)
-                }
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp),
+                    placeholder = { Text("Введите описание") },
+                    maxLines = 15
+                )
             },
             confirmButton = {
+                TextButton(
+                    onClick = {
+                        onContentEdit?.invoke(editedContent)
+                        showContentDialog = false
+                    }
+                ) {
+                    Text("Сохранить")
+                }
+            },
+            dismissButton = {
                 TextButton(onClick = { showContentDialog = false }) {
-                    Text("OK")
+                    Text("Отмена")
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface

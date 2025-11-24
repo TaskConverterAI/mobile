@@ -97,9 +97,9 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
             Spacer(modifier = Modifier.height(24.dp))
 
             val testNote = Note(
-                title = "Заметка",
+                title = uiData.noteTitle,
                 content = uiData.summary,
-                geotag = "office",
+                geotag = uiData.noteGeotag,
                 group = Group(
                     id = "work",
                     name = "Work",
@@ -114,9 +114,16 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                 creationDate = 0
             )
 
-            ColorBlock(blockType = BlockType.SIMPLE_NOTE,
+            ColorBlock(
+                blockType = BlockType.SIMPLE_NOTE,
                 note = testNote,
-                backgroundColor = testNote.color
+                backgroundColor = testNote.color,
+                onTitleEdit = { newTitle ->
+                    viewModel.updateNoteTitle(newTitle)
+                },
+                onContentEdit = { newContent ->
+                    viewModel.updateNoteContent(newContent)
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -156,6 +163,12 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                         isEnabled = taskCell.isUsed,
                         onEnabledChange = { newValue ->
                             viewModel.updateTaskUsing(index, newValue)
+                        },
+                        onTitleEdit = { newTitle ->
+                            viewModel.updateTaskTitle(index, newTitle)
+                        },
+                        onDescriptionEdit = { newDescription ->
+                            viewModel.updateTaskDescription(index, newDescription)
                         }
                     )
                 }
@@ -164,19 +177,28 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
             }
             //end of scrollable content
 
+            val saveInProgress by viewModel.saveInProgress.collectAsState()
+
             Button(
                 onClick = {
-                    // ToDo: сохранить заметку и выбранные задачи
-                    navController.popBackStack()
+                    viewModel.saveNoteAndTasks(
+                        onSuccess = {
+                            navController.popBackStack()
+                        },
+                        onError = { errorMessage ->
+                            // Можно добавить отображение ошибки (Snackbar, Toast и т.д.)
+                            println("Ошибка сохранения: $errorMessage")
+                        }
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 20.dp)
                     .height(56.dp),
-                enabled = true
+                enabled = !saveInProgress
             ) {
                 Text(
-                    "Сохранить",
+                    if (saveInProgress) "Сохранение..." else "Сохранить",
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
