@@ -19,10 +19,9 @@ fun UserEntity.toUser(): User {
 @OptIn(ExperimentalUuidApi::class)
 fun User.toEntity(): UserEntity {
     return UserEntity(
-        id = id.ifEmpty { Uuid.random().toString() },
+        id = id,
         email = email,
         username = username,
         privileges = privileges
     )
 }
-

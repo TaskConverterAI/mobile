@@ -1,12 +1,13 @@
 package org.example.project.data.database.mappers
 
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 import org.example.project.data.commonData.Group
 import org.example.project.data.database.entities.GroupEntity
 import org.example.project.data.database.entities.GroupWithUsers
+import kotlin.time.ExperimentalTime
 
 // Convert GroupEntity to Group (без пользователей)
+@OptIn(ExperimentalTime::class)
 fun GroupEntity.toGroup(): Group {
     return Group(
         id = id,
@@ -14,7 +15,7 @@ fun GroupEntity.toGroup(): Group {
         description = description,
         ownerId = ownerId,
         memberCount = memberCount,
-        members = mutableListOf(),  // Пользователи не загружены
+        members = mutableListOf(),
         createdAt = createdAt,
         taskCount = taskCount
     )
@@ -38,7 +39,7 @@ fun GroupWithUsers.toGroup(): Group {
 @OptIn(ExperimentalUuidApi::class)
 fun Group.toEntity(): GroupEntity {
     return GroupEntity(
-        id = id.ifEmpty { Uuid.random().toString() },
+        id = id,
         name = name,
         description = description,
         ownerId = ownerId,
@@ -47,4 +48,3 @@ fun Group.toEntity(): GroupEntity {
         taskCount = taskCount
     )
 }
-

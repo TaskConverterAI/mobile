@@ -4,6 +4,9 @@ import android.util.Log
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.first
+import org.example.project.model.DecodeAccessTokenRequest
+import org.example.project.model.InvalidateSessionRequest
+import org.example.project.model.RefreshAccessTokenRequest
 import org.example.project.model.SignInUserRequest
 import org.example.project.model.SignUpUserRequest
 import org.example.project.network.AuthApiService
@@ -14,7 +17,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class NetworkAuthRepository(
     private val userAuthPreferencesRepository: UserAuthPreferencesRepository
 ): AuthRepository {
-    private val baseAuthUrl = "http://192.168.31.79:8090/"
+    private val baseAuthUrl = "http://192.168.1.102:8090/"
     private val authRetrofit: Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl(baseAuthUrl)
@@ -81,5 +84,48 @@ class NetworkAuthRepository(
     override suspend fun getUserId(): String {
         Log.i("MY_APP_TAG", userAuthPreferencesRepository.userId.first())
         return userAuthPreferencesRepository.userId.first()
+    }
+
+    override suspend fun refresh(): Boolean {
+        return try {
+            val token = userAuthPreferencesRepository.refreshToken.first()
+
+            Log.d("TOKEN", token)
+
+            val response = authApiService.refresh(RefreshAccessTokenRequest(token))
+
+            if (response.isSuccessful) {
+                userAuthPreferencesRepository.saveAccessToken(response.body()!!.accessToken)
+                true
+            } else {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    override suspend fun decode(): Pair<Long, String>? {
+        return try {
+            val response = authApiService.decode(DecodeAccessTokenRequest(userAuthPreferencesRepository.accessToken.first()))
+
+            if (response.isSuccessful) {
+                Pair(response.body()!!.userId, response.body()!!.role)
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override suspend fun logout(userId: Long): Boolean {
+        return try {
+            val response = authApiService.logout(InvalidateSessionRequest(userId))
+
+            response.isSuccessful
+        } catch (_: Exception) {
+            false
+        }
     }
 }

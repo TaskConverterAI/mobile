@@ -2,7 +2,10 @@ package org.example.project.ui.screens.groupsScreen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -15,16 +18,30 @@ import org.example.project.ui.screens.groupsScreen.conditionScreens.MainScreenWi
 
 @Composable
 fun GroupsScreen(navController: NavController, viewModel: GroupsViewModel) {
+    // Загружаем группы при отображении экрана
+    LaunchedEffect(Unit) {
+        viewModel.loadGroups()
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         val listState by viewModel.listUi.collectAsState()
 
-        if (listState.isEmptyList) {
-            EmptyScreen()
-        } else {
-            MainScreenWithGroups(navController, viewModel)
+        when {
+            listState.isLoading -> {
+                CircularProgressIndicator()
+            }
+            listState.error != null -> {
+                Text("Ошибка: ${listState.error}")
+            }
+            listState.isEmptyList -> {
+                EmptyScreen()
+            }
+            else -> {
+                MainScreenWithGroups(navController, viewModel)
+            }
         }
 
     }

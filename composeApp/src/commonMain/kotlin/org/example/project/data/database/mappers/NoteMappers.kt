@@ -9,13 +9,13 @@ import org.example.project.data.database.entities.NoteEntity
 import org.example.project.data.database.entities.NoteWithTasks
 
 // Convert Note to NoteEntity (только для вставки/обновления)
-fun Note.toEntity(id: Long = 0, groupId: String? = null): NoteEntity {
+fun Note.toEntity(): NoteEntity {
     return NoteEntity(
         id = id,
         title = title,
         content = content,
         geotag = geotag,
-        groupId = groupId,  // Используем переданный groupId
+        groupId = null,
         colorArgb = color.value.toLong(),
         creationDate = creationDate,
         contentMaxLines = contentMaxLines
@@ -29,16 +29,7 @@ fun NoteWithTasks.toNote(comments: List<Comment> = emptyList()): Note {
         title = note.title,
         content = note.content,
         geotag = note.geotag,
-        group = group?.toGroup() ?: Group(
-            id = "",
-            name = "Без группы",
-            description = "",
-            ownerId = "",
-            memberCount = 0,
-            members = mutableListOf(),
-            createdAt = "",
-            taskCount = 0
-        ),
+        group = null,
         comments = comments,
         color = Color(note.colorArgb.toULong()),
         creationDate = note.creationDate,

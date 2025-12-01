@@ -18,7 +18,7 @@ interface UserDao {
     suspend fun delete(user: UserEntity)
 
     @Query("SELECT * FROM users WHERE id = :id")
-    suspend fun getById(id: String): UserEntity?
+    suspend fun getById(id: Long): UserEntity?
 
     @Query("SELECT * FROM users WHERE email = :email")
     suspend fun getByEmail(email: String): UserEntity?
@@ -29,7 +29,7 @@ interface UserDao {
     // Получение пользователя со всеми его группами
     @Transaction
     @Query("SELECT * FROM users WHERE id = :userId")
-    suspend fun getUserWithGroups(userId: String): UserWithGroups?
+    suspend fun getUserWithGroups(userId: Long): UserWithGroups?
 
     @Transaction
     @Query("SELECT * FROM users")

@@ -66,9 +66,9 @@ import org.example.project.ui.viewComponents.taskScreenComponents.InProgressStat
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
 
 @Serializable
-data class DetailTaskScreenArgs(val taskID: String?, val isEditMode: Boolean = false)
+data class DetailTaskScreenArgs(val taskID: Long?, val isEditMode: Boolean = false)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun DetailTaskScreen(
     task: Task?,
@@ -82,20 +82,20 @@ fun DetailTaskScreen(
     // Default values for new tasks
     val defaultGroup = remember {
         availableGroups.firstOrNull() ?: Group(
-            id = "",
+            id = 0,
             name = "Без группы",
             description = "",
-            ownerId = "",
+            ownerId = 0,
             memberCount = 0,
             members = mutableListOf(),
-            createdAt = "",
+            createdAt = 0,
             taskCount = 0
         )
     }
 
     val defaultUser = remember {
         availableUsers.firstOrNull() ?: User(
-            id = "",
+            id = 0,
             email = "Не назначен",
             username = "Не назначен",
             privileges = org.example.project.data.commonData.Privileges.member
@@ -121,10 +121,10 @@ fun DetailTaskScreen(
         if (task != null) {
             editableTitle = task.title
             editableDescription = task.description
-            editableGeotag = task.geotag
-            editableGroup = task.group
-            editableAssignee = task.assignee
-            editableDueDate = task.dueDate
+            editableGeotag = task.geotag ?: ""
+            editableGroup = task.group ?: defaultGroup
+            editableAssignee = task.assignee ?: defaultUser
+            editableDueDate = task.dueDate ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
             editablePriority = task.priority
             editableStatus = task.status
         }
@@ -170,7 +170,7 @@ fun DetailTaskScreen(
                         Button(
                             onClick = {
                                 val updatedTask = Task(
-                                    id = task?.id ?: "",
+                                    id = task?.id ?: 0L,
                                     title = editableTitle,
                                     description = editableDescription,
                                     comments = task?.comments ?: emptyList(),
@@ -211,10 +211,10 @@ fun DetailTaskScreen(
                                     // Reset changes
                                     editableTitle = task.title
                                     editableDescription = task.description
-                                    editableGeotag = task.geotag
-                                    editableGroup = task.group
-                                    editableAssignee = task.assignee
-                                    editableDueDate = task.dueDate
+                                    editableGeotag = task.geotag ?: ""
+                                    editableGroup = task.group ?: defaultGroup
+                                    editableAssignee = task.assignee ?: defaultUser
+                                    editableDueDate = task.dueDate ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
                                     editablePriority = task.priority
                                     editableStatus = task.status
                                     isInEditMode = false

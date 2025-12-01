@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -47,6 +48,8 @@ kotlin {
             implementation(libs.java.jwt)
         }
         commonMain.dependencies {
+            implementation(libs.kermit)
+
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

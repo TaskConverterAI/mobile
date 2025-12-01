@@ -43,6 +43,8 @@ import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailGro
 import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailedGroupViewModel
 import org.example.project.ui.screens.groupsScreen.GroupsScreen
 import org.example.project.ui.screens.groupsScreen.conditionScreens.GroupsViewModel
+import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupScreen
+import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupViewModel
 import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
@@ -100,23 +102,13 @@ fun ChooseCreateDialog(
         }
 
         Destination.TASKS.route -> {
-            TaskCreateDialog(
-                onDismiss = onDismiss,
-                onConfirm = { route ->
-                    onDismiss()
-                    if (route == "create_manual_task") {
-                        navController.navigate(DetailTaskScreenArgs(taskID = null, isEditMode = true))
-                    } else {
-                        navController.navigate(route)
-                    }
-                },
-                navController = navController
-            )
+            onDismiss()
+            navController.navigate(DetailTaskScreenArgs(taskID = null, isEditMode = true))
         }
 
         Destination.GROUPS.route -> {
-            // Show create group dialog
             onDismiss()
+            navController.navigate("create_group")
         }
 
         else -> {
@@ -176,8 +168,8 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-//            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
-            startDestination = Destination.NOTES.route
+            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
+//            startDestination = Destination.NOTES.route
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
@@ -325,7 +317,7 @@ fun TaskConvertAIApp(
                     availableGroups = emptyList(),
                     availableUsers = emptyList(),
                     onSave = { updatedTask ->
-                        if (updatedTask.id.isEmpty() || taskID == null) {
+                        if (updatedTask.id == 0L || taskID == null) {
                             // Создание новой задачи
                             viewModelTasks.addTask(updatedTask)
                         } else {
@@ -339,6 +331,13 @@ fun TaskConvertAIApp(
                 )
             }
 
+            composable("create_group") {
+                CreateGroupScreen(
+                    navController = navController,
+                    viewModel = viewModel(factory = CreateGroupViewModel.Factory)
+                )
+            }
+
             composable<DetailGroupScreenArgs> { currentBackStackEntry ->
                 val detailGroupScreenArgs: DetailGroupScreenArgs = currentBackStackEntry.toRoute()
 
@@ -347,6 +346,7 @@ fun TaskConvertAIApp(
                 groupVM.setGroup(groupName)
                 DetailGroupScreen(groupVM, navController)
             }
+
         }
     }
 }

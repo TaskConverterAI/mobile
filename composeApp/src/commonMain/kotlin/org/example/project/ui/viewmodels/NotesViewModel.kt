@@ -73,7 +73,7 @@ class NotesViewModel(
     fun updateNote(noteId: Long, note: Note) {
         viewModelScope.launch {
             try {
-                noteRepository.updateNote(noteId, note)
+                noteRepository.updateNote(note)
             } catch (e: Exception) {
                 _error.value = e.message
             }
@@ -113,7 +113,7 @@ class NotesViewModel(
      * Загрузить заметки конкретной группы
      * @param groupId - ID группы
      */
-    fun getNotesByGroup(groupId: String) {
+    fun getNotesByGroup(groupId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
             noteRepository.getNotesByGroup(groupId)

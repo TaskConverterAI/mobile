@@ -157,7 +157,7 @@ class NoteSyncManager(
                 val existingNote = noteRepository.getNoteById(noteDto.id)
                 if (existingNote != null) {
                     // Обновляем существующую заметку
-                    noteRepository.updateNote(noteDto.id, note)
+                    noteRepository.updateNote(note)
                 } else {
                     // Создаём новую заметку (сервер вернул заметку, которой нет локально)
                     noteRepository.insertNote(note)
@@ -182,7 +182,7 @@ class NoteSyncManager(
                     val existingNote = noteRepository.getNoteById(noteId)
 
                     if (existingNote != null) {
-                        noteRepository.updateNote(noteId, note)
+                        noteRepository.updateNote(note)
                     } else {
                         noteRepository.insertNote(note)
                     }

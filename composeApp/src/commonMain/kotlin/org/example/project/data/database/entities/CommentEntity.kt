@@ -27,7 +27,7 @@ data class CommentEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val noteId: Long? = null,
-    val taskId: String? = null,
+    val taskId: Long? = null,
     val author: String,
     val content: String,
     val timestamp: Long

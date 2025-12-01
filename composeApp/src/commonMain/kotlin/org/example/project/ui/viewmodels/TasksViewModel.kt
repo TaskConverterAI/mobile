@@ -72,7 +72,7 @@ class TasksViewModel(
      * @param taskId - ID задачи для обновления
      * @param task - обновлённые данные задачи
      */
-    fun updateTask(taskId: String, task: Task) {
+    fun updateTask(taskId: Long, task: Task) {
         viewModelScope.launch {
             try {
                 taskRepository.updateTask(taskId, task)
@@ -86,7 +86,7 @@ class TasksViewModel(
      * Удалить задачу
      * @param taskId - ID задачи для удаления
      */
-    fun deleteTask(taskId: String) {
+    fun deleteTask(taskId: Long) {
         viewModelScope.launch {
             try {
                 taskRepository.deleteTask(taskId)
@@ -101,7 +101,7 @@ class TasksViewModel(
      * @param taskId - ID задачи
      * @param comment - комментарий для добавления
      */
-    fun addCommentToTask(taskId: String, comment: Comment) {
+    fun addCommentToTask(taskId: Long, comment: Comment) {
         viewModelScope.launch {
             try {
                 taskRepository.addCommentToTask(taskId, comment)
@@ -116,7 +116,7 @@ class TasksViewModel(
      * @param taskId - ID задачи
      * @return Task с полными деталями (группа, исполнитель, заметка, комментарии)
      */
-    suspend fun getTaskById(taskId: String): Task? {
+    suspend fun getTaskById(taskId: Long): Task? {
         return try {
             taskRepository.getTaskById(taskId)
         } catch (e: Exception) {
@@ -129,7 +129,7 @@ class TasksViewModel(
      * Загрузить задачи конкретной группы
      * @param groupId - ID группы
      */
-    fun getTasksByGroup(groupId: String) {
+    fun getTasksByGroup(groupId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
             taskRepository.getTasksByGroup(groupId)
@@ -148,7 +148,7 @@ class TasksViewModel(
      * Загрузить задачи конкретного исполнителя
      * @param assigneeId - ID пользователя (исполнителя)
      */
-    fun getTasksByAssignee(assigneeId: String) {
+    fun getTasksByAssignee(assigneeId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
             taskRepository.getTasksByAssignee(assigneeId)
@@ -233,7 +233,7 @@ class TasksViewModel(
     fun insertSampleData() {
         viewModelScope.launch {
             try {
-                taskRepository.insertSampleData()
+//                taskRepository.insertSampleData()
                 println("TasksViewModel: Sample data inserted successfully")
             } catch (e: Exception) {
                 _error.value = "Ошибка при добавлении тестовых данных: ${e.message}"

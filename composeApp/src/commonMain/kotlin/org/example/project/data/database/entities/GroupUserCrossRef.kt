@@ -30,7 +30,7 @@ import androidx.room.Index
     ]
 )
 data class GroupUserCrossRef(
-    val groupId: String,
-    val userId: String
+    val groupId: Long,
+    val userId: Long
 )
 

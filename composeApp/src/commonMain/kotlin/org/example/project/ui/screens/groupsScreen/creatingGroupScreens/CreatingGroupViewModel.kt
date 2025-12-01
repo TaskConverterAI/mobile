@@ -1,11 +1,19 @@
 package org.example.project.ui.screens.groupsScreen.creatingGroupScreens
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.example.project.AppDependencies
+import org.example.project.data.database.repository.GroupRepository
+import org.example.project.data.commonData.Group
+import org.example.project.data.commonData.User
 
 data class CreateGroupUiState(
     val groupName: String = "",
@@ -16,7 +24,9 @@ data class CreateGroupUiState(
     val emailError: String? = null
 )
 
-class CreateGroupViewModel : ViewModel() {
+class CreateGroupViewModel(
+    private val groupRepository: GroupRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateGroupUiState())
     val uiState: StateFlow<CreateGroupUiState> = _uiState
@@ -72,9 +82,27 @@ class CreateGroupViewModel : ViewModel() {
     fun createGroup(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             // TODO: логика создания группы
-            onComplete()
+            try {
+                Logger.d {"Creating group: ${uiState.value.groupName}"}
+
+                val userMembers:  MutableList<User> = mutableListOf()
+
+                onComplete()
+            } catch (e: Exception) {
+                Logger.e(e) { "Failed to create group" }
+            }
         }
     }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val groupRepository = AppDependencies.container.groupRepository
+                CreateGroupViewModel(groupRepository = groupRepository)
+            }
+        }
+    }
+
 }
 
 fun isValidEmail(email: String): Boolean {

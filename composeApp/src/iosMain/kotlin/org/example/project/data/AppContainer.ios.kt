@@ -23,6 +23,17 @@ actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferenc
             TODO("Not yet implemented")
         }
 
+        override suspend fun decode(): Pair<Long, String>? {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun logout(userId: Long): Boolean {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun refresh(): Boolean {
+            TODO("Not yet implemented")
+        }
     }
 }
 

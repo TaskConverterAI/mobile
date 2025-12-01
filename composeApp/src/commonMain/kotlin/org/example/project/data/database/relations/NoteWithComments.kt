@@ -13,4 +13,3 @@ data class NoteWithComments(
     )
     val comments: List<CommentEntity>
 )
-

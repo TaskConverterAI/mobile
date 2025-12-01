@@ -13,14 +13,14 @@ enum class Status {
 }
 
 data class Task(
-    val id: String = "",
+    val id: Long,
     val title: String,
     val description: String,
     val comments: List<Comment>,
-    val group: Group,
-    val assignee: User,
-    val dueDate: Long,
-    val geotag: String,
+    val group: Group?,
+    val assignee: User?,
+    val dueDate: Long?,
+    val geotag: String?,
     val priority: Priority,
     val status: Status
 )

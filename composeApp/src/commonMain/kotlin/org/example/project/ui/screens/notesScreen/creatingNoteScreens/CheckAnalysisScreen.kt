@@ -100,14 +100,7 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                 title = "Заметка",
                 content = uiData.summary,
                 geotag = "office",
-                group = Group(
-                    id = "work",
-                    name = "Work",
-                    description = "",
-                    ownerId = "",
-                    memberCount = 0,
-                    createdAt = ""
-                ),
+                group = null,
                 comments = emptyList(),
                 color = PrimaryBase,
                 contentMaxLines = 5,
@@ -134,24 +127,13 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                             title = taskCell.task.title,
                             description = taskCell.task.description,
                             comments = emptyList(),
-                            group = Group(
-                                id = "standard",
-                                name = "Standard",
-                                description = "",
-                                ownerId = "",
-                                memberCount = 0,
-                                createdAt = ""
-                            ),
-                            assignee = User(
-                                id = taskCell.task.assignee ?: "",
-                                email = "",
-                                username = taskCell.task.assignee ?: "",
-                                privileges = Privileges.member
-                            ),
-                            dueDate = 0,
+                            group = null,
+                            assignee = null,
+                            dueDate = kotlin.time.Clock.System.now().toEpochMilliseconds(),
                             geotag = "empty",
                             priority = Priority.MEDIUM,
-                            status = Status.IN_PROGRESS
+                            status = Status.TODO,
+                            id = 0L
                         ),
                         isEnabled = taskCell.isUsed,
                         onEnabledChange = { newValue ->

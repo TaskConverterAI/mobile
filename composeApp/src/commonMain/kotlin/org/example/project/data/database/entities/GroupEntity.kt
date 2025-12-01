@@ -5,12 +5,12 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "groups")
 data class GroupEntity (
-    @PrimaryKey
-    val id: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
     val name: String,
     val description: String,
-    val ownerId: String,
+    val ownerId: Long,
     val memberCount: Int,
-    val createdAt: String,
+    val createdAt: Long,
     val taskCount: Int = 0
 )

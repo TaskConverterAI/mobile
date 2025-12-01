@@ -36,15 +36,15 @@ import org.example.project.data.commonData.Status
     ]
 )
 data class TaskEntity(
-    @PrimaryKey
-    val id: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
     val title: String,
     val description: String,
-    val groupId: String? = null,  // Ссылка на группу (может быть null)
-    val assigneeId: String? = null,  // Ссылка на исполнителя (может быть null)
-    val noteId: Long? = null,  // Ссылка на заметку (может быть null)
-    val dueDate: Long,
-    val geotag: String,
+    val groupId: Long? = null,
+    val assigneeId: Long? = null,
+    val noteId: Long? = null,
+    val dueDate: Long? = null,
+    val geotag: String? = null,
     val priority: Priority,
     val status: Status
 )

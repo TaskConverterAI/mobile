@@ -36,7 +36,6 @@ class NoteRepository(
     fun getAllNotes(): Flow<List<Note>> {
         return noteDao.getAllNotesWithTasks().map { notesWithTasks ->
             notesWithTasks.map { noteWithTasks ->
-                // Получаем комментарии для каждой заметки
                 val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
                     .map { it.toComment() }
                 noteWithTasks.toNote(comments)
@@ -56,7 +55,7 @@ class NoteRepository(
     /**
      * Получить заметки по группе
      */
-    fun getNotesByGroup(groupId: String): Flow<List<Note>> {
+    fun getNotesByGroup(groupId: Long): Flow<List<Note>> {
         return noteDao.getNotesByGroupWithTasks(groupId).map { notesWithTasks ->
             notesWithTasks.map { noteWithTasks ->
                 val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
@@ -72,14 +71,9 @@ class NoteRepository(
      * @return ID новой заметки
      */
     suspend fun insertNote(note: Note): Long {
-        // Найти или создать группу
-        val groupId = findOrCreateGroup(note.group)
-
-        // Вставить заметку с groupId
-        val noteEntity = note.toEntity(groupId = groupId)
+        val noteEntity = note.toEntity()
         val noteId = noteDao.insertNote(noteEntity)
 
-        // Вставить комментарии
         note.comments.forEach { comment ->
             noteDao.insertComment(comment.toNoteCommentEntity(noteId))
         }
@@ -90,12 +84,8 @@ class NoteRepository(
     /**
      * Обновить заметку
      */
-    suspend fun updateNote(noteId: Long, note: Note) {
-        // Найти или создать группу
-        val groupId = findOrCreateGroup(note.group)
-
-        // Обновить заметку с новым groupId
-        val noteEntity = note.toEntity(id = noteId, groupId = groupId)
+    suspend fun updateNote(note: Note) {
+        val noteEntity = note.toEntity()
         noteDao.updateNote(noteEntity)
     }
 
@@ -120,38 +110,38 @@ class NoteRepository(
         return noteDao.getCommentsForNote(noteId).map { it.toComment() }
     }
 
-    /**
-     * Найти группу по имени или создать новую
-     * @return ID группы
-     */
-    private suspend fun findOrCreateGroup(group: org.example.project.data.commonData.Group): String? {
-        // Если группа дефолтная
-        if (group.name == "Без группы" || group.id.isEmpty() && group.name.isEmpty()) {
-            return null
-        }
-
-        // Если у группы уже есть ID, используем его
-        if (group.id.isNotEmpty()) {
-            return group.id
-        }
-
-        // Ищем группу по имени
-        val allGroups = groupDao.getAllGroups()
-        var groupId: String? = null
-
-        allGroups.collect { groups ->
-            groupId = groups.find { it.name == group.name }?.id
-        }
-
-        // Если группа не найдена, создаём новую
-        if (groupId == null) {
-            val newGroup = group.toEntity()
-            groupDao.insert(newGroup)
-            groupId = newGroup.id
-        }
-
-        return groupId
-    }
+//    /**
+//     * Найти группу по имени или создать новую
+//     * @return ID группы
+//     */
+//    private suspend fun findOrCreateGroup(group: org.example.project.data.commonData.Group): String? {
+//        // Если группа дефолтная
+//        if (group.name == "Без группы" || group.id.isEmpty() && group.name.isEmpty()) {
+//            return null
+//        }
+//
+//        // Если у группы уже есть ID, используем его
+//        if (group.id.isNotEmpty()) {
+//            return group.id
+//        }
+//
+//        // Ищем группу по имени
+//        val allGroups = groupDao.getAllGroups()
+//        var groupId: String? = null
+//
+//        allGroups.collect { groups ->
+//            groupId = groups.find { it.name == group.name }?.id
+//        }
+//
+//        // Если группа не найдена, создаём новую
+//        if (groupId == null) {
+//            val newGroup = group.toEntity()
+//            groupDao.insert(newGroup)
+//            groupId = newGroup.id
+//        }
+//
+//        return groupId
+//    }
 
     // ==================== Методы синхронизации ====================
 
@@ -199,7 +189,7 @@ class NoteRepository(
      * Обновить заметку и сразу синхронизировать с сервером
      */
     suspend fun updateNoteAndSync(noteId: Long, note: Note) {
-        updateNote(noteId, note)
+        updateNote(note)
         syncManager?.pushNoteToServer(noteId)
     }
 

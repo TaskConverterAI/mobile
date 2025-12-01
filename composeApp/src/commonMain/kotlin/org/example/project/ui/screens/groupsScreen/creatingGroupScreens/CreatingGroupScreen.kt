@@ -17,11 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import org.example.project.ui.theme.LightGray
-import org.example.project.ui.theme.TaskConvertAIAppTheme
 import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersList
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -193,22 +190,22 @@ private fun AddParticipantDialog(state: CreateGroupUiState, viewModel: CreateGro
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun CreateGroupScreenPreview() {
-    val vm = CreateGroupViewModel()
-
-    vm.onGroupNameChange("Work Group")
-    vm.onDescriptionChange("пара слов о группе")
-    vm.onNewEmailChange("test@gmail.com")
-    vm.addParticipant()
-    vm.onNewEmailChange("user2@gmail.com")
-    vm.addParticipant()
-
-    TaskConvertAIAppTheme {
-        CreateGroupScreen(
-            navController = rememberNavController(),
-            viewModel = vm
-        )
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun CreateGroupScreenPreview() {
+//    val vm = CreateGroupViewModel()
+//
+//    vm.onGroupNameChange("Work Group")
+//    vm.onDescriptionChange("пара слов о группе")
+//    vm.onNewEmailChange("test@gmail.com")
+//    vm.addParticipant()
+//    vm.onNewEmailChange("user2@gmail.com")
+//    vm.addParticipant()
+//
+//    TaskConvertAIAppTheme {
+//        CreateGroupScreen(
+//            navController = rememberNavController(),
+//            viewModel = vm
+//        )
+//    }
+//}

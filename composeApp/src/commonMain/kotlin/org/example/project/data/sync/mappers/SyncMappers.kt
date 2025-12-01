@@ -15,15 +15,14 @@ import org.example.project.data.network.models.NoteDto
  */
 @OptIn(ExperimentalTime::class)
 fun Note.toDto(): NoteDto {
-    val groupIdStr: String = this.group.id
     return NoteDto(
         id = if (this.id == 0L) null else this.id,
         title = this.title,
         content = this.content,
-        geotag = this.geotag,
-        groupId = groupIdStr.ifEmpty { null },
-        groupName = this.group.name,
-        groupDescription = this.group.description,
+        geotag = this.geotag ?: "",
+        groupId = "",
+        groupName = this.group?.name,
+        groupDescription = this.group?.description,
         colorArgb = this.color.toArgb().toLong(),
         creationDate = this.creationDate,
         contentMaxLines = this.contentMaxLines,
@@ -37,20 +36,19 @@ fun Note.toDto(): NoteDto {
  * Конвертация NoteDto в Note для сохранения локально
  */
 fun NoteDto.toNote(): Note {
-    val groupIdOrEmpty: String = this.groupId ?: ""
     return Note(
         id = this.id ?: 0L,
         title = this.title,
         content = this.content,
         geotag = this.geotag,
         group = Group(
-            id = groupIdOrEmpty,
+            id = 0,
             name = this.groupName ?: "Без группы",
             description = this.groupDescription ?: "",
-            ownerId = "",
+            ownerId = 0,
             memberCount = 0,
             members = mutableListOf(),
-            createdAt = "",
+            createdAt = 0,
             taskCount = 0
         ),
         comments = this.comments.map { it.toComment() },

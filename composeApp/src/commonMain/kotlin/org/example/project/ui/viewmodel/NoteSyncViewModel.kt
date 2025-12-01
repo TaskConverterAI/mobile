@@ -115,7 +115,7 @@ class NoteSyncViewModel(
     fun updateNoteLocally(noteId: Long, note: Note) {
         viewModelScope.launch {
             try {
-                noteRepository.updateNote(noteId, note)
+                noteRepository.updateNote(note)
                 _errorMessage.value = null
             } catch (e: Exception) {
                 _errorMessage.value = "Ошибка обновления заметки: ${e.message}"

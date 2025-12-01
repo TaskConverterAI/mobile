@@ -186,3 +186,89 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("DROP TABLE IF EXISTS comments")
+        connection.execSQL("DROP TABLE IF EXISTS group_user_cross_ref")
+        connection.execSQL("DROP TABLE IF EXISTS tasks")
+        connection.execSQL("DROP TABLE IF EXISTS notes")
+        connection.execSQL("DROP TABLE IF EXISTS groups")
+        connection.execSQL("DROP TABLE IF EXISTS users")
+
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                ownerId INTEGER NOT NULL,
+                memberCount INTEGER NOT NULL,
+                createdAt INTEGER NOT NULL,
+                taskCount INTEGER NOT NULL
+            )
+        """.trimIndent())
+
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                email TEXT NOT NULL,
+                username TEXT NOT NULL,
+                privileges TEXT NOT NULL
+            )
+        """.trimIndent())
+
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS group_user_cross_ref (
+                groupId INTEGER NOT NULL,
+                userId INTEGER NOT NULL,
+                PRIMARY KEY (groupId, userId),
+                FOREIGN KEY (groupId) REFERENCES groups(id) ON DELETE CASCADE,
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                geotag TEXT,
+                groupId INTEGER,
+                colorArgb INTEGER NOT NULL,
+                creationDate INTEGER NOT NULL,
+                contentMaxLines INTEGER NOT NULL,
+                FOREIGN KEY (groupId) REFERENCES groups(id) ON DELETE SET NULL
+            )
+        """.trimIndent())
+
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                groupId INTEGER,
+                assigneeId INTEGER,
+                noteId INTEGER,
+                dueDate INTEGER,
+                geotag TEXT,
+                priority TEXT NOT NULL,
+                status TEXT NOT NULL,
+                FOREIGN KEY (groupId) REFERENCES groups(id) ON DELETE SET NULL,
+                FOREIGN KEY (assigneeId) REFERENCES users(id) ON DELETE SET NULL,
+                FOREIGN KEY (noteId) REFERENCES notes(id) ON DELETE SET NULL
+            )
+        """.trimIndent())
+
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                noteId INTEGER,
+                taskId INTEGER,
+                author TEXT NOT NULL,
+                content TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                FOREIGN KEY (noteId) REFERENCES notes(id) ON DELETE CASCADE,
+                FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+    }
+}

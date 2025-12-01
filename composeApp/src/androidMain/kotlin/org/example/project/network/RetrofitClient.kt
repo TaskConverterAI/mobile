@@ -14,8 +14,7 @@ import java.util.concurrent.TimeUnit
  * Фабрика для создания Retrofit клиента и API сервисов
  */
 object RetrofitClient {
-    // TODO: Замените на URL вашего сервера
-    private const val BASE_URL = "http://192.168.31.79:8090/api/"
+    private const val BASE_URL = "http://192.168.1.102:8090/"
 
     private val gson = GsonBuilder()
         .setLenient()

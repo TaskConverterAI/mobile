@@ -12,19 +12,14 @@ import org.example.project.data.database.entities.TaskWithDetails
 
 // Convert Task to TaskEntity (только для вставки/обновления)
 @OptIn(ExperimentalUuidApi::class)
-fun Task.toEntity(
-    id: String = "",
-    groupId: String? = null,
-    assigneeId: String? = null,
-    noteId: Long? = null
-): TaskEntity {
+fun Task.toEntity(): TaskEntity {
     return TaskEntity(
-        id = id.ifEmpty { Uuid.random().toString() },
+        id = id,
         title = title,
         description = description,
-        groupId = groupId,  // Используем переданный groupId
-        assigneeId = assigneeId,  // Используем переданный assigneeId
-        noteId = noteId,  // Используем переданный noteId
+        groupId = null,
+        assigneeId = null,
+        noteId = null,
         dueDate = dueDate,
         geotag = geotag,
         priority = priority,
@@ -39,22 +34,8 @@ fun TaskWithDetails.toTask(comments: List<Comment> = emptyList()): Task {
         title = task.title,
         description = task.description,
         comments = comments,
-        group = group?.toGroup() ?: Group(
-            id = "",
-            name = "Без группы",
-            description = "",
-            ownerId = "",
-            memberCount = 0,
-            members = mutableListOf(),
-            createdAt = "",
-            taskCount = 0
-        ),
-        assignee = assignee?.toUser() ?: User(
-            id = "",
-            email = "Не назначен",
-            username = "Не назначен",
-            privileges = org.example.project.data.commonData.Privileges.member
-        ),
+        group = null,
+        assignee = null,
         dueDate = task.dueDate,
         geotag = task.geotag,
         priority = task.priority,
@@ -63,7 +44,7 @@ fun TaskWithDetails.toTask(comments: List<Comment> = emptyList()): Task {
 }
 
 // Convert Comment to CommentEntity for Task
-fun Comment.toTaskCommentEntity(taskId: String): CommentEntity {
+fun Comment.toTaskCommentEntity(taskId: Long): CommentEntity {
     return CommentEntity(
         id = id,
         taskId = taskId,
@@ -72,4 +53,3 @@ fun Comment.toTaskCommentEntity(taskId: String): CommentEntity {
         timestamp = timestamp
     )
 }
-

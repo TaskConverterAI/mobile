@@ -21,7 +21,7 @@ interface GroupDao {
     suspend fun delete(group: GroupEntity)
 
     @Query("SELECT * FROM `groups` WHERE id = :id")
-    suspend fun getById(id: String): GroupEntity?
+    suspend fun getById(id: Long): GroupEntity?
 
     @Query("SELECT * FROM `groups`")
     fun getAllGroups(): Flow<List<GroupEntity>>
@@ -34,15 +34,15 @@ interface GroupDao {
     suspend fun deleteGroupUserCrossRef(crossRef: GroupUserCrossRef)
 
     @Query("DELETE FROM group_user_cross_ref WHERE groupId = :groupId")
-    suspend fun deleteAllUsersFromGroup(groupId: String)
+    suspend fun deleteAllUsersFromGroup(groupId: Long)
 
     @Query("DELETE FROM group_user_cross_ref WHERE userId = :userId")
-    suspend fun deleteUserFromAllGroups(userId: String)
+    suspend fun deleteUserFromAllGroups(userId: Long)
 
     // Получение группы со всеми пользователями
     @Transaction
     @Query("SELECT * FROM `groups` WHERE id = :groupId")
-    suspend fun getGroupWithUsers(groupId: String): GroupWithUsers?
+    suspend fun getGroupWithUsers(groupId: Long): GroupWithUsers?
 
     @Transaction
     @Query("SELECT * FROM `groups`")
@@ -51,7 +51,7 @@ interface GroupDao {
     // Получение группы со всеми заметками
     @Transaction
     @Query("SELECT * FROM `groups` WHERE id = :groupId")
-    suspend fun getGroupWithNotes(groupId: String): GroupWithNotes?
+    suspend fun getGroupWithNotes(groupId: Long): GroupWithNotes?
 
     @Transaction
     @Query("SELECT * FROM `groups`")

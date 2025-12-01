@@ -62,7 +62,7 @@ import org.example.project.ui.theme.DarkGray
 @Serializable
 data class DetailNoteScreenArgs(val noteID: Int?, val isEditMode: Boolean = false)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun DetailNoteScreen(
     note: Note?,
@@ -75,13 +75,13 @@ fun DetailNoteScreen(
     // Default group для новых заметок
     val defaultGroup = remember {
         availableGroups.firstOrNull() ?: Group(
-            id = "",
+            id = 0L,
             name = "Без группы",
             description = "",
-            ownerId = "",
+            ownerId = 0L,
             memberCount = 0,
             members = mutableListOf(),
-            createdAt = "",
+            createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
             taskCount = 0
         )
     }
@@ -89,8 +89,8 @@ fun DetailNoteScreen(
     // Состояния для редактируемых полей
     var editableTitle by remember { mutableStateOf("") }
     var editableContent by remember { mutableStateOf("") }
-    var editableGeotag by remember { mutableStateOf("") }
-    var editableGroup by remember { mutableStateOf(defaultGroup) }
+    var editableGeotag: String? by remember { mutableStateOf("") }
+    var editableGroup: Group? by remember { mutableStateOf(defaultGroup) }
     var editableColor by remember { mutableStateOf(PrimaryBase) }
 
     // Инициализируем isNewNote на основе параметра isEditMode, если он true и note == null
@@ -266,13 +266,15 @@ fun DetailNoteScreen(
 
             // Геометка
             if (isInEditMode) {
-                OutlinedTextField(
-                    value = editableGeotag,
-                    onValueChange = { editableGeotag = it },
-                    label = { Text("Геометка") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                editableGeotag?.let { it1 ->
+                    OutlinedTextField(
+                        value = it1,
+                        onValueChange = { editableGeotag = it },
+                        label = { Text("Геометка") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -280,11 +282,13 @@ fun DetailNoteScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        editableGeotag,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
+                    editableGeotag?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -296,7 +300,7 @@ fun DetailNoteScreen(
 
                 Box {
                     OutlinedTextField(
-                        value = editableGroup.name,
+                        value = editableGroup?.name ?: "None",
                         onValueChange = { },
                         label = { Text("Группа") },
                         modifier = Modifier.fillMaxWidth(),
@@ -342,7 +346,7 @@ fun DetailNoteScreen(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        editableGroup.name,
+                        editableGroup?.name ?: "None",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
