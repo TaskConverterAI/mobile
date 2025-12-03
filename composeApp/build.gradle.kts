@@ -44,7 +44,7 @@ kotlin {
             // FilePicker
             implementation(libs.androidx.activity.compose)
 
-            //JWT
+            // JWT
             implementation(libs.java.jwt)
         }
         commonMain.dependencies {

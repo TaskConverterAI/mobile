@@ -20,10 +20,16 @@ fun NoteCreateDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    val selectedFile = viewModel.selectedFileUri.collectAsState()
+    val uiData = viewModel.uiData.collectAsState()
     val filePicker = createFilePicker {uri -> viewModel.onFileSelected(uri)}
 
-    if (selectedFile.value != null) {
+    if (uiData.value.selectedFileUri != null) {
+        viewModel.clearFile()
+        onConfirm("tasks")
+    }
+
+    if (uiData.value.sendAudioFailed) {
+
         viewModel.clearFile()
         onConfirm("tasks")
     }
@@ -39,39 +45,49 @@ fun NoteCreateDialog(
             )
         ) {
             Spacer(modifier = Modifier.height(30.dp))
+            if (!uiData.value.startSending) {
+                Text(
+                    text = "Создай заметку",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-            Text(
-                text = "Создай заметку",
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+                Button(
+                    onClick = {
+                        filePicker.launch()
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                ) {
+                    Text("Из медиафайла", style = MaterialTheme.typography.bodyMedium)
+                }
 
-            Button(
-                onClick = {
-                    filePicker.launch()
-                          },
-                modifier = Modifier.fillMaxWidth().padding(20.dp),
-            ) {
-                Text("Из медиафайла", style = MaterialTheme.typography.bodyMedium)
+                DividerWithText(text = "или")
+
+                OutlinedButton(
+                    onClick = {
+                        // Navigate to DetailNoteScreen with null noteID to create a new note
+                        onConfirm("create_manual_note")
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Вручную", style = MaterialTheme.typography.bodyMedium)
+                }
+
+            } else{
+                Text(
+                    text = "Файл загружен на ${uiData.value.convertVideoAudioPercent}%",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             }
 
-            DividerWithText(text = "или")
-
-            OutlinedButton(
-                onClick = {
-                    // Navigate to DetailNoteScreen with null noteID to create a new note
-                    onConfirm("create_manual_note")
-                },
-                modifier = Modifier.fillMaxWidth().padding(20.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Вручную", style = MaterialTheme.typography.bodyMedium)
-            }
         }
     }
 }
