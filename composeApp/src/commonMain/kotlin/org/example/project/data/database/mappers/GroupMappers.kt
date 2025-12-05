@@ -36,7 +36,7 @@ fun GroupWithUsers.toGroup(): Group {
 }
 
 // Convert Group to GroupEntity (только для вставки/обновления)
-@OptIn(ExperimentalUuidApi::class)
+//@OptIn(ExperimentalUuidApi::class)
 fun Group.toEntity(): GroupEntity {
     return GroupEntity(
         id = id,

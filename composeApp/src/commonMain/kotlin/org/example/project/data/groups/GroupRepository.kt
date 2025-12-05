@@ -8,4 +8,5 @@ interface GroupRepository {
     suspend fun addMember(groupId: Int, memberEmail: String): Boolean
     suspend fun removeMember(groupId: Int, memberEmail: String): Boolean
     suspend fun leaveFrom(groupID: Int, accessorEmail: String): Boolean
+
 }

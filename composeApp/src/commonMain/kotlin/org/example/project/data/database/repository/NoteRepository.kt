@@ -1,16 +1,23 @@
 package org.example.project.data.database.repository
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import org.example.project.data.commonData.Comment
+import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Note
+import org.example.project.data.commonData.toAddCommentRequest
+import org.example.project.data.commonData.toComment
+import org.example.project.data.commonData.toCreateNoteRequest
+import org.example.project.data.commonData.toNote
+import org.example.project.data.commonData.toUpdateNoteRequest
 import org.example.project.data.database.AppDatabase
-import org.example.project.data.database.mappers.toComment
-import org.example.project.data.database.mappers.toEntity
-import org.example.project.data.database.mappers.toNote
-import org.example.project.data.database.mappers.toNoteCommentEntity
 import org.example.project.data.network.NoteApiService
+import org.example.project.data.network.models.AddCommentRequest
+import org.example.project.data.network.models.CreateNoteRequest
+import org.example.project.data.network.models.LocationDto
+import org.example.project.data.network.models.UpdateNoteRequest
 import org.example.project.data.sync.NoteSyncManager
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class NoteRepository(
     private val database: AppDatabase,
@@ -30,39 +37,87 @@ class NoteRepository(
         syncManager = manager
     }
 
-    /**
-     * Получить все заметки с группами и задачами
-     */
-    fun getAllNotes(): Flow<List<Note>> {
-        return noteDao.getAllNotesWithTasks().map { notesWithTasks ->
-            notesWithTasks.map { noteWithTasks ->
-                val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
-                    .map { it.toComment() }
-                noteWithTasks.toNote(comments)
-            }
+    suspend fun getGroupNoteCount(groupId: Long) : Int {
+        val result = noteApiService?.getAllGroupNotes(groupId = groupId)
+        val retVal = result?.fold(
+            onSuccess = {response -> response.size},
+            onFailure = {response -> 0}
+        )
+        if (retVal != null){
+            return retVal
         }
+
+        return 0
+    }
+    
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun getAllNotes(userId: Long): List<Note>? {
+
+        val result =  noteApiService?.getAllNotes(userId)
+        val retVal = result?.fold(
+            onSuccess = { response ->
+                response.map { noteDto -> noteDto.toNote() }
+            },
+            onFailure = { error ->
+                error.printStackTrace()
+                null
+            }
+        )
+//        return noteDao.getAllNotesWithTasks().map { notesWithTasks ->
+//            notesWithTasks.map { noteWithTasks ->
+//                val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
+//                    .map { it.toComment() }
+//                noteWithTasks.toNote(comments)
+//            }
+//        }
+        return retVal
     }
 
     /**
      * Получить заметку по ID с полными деталями
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun getNoteById(noteId: Long): Note? {
-        val noteWithTasks = noteDao.getNoteWithTasks(noteId) ?: return null
-        val comments = noteDao.getCommentsForNote(noteId).map { it.toComment() }
-        return noteWithTasks.toNote(comments)
+        val result =noteApiService?.getNoteDetails(noteId)
+        val retVal = result?.fold(
+            onSuccess = { response ->
+                response.toNote()
+            },
+            onFailure = { error ->
+                error.printStackTrace()
+                null
+            }
+        )
+//        val noteWithTasks = noteDao.getNoteWithTasks(noteId) ?: return null
+//        val comments = noteDao.getCommentsForNote(noteId).map { it.toComment() }
+//        return noteWithTasks.toNote(comments)
+        return retVal
     }
 
     /**
      * Получить заметки по группе
      */
-    fun getNotesByGroup(groupId: Long): Flow<List<Note>> {
-        return noteDao.getNotesByGroupWithTasks(groupId).map { notesWithTasks ->
-            notesWithTasks.map { noteWithTasks ->
-                val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
-                    .map { it.toComment() }
-                noteWithTasks.toNote(comments)
+    @OptIn(ExperimentalTime::class)
+    suspend fun getNotesByGroup(groupId: Long): List<Note>? {
+        val result =  noteApiService?.getAllGroupNotes(groupId)
+        val retVal = result?.fold(
+            onSuccess = { response ->
+                response.map({noteDto -> noteDto.toNote()})
+            },
+            onFailure = { error ->
+                error.printStackTrace()
+                null
             }
-        }
+        )
+//        return noteDao.getNotesByGroupWithTasks(groupId).map { notesWithTasks ->
+//            notesWithTasks.map { noteWithTasks ->
+//                val comments = noteDao.getCommentsForNote(noteWithTasks.note.id)
+//                    .map { it.toComment() }
+//                noteWithTasks.toNote(comments)
+//            }
+//        }
+        return retVal
     }
 
     /**
@@ -70,45 +125,104 @@ class NoteRepository(
      * @param note - заметка с группой (объект Group будет преобразован в groupId)
      * @return ID новой заметки
      */
-    suspend fun insertNote(note: Note): Long {
-        val noteEntity = note.toEntity()
-        val noteId = noteDao.insertNote(noteEntity)
+    @OptIn(ExperimentalTime::class)
+    suspend fun insertNote(userId: Long, note: Note): Note? {
 
-        note.comments.forEach { comment ->
-            noteDao.insertComment(comment.toNoteCommentEntity(noteId))
-        }
+        val result = noteApiService?.createNote(note.toCreateNoteRequest())
+        val retVal = result?.fold(
+            onSuccess = {response ->
+                response.toNote()
+            },
 
-        return noteId
+            onFailure = {
+                error ->
+                error.printStackTrace()
+                null
+            }
+        )
+
+//        val noteEntity = note.toEntity()
+//        val noteId = noteDao.insertNote(noteEntity)
+//
+//            // ToDo: server change
+//
+//        note.comments.forEach { comment ->
+//            noteDao.insertComment(comment.toNoteCommentEntity(noteId))
+//        }
+//
+//        return noteId
+        return retVal
     }
 
     /**
      * Обновить заметку
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun updateNote(note: Note) {
-        val noteEntity = note.toEntity()
-        noteDao.updateNote(noteEntity)
+
+
+        val result = noteApiService?.updateNote(note.id,
+            note.toUpdateNoteRequest())
+        val retVal = result?.fold(
+            onSuccess = {response ->
+                response.toNote()
+            },
+
+            onFailure = {
+                    error ->
+                error.printStackTrace()
+                null
+            }
+        )
+
+//        val noteEntity = note.toEntity()
+//        noteDao.updateNote(noteEntity)
+
     }
 
     /**
      * Удалить заметку
      */
     suspend fun deleteNote(noteId: Long) {
-        noteDao.deleteNoteById(noteId)
+        val result = noteApiService?.deleteNote(noteId)
+        //noteDao.deleteNoteById(noteId)
     }
 
     /**
      * Добавить комментарий к заметке
      */
-    suspend fun addCommentToNote(noteId: Long, comment: Comment) {
-        noteDao.insertComment(comment.toNoteCommentEntity(noteId))
+    @OptIn(ExperimentalTime::class)
+    suspend fun addCommentToNote(noteId: Long, comment: Comment) : Comment? {
+        val commentRequest = AddCommentRequest(
+            authorId = comment.author,
+            text = comment.content
+        )
+        val result = noteApiService?.addCommentToNote(noteId, comment.toAddCommentRequest())
+        val retVal = result?.fold(
+            onSuccess = {response ->
+                response.toComment()
+            },
+
+            onFailure = {
+                error ->
+                error.printStackTrace()
+                null
+            }
+        )
+        //noteDao.insertComment(comment.toNoteCommentEntity(noteId))
+        return retVal
+    }
+
+    suspend fun deleteCommentFromNote(commentId: Long) {
+        val result = noteApiService?.deleteNote(commentId)
     }
 
     /**
      * Получить комментарии для заметки
      */
-    suspend fun getCommentsForNote(noteId: Long): List<Comment> {
-        return noteDao.getCommentsForNote(noteId).map { it.toComment() }
-    }
+//    suspend fun getCommentsForNote(noteId: Long): List<Comment> {
+//        return noteDao.getCommentsForNote(noteId).map { it.toComment() }
+//    }
 
 //    /**
 //     * Найти группу по имени или создать новую
@@ -179,11 +293,11 @@ class NoteRepository(
     /**
      * Вставить заметку и сразу синхронизировать с сервером
      */
-    suspend fun insertNoteAndSync(note: Note): Long {
-        val noteId = insertNote(note)
-        syncManager?.pushNoteToServer(noteId)
-        return noteId
-    }
+//    suspend fun insertNoteAndSync(note: Note): Long {
+//        val noteId = insertNote(note)
+//        syncManager?.pushNoteToServer(noteId)
+//        return noteId
+//    }
 
     /**
      * Обновить заметку и сразу синхронизировать с сервером

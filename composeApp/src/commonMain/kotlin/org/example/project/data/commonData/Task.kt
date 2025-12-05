@@ -17,10 +17,12 @@ data class Task(
     val title: String,
     val description: String,
     val comments: List<Comment>,
-    val group: Group?,
-    val assignee: User?,
-    val dueDate: Long?,
-    val geotag: String?,
+    val authorId: Long,
+    val groupId: Long?,
+    val assignee: Long,
+    val dueDate: Deadline?,
+    val geotag: Location?,
     val priority: Priority,
-    val status: Status
+    val status: Status,
+    val createAt: Long = 0
 )
