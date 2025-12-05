@@ -49,6 +49,7 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 import org.example.project.data.commonData.Group
+import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Note
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
@@ -66,6 +67,7 @@ data class DetailNoteScreenArgs(val noteID: Int?, val isEditMode: Boolean = fals
 @Composable
 fun DetailNoteScreen(
     note: Note?,
+    group: Group?,
     navController: NavController,
     isEditMode: Boolean = false,
     availableGroups: List<Group> = emptyList(), // Передайте список доступных групп
@@ -99,11 +101,12 @@ fun DetailNoteScreen(
 
     // Обновляем поля при загрузке заметки
     androidx.compose.runtime.LaunchedEffect(note) {
+
         if (note != null) {
             editableTitle = note.title
             editableContent = note.content
-            editableGeotag = note.geotag
-            editableGroup = note.group
+            editableGeotag = note.geotag?.name ?: ""
+            editableGroup = group
             editableColor = note.color
         }
     }
@@ -146,17 +149,19 @@ fun DetailNoteScreen(
                 ) {
                     if (isInEditMode) {
                         Button(
+                            //TODO: add getting location
                             onClick = {
                                 @OptIn(ExperimentalTime::class)
                                 val updatedNote = Note(
                                     id = note?.id ?: 0,
                                     title = editableTitle,
                                     content = editableContent,
-                                    geotag = editableGeotag,
-                                    group = editableGroup,
+                                    geotag = Location(0.0, 0.0, "", false),
+                                    groupId = editableGroup?.id,
                                     comments = note?.comments ?: emptyList(),
                                     color = editableColor,
-                                    creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds()
+                                    creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds(),
+                                    authorId = 0
                                 )
                                 onSave(updatedNote)
                                 if (!isNewNote) {
@@ -188,8 +193,8 @@ fun DetailNoteScreen(
                                     // Сброс изменений
                                     editableTitle = note.title
                                     editableContent = note.content
-                                    editableGeotag = note.geotag
-                                    editableGroup = note.group
+                                    editableGeotag = note.geotag?.name
+                                    editableGroup = group
                                     editableColor = note.color
                                     isInEditMode = false
                                 }

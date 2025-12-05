@@ -8,15 +8,16 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import org.example.project.AppDependencies
+import org.example.project.data.auth.AuthRepository
 import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Note
-import org.example.project.data.database.DatabaseProvider
 import org.example.project.data.database.repository.NoteRepository
 
 class NotesViewModel(
-    private val noteRepository: NoteRepository = DatabaseProvider.getNoteRepository()
+    private val noteRepository: NoteRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
@@ -28,26 +29,24 @@ class NotesViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    init {
-        loadNotes()
-    }
 
     /**
      * Загрузить все заметки
      */
-    private fun loadNotes() {
+    fun loadNotes() {
         viewModelScope.launch {
+
+            val refreshRes = authRepository.refresh()
+            if (!refreshRes) {
+                throw RuntimeException("Refresh error")
+            }
+            val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
+
             _isLoading.value = true
-            noteRepository.getAllNotes()
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { notesList ->
-                    _notes.value = notesList
-                    _isLoading.value = false
-                }
+            _notes.value = noteRepository.getAllNotes(userData.first)!!
+
         }
+        notes
     }
 
     /**
@@ -57,7 +56,12 @@ class NotesViewModel(
     fun addNote(note: Note) {
         viewModelScope.launch {
             try {
-                noteRepository.insertNote(note)
+                val refreshRes = authRepository.refresh()
+                if (!refreshRes) {
+                    throw RuntimeException("Refresh error")
+                }
+                val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
+                noteRepository.insertNote(userData.first, note)
                 // Заметки обновятся автоматически через Flow
             } catch (e: Exception) {
                 _error.value = e.message
@@ -70,7 +74,7 @@ class NotesViewModel(
      * @param noteId - ID заметки для обновления
      * @param note - обновлённые данные заметки
      */
-    fun updateNote(noteId: Long, note: Note) {
+    fun updateNote(note: Note) {
         viewModelScope.launch {
             try {
                 noteRepository.updateNote(note)
@@ -109,24 +113,36 @@ class NotesViewModel(
         }
     }
 
-    /**
-     * Загрузить заметки конкретной группы
-     * @param groupId - ID группы
-     */
-    fun getNotesByGroup(groupId: Long) {
+    fun deleteCommentToNote(commentId: Long) {
         viewModelScope.launch {
-            _isLoading.value = true
-            noteRepository.getNotesByGroup(groupId)
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { notesList ->
-                    _notes.value = notesList
-                    _isLoading.value = false
-                }
+            try {
+                noteRepository.deleteCommentFromNote(commentId)
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
         }
     }
+
+
+
+//    /**
+//     * Загрузить заметки конкретной группы
+//     * @param groupId - ID группы
+//     */
+//    fun getNotesByGroup(groupId: Long) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            noteRepository.getNotesByGroup(groupId)
+//                .catch { e ->
+//                    _error.value = e.message
+//                    _isLoading.value = false
+//                }
+//                .collect { notesList ->
+//                    _notes.value = notesList
+//                    _isLoading.value = false
+//                }
+//        }
+//    }
 
     /**
      * Получить конкретную заметку по ID
@@ -149,7 +165,10 @@ class NotesViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                NotesViewModel()
+                NotesViewModel(
+                    AppDependencies.container.noteRepository,
+                    AppDependencies.container.authRepository
+                )
             }
         }
     }

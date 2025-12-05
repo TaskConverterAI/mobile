@@ -72,6 +72,7 @@ data class DetailTaskScreenArgs(val taskID: Long?, val isEditMode: Boolean = fal
 @Composable
 fun DetailTaskScreen(
     task: Task?,
+    group: Group?,
     navController: NavController,
     isEditMode: Boolean = false,
     availableGroups: List<Group> = emptyList(),
@@ -121,8 +122,8 @@ fun DetailTaskScreen(
         if (task != null) {
             editableTitle = task.title
             editableDescription = task.description
-            editableGeotag = task.geotag ?: ""
-            editableGroup = task.group ?: defaultGroup
+            editableGeotag = task.geotag?.name ?: ""
+            editableGroup = group ?: defaultGroup
             editableAssignee = task.assignee ?: defaultUser
             editableDueDate = task.dueDate ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
             editablePriority = task.priority

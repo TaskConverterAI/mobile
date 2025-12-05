@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 
 import org.example.project.data.commonData.Destination
+import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Task
 import org.example.project.ui.screens.auth.AuthViewModel
@@ -126,6 +127,7 @@ fun TaskConvertAIApp(
 //    HideSystemBarsWithInsetsController()
     val viewModelTasks: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
     val  viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
+    val viewModelGroups : GroupsViewModel = viewModel(factory = GroupsViewModel.Factory)
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     var showDialog by remember { mutableStateOf(false) }
@@ -264,7 +266,7 @@ fun TaskConvertAIApp(
                 val isEditMode = detailNoteScreenArgs.isEditMode
 
                 var note by remember { mutableStateOf<Note?>(null) }
-
+                var group by remember { mutableStateOf<Group?>(null)}
                 // Загружаем данные в корутине, если noteID не null
                 LaunchedEffect(noteID) {
                     note = if (noteID != null) {
@@ -272,10 +274,16 @@ fun TaskConvertAIApp(
                     } else {
                         null
                     }
+
+                    if (note != null){
+                        group = null
+                        //TODO: add get group by id
+                    }
                 }
 
                 DetailNoteScreen(
                     note = note,
+                    group = group,
                     navController = navController,
                     isEditMode = isEditMode,
                     availableGroups = emptyList(),
@@ -285,7 +293,7 @@ fun TaskConvertAIApp(
                             viewModelNotes.addNote(updatedNote)
                         } else {
                             // Обновление существующей заметки
-                            viewModelNotes.updateNote(updatedNote.id, updatedNote)
+                            viewModelNotes.updateNote(updatedNote)
                         }
                     },
                     onDelete = { noteToDelete ->
@@ -300,7 +308,7 @@ fun TaskConvertAIApp(
                 val isEditMode = detailTaskScreenArgs.isEditMode
 
                 var task by remember { mutableStateOf<Task?>(null) }
-
+                var group by remember { mutableStateOf<Group?>(null)}
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
                     task = if (taskID != null) {
@@ -308,10 +316,16 @@ fun TaskConvertAIApp(
                     } else {
                         null
                     }
+
+                    if (task != null) {
+                        group = null
+                        //TODO: add get group by id
+                    }
                 }
 
                 DetailTaskScreen(
                     task = task,
+                    group=  group,
                     navController = navController,
                     isEditMode = isEditMode,
                     availableGroups = emptyList(),
