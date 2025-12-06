@@ -138,8 +138,6 @@ class NoteRepository(
 //        val noteEntity = note.toEntity()
 //        val noteId = noteDao.insertNote(noteEntity)
 //
-//            // ToDo: server change
-//
 //        note.comments.forEach { comment ->
 //            noteDao.insertComment(comment.toNoteCommentEntity(noteId))
 //        }

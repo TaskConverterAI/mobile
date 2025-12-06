@@ -275,9 +275,8 @@ fun TaskConvertAIApp(
                         null
                     }
 
-                    if (note != null){
-                        group = null
-                        //TODO: add get group by id
+                    if (note != null && note?.groupId != null) {
+                        group = viewModelGroups.getGroupById(note!!.groupId!!)
                     }
                 }
 
@@ -317,9 +316,8 @@ fun TaskConvertAIApp(
                         null
                     }
 
-                    if (task != null) {
-                        group = null
-                        //TODO: add get group by id
+                    if (task != null && task?.groupId != null) {
+                        group = viewModelGroups.getGroupById(task!!.groupId!!)
                     }
                 }
 
