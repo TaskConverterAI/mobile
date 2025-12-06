@@ -54,21 +54,21 @@ class DefaultAppContainer(
     // Создать CoroutineScope для фоновых операций синхронизации
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    // Создать sync manager если есть API сервис
-    private val syncManager = if (noteApiService != null) {
-        org.example.project.data.sync.NoteSyncManager(
-            noteRepository = noteRepository,
-            noteApiService = noteApiService,
-            syncPreferences = syncPreferences,
-            coroutineScope = syncScope,
-            autoStart = false
-        )
-    } else null
+//    // Создать sync manager если есть API сервис
+//    private val syncManager = if (noteApiService != null) {
+//        org.example.project.data.sync.NoteSyncManager(
+//            noteRepository = noteRepository,
+//            noteApiService = noteApiService,
+//            syncPreferences = syncPreferences,
+//            coroutineScope = syncScope,
+//            autoStart = false
+//        )
+//    } else null
 
-    init {
-        // Установить sync manager в репозиторий если он доступен
-        syncManager?.let { noteRepository.setSyncManager(it) }
-    }
+//    init {
+//        // Установить sync manager в репозиторий если он доступен
+//        syncManager?.let { noteRepository.setSyncManager(it) }
+//    }
 
     override val groupRepository: GroupRepository = GroupRepository(createGroupApiService())
 }

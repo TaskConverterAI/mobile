@@ -1,14 +1,6 @@
 package org.example.project.data.database.repository
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlin.time.Clock
 import org.example.project.data.commonData.Comment
-import org.example.project.data.commonData.Deadline
-import org.example.project.data.commonData.Location
-import org.example.project.data.commonData.Note
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.data.commonData.toAddCommentRequest
 import org.example.project.data.commonData.toComment
@@ -16,15 +8,8 @@ import org.example.project.data.commonData.toCreateRequest
 import org.example.project.data.commonData.toTask
 import org.example.project.data.commonData.toUpdateRequest
 import org.example.project.data.database.AppDatabase
-import org.example.project.data.database.mappers.toComment
-import org.example.project.data.database.mappers.toEntity
-import org.example.project.data.database.mappers.toTask
-import org.example.project.data.database.mappers.toTaskCommentEntity
 import org.example.project.data.network.NoteApiService
-import org.example.project.data.network.models.CreateNoteRequest
-import org.example.project.data.network.models.LocationDto
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 class TaskRepository(
     private val database: AppDatabase,

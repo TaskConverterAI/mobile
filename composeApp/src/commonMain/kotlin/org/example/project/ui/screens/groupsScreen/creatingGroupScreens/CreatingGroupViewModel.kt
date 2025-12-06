@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
+import org.example.project.data.auth.AuthRepository
 import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.User
@@ -25,7 +26,8 @@ data class CreateGroupUiState(
 )
 
 class CreateGroupViewModel(
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateGroupUiState())
@@ -81,11 +83,25 @@ class CreateGroupViewModel(
 
     fun createGroup(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
-            // TODO: логика создания группы
+            // TODO: нужно добавить участников
             try {
                 Logger.d {"Creating group: ${uiState.value.groupName}"}
 
+                val refreshRes = authRepository.refresh()
+
+                if (!refreshRes) {
+                    throw RuntimeException("Refresh error")
+                }
+
+                val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
                 val userMembers:  MutableList<User> = mutableListOf()
+
+                groupRepository.createGroup(Group(0,
+                    uiState.value.groupName,
+                    uiState.value.description,
+                    0, 0,
+                    userMembers, 0),
+                    userData.first)
 
                 onComplete()
             } catch (e: Exception) {
@@ -98,7 +114,8 @@ class CreateGroupViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val groupRepository = AppDependencies.container.groupRepository
-                CreateGroupViewModel(groupRepository = groupRepository)
+                val authRepository = AppDependencies.container.authRepository
+                CreateGroupViewModel(groupRepository = groupRepository, authRepository)
             }
         }
     }

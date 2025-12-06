@@ -118,10 +118,10 @@ private fun GroupForm(
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             minLines = 4,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.error,
+                focusedContainerColor = MaterialTheme.colorScheme.background,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedTextColor = MaterialTheme.colorScheme.primary,
-                unfocusedTextColor = MaterialTheme.colorScheme.primary
+                unfocusedTextColor = Color.Gray
             ),
             shape = RoundedCornerShape(12.dp)
         )
@@ -131,7 +131,7 @@ private fun GroupForm(
         AdminMembersList(
             state.participants,
             { id -> viewModel.removeParticipant(id) },
-            { viewModel.addParticipant() })
+            { viewModel.openAddDialog() })
     }
 }
 
@@ -185,7 +185,8 @@ private fun AddParticipantDialog(state: CreateGroupUiState, viewModel: CreateGro
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 

@@ -18,7 +18,7 @@ import org.example.project.data.database.repository.GroupRepository
 import kotlin.collections.emptyList
 
 data class GroupListUi(
-    val showBottom: Boolean = true,
+    val showBottom: Boolean = false,
     val isEmptyList: Boolean = true,
     val groups: List<Group> = emptyList(),
     val isLoading: Boolean = false,

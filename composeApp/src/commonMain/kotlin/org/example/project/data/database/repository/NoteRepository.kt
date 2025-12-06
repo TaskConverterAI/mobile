@@ -2,7 +2,6 @@ package org.example.project.data.database.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.example.project.data.commonData.Comment
-import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.toAddCommentRequest
 import org.example.project.data.commonData.toComment
@@ -12,12 +11,7 @@ import org.example.project.data.commonData.toUpdateNoteRequest
 import org.example.project.data.database.AppDatabase
 import org.example.project.data.network.NoteApiService
 import org.example.project.data.network.models.AddCommentRequest
-import org.example.project.data.network.models.CreateNoteRequest
-import org.example.project.data.network.models.LocationDto
-import org.example.project.data.network.models.UpdateNoteRequest
-import org.example.project.data.sync.NoteSyncManager
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 class NoteRepository(
     private val database: AppDatabase,
@@ -27,15 +21,15 @@ class NoteRepository(
     private val noteDao = database.noteDao()
     private val groupDao = database.groupDao()
 
-    // Sync manager будет инициализирован при необходимости
-    private var syncManager: NoteSyncManager? = null
-
-    /**
-     * Установить sync manager для работы с удалённым сервером
-     */
-    fun setSyncManager(manager: NoteSyncManager) {
-        syncManager = manager
-    }
+//    // Sync manager будет инициализирован при необходимости
+//    private var syncManager: NoteSyncManager? = null
+//
+//    /**
+//     * Установить sync manager для работы с удалённым сервером
+//     */
+//    fun setSyncManager(manager: NoteSyncManager) {
+//        syncManager = manager
+//    }
 
     suspend fun getGroupNoteCount(groupId: Long) : Int {
         val result = noteApiService?.getAllGroupNotes(groupId = groupId)
@@ -259,60 +253,60 @@ class NoteRepository(
 
     // ==================== Методы синхронизации ====================
 
-    /**
-     * Синхронизировать все заметки с сервером
-     */
-    suspend fun syncWithServer(): Result<Unit> {
-        return syncManager?.syncWithServer()
-            ?: Result.failure(Exception("Sync manager not initialized"))
-    }
-
-    /**
-     * Загрузить заметку с сервера
-     */
-    suspend fun pullNoteFromServer(noteId: Long): Result<Unit> {
-        return syncManager?.pullNoteFromServer(noteId)
-            ?: Result.failure(Exception("Sync manager not initialized"))
-    }
-
-    /**
-     * Отправить заметку на сервер
-     */
-    suspend fun pushNoteToServer(noteId: Long): Result<Unit> {
-        return syncManager?.pushNoteToServer(noteId)
-            ?: Result.failure(Exception("Sync manager not initialized"))
-    }
-
-    /**
-     * Получить состояние синхронизации
-     */
-    fun getSyncState(): Flow<org.example.project.data.sync.SyncState>? {
-        return syncManager?.syncState
-    }
-
-    /**
-     * Вставить заметку и сразу синхронизировать с сервером
-     */
-//    suspend fun insertNoteAndSync(note: Note): Long {
-//        val noteId = insertNote(note)
-//        syncManager?.pushNoteToServer(noteId)
-//        return noteId
+//    /**
+//     * Синхронизировать все заметки с сервером
+//     */
+//    suspend fun syncWithServer(): Result<Unit> {
+//        return syncManager?.syncWithServer()
+//            ?: Result.failure(Exception("Sync manager not initialized"))
 //    }
-
-    /**
-     * Обновить заметку и сразу синхронизировать с сервером
-     */
-    suspend fun updateNoteAndSync(noteId: Long, note: Note) {
-        updateNote(note)
-        syncManager?.pushNoteToServer(noteId)
-    }
-
-    /**
-     * Удалить заметку и сразу синхронизировать с сервером
-     */
-    suspend fun deleteNoteAndSync(noteId: Long) {
-        deleteNote(noteId)
-        noteApiService?.deleteNote(noteId)
-    }
+//
+//    /**
+//     * Загрузить заметку с сервера
+//     */
+//    suspend fun pullNoteFromServer(noteId: Long): Result<Unit> {
+//        return syncManager?.pullNoteFromServer(noteId)
+//            ?: Result.failure(Exception("Sync manager not initialized"))
+//    }
+//
+//    /**
+//     * Отправить заметку на сервер
+//     */
+//    suspend fun pushNoteToServer(noteId: Long): Result<Unit> {
+//        return syncManager?.pushNoteToServer(noteId)
+//            ?: Result.failure(Exception("Sync manager not initialized"))
+//    }
+//
+//    /**
+//     * Получить состояние синхронизации
+//     */
+//    fun getSyncState(): Flow<org.example.project.data.sync.SyncState>? {
+//        return syncManager?.syncState
+//    }
+//
+//    /**
+//     * Вставить заметку и сразу синхронизировать с сервером
+//     */
+////    suspend fun insertNoteAndSync(note: Note): Long {
+////        val noteId = insertNote(note)
+////        syncManager?.pushNoteToServer(noteId)
+////        return noteId
+////    }
+//
+//    /**
+//     * Обновить заметку и сразу синхронизировать с сервером
+//     */
+//    suspend fun updateNoteAndSync(noteId: Long, note: Note) {
+//        updateNote(note)
+//        syncManager?.pushNoteToServer(noteId)
+//    }
+//
+//    /**
+//     * Удалить заметку и сразу синхронизировать с сервером
+//     */
+//    suspend fun deleteNoteAndSync(noteId: Long) {
+//        deleteNote(noteId)
+//        noteApiService?.deleteNote(noteId)
+//    }
 }
 

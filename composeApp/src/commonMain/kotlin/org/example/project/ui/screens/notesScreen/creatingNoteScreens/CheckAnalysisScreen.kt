@@ -30,13 +30,10 @@ import androidx.navigation.NavController
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 
-import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
-import org.example.project.data.commonData.User
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.viewComponents.commonComponents.BlockType
@@ -99,8 +96,9 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
             val testNote = Note(
                 title = "Заметка",
                 content = uiData.summary,
-                geotag = "office",
-                group = null,
+                authorId = 1,
+                geotag = null,
+                groupId = null,
                 comments = emptyList(),
                 color = PrimaryBase,
                 contentMaxLines = 5,
@@ -124,16 +122,17 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                 tasks.forEachIndexed { index, taskCell ->
                     TaskChoosingItem(
                         task = Task(
+                            id = 0,
                             title = taskCell.task.title,
                             description = taskCell.task.description,
                             comments = emptyList(),
-                            group = null,
-                            assignee = null,
-                            dueDate = kotlin.time.Clock.System.now().toEpochMilliseconds(),
-                            geotag = "empty",
+                            authorId = 1,
+                            groupId = null,
+                            assignee = 2,
+                            dueDate = null,
+                            geotag = null,
                             priority = Priority.MEDIUM,
-                            status = Status.TODO,
-                            id = 0L
+                            status = Status.TODO
                         ),
                         isEnabled = taskCell.isUsed,
                         onEnabledChange = { newValue ->
