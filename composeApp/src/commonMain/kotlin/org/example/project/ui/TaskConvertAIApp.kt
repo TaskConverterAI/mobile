@@ -94,7 +94,12 @@ fun ChooseCreateDialog(
                 onConfirm = { route ->
                     onDismiss()
                     if (route == "create_manual_note") {
-                        navController.navigate(DetailNoteScreenArgs(noteID = null, isEditMode = true))
+                        navController.navigate(
+                            DetailNoteScreenArgs(
+                                noteID = null,
+                                isEditMode = true
+                            )
+                        )
                     } else {
                         navController.navigate(route)
                     }
@@ -126,8 +131,8 @@ fun TaskConvertAIApp(
 ) {
 //    HideSystemBarsWithInsetsController()
     val viewModelTasks: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
-    val  viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
-    val viewModelGroups : GroupsViewModel = viewModel(factory = GroupsViewModel.Factory)
+    val viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
+    val viewModelGroups: GroupsViewModel = viewModel(factory = GroupsViewModel.Factory)
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     var showDialog by remember { mutableStateOf(false) }
@@ -170,8 +175,13 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
-//            startDestination = Destination.NOTES.route
+            startDestination = if (viewModel.showOverview) {
+                TaskConvertAIAppScreens.Overview.name
+            } else if (viewModel.mustLogIn) {
+                TaskConvertAIAppScreens.SignIn.name
+            } else {
+                Destination.NOTES.route
+            }
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
@@ -266,7 +276,7 @@ fun TaskConvertAIApp(
                 val isEditMode = detailNoteScreenArgs.isEditMode
 
                 var note by remember { mutableStateOf<Note?>(null) }
-                var group by remember { mutableStateOf<Group?>(null)}
+                var group by remember { mutableStateOf<Group?>(null) }
                 // Загружаем данные в корутине, если noteID не null
                 LaunchedEffect(noteID) {
                     note = if (noteID != null) {
@@ -307,7 +317,7 @@ fun TaskConvertAIApp(
                 val isEditMode = detailTaskScreenArgs.isEditMode
 
                 var task by remember { mutableStateOf<Task?>(null) }
-                var group by remember { mutableStateOf<Group?>(null)}
+                var group by remember { mutableStateOf<Group?>(null) }
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
                     task = if (taskID != null) {
@@ -323,7 +333,7 @@ fun TaskConvertAIApp(
 
                 DetailTaskScreen(
                     task = task,
-                    group=  group,
+                    group = group,
                     navController = navController,
                     isEditMode = isEditMode,
                     availableGroups = emptyList(),
@@ -354,7 +364,8 @@ fun TaskConvertAIApp(
                 val detailGroupScreenArgs: DetailGroupScreenArgs = currentBackStackEntry.toRoute()
 
                 val groupName = detailGroupScreenArgs.groupName
-                val groupVM: DetailedGroupViewModel = viewModel(factory = DetailedGroupViewModel.Factory)
+                val groupVM: DetailedGroupViewModel =
+                    viewModel(factory = DetailedGroupViewModel.Factory)
                 groupVM.setGroup(groupName)
                 DetailGroupScreen(groupVM, navController)
             }

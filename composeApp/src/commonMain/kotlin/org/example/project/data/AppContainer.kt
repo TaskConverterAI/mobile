@@ -14,6 +14,7 @@ import org.example.project.data.database.repository.TaskRepository
 import org.example.project.data.database.repository.GroupRepository
 
 interface AppContainer {
+    val userAuthPreferencesRepository: UserAuthPreferencesRepository
     val authRepository: AuthRepository
     val analyzerRepository: AnalyzerRepository
     val noteRepository: NoteRepository
@@ -36,7 +37,7 @@ class DefaultAppContainer(
     dataStore: DataStore<Preferences>,
     database: org.example.project.data.database.AppDatabase
 ) : AppContainer {
-    private val userAuthPreferencesRepository: UserAuthPreferencesRepository =
+    override val userAuthPreferencesRepository: UserAuthPreferencesRepository =
         createAuthPreferencesRepository(dataStore)
 
     override val authRepository: AuthRepository =
