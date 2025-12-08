@@ -187,6 +187,7 @@ fun TaskConvertAIApp(
 //                BackHandler(true) { }
                 OverviewScreen(
                     onCompleteOverviewButtonClicked = {
+                        viewModel.hideOverview()
                         navController.navigate(TaskConvertAIAppScreens.SignUp.name)
                     }
                 )

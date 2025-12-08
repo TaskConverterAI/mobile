@@ -39,7 +39,11 @@ class TaskConvertAIViewModel(
     private val _selectedFileUri = MutableStateFlow<String?>(null)
     val selectedFileUri: StateFlow<String?> = _selectedFileUri
 
-
+    fun hideOverview() {
+        viewModelScope.launch {
+            authPreferencesRepository.saveShowTutorial(false)
+        }
+    }
     fun onFileSelected(uri: String?) {
         if (uri == null)
             return
