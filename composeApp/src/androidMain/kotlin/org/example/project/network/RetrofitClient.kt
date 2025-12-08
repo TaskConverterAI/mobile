@@ -2,6 +2,9 @@ package org.example.project.network
 
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
+import org.example.project.data.auth.AuthRepository
+import org.example.project.data.auth.NetworkAuthRepository
+import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.network.GroupApiService
 import org.example.project.data.network.NetworkGroupApiService
 import org.example.project.data.network.NoteApiService
@@ -34,6 +37,10 @@ object RetrofitClient {
             .build()
     }
 
+    val retrofitAuthService: AuthApiService by lazy {
+        retrofit.create(AuthApiService::class.java)
+    }
+
     val retrofitNoteApiService: RetrofitNoteApiService by lazy {
         retrofit.create(RetrofitNoteApiService::class.java)
     }
@@ -45,6 +52,9 @@ object RetrofitClient {
     /**
      * Создать NoteApiService для использования в репозиториях
      */
+    fun createAuthRepository(repo: UserAuthPreferencesRepository): AuthRepository {
+        return NetworkAuthRepository.getInstance(repo, retrofitAuthService)
+    }
     fun createNoteApiService(): NoteApiService {
         return NetworkNoteApiService(retrofitNoteApiService)
     }

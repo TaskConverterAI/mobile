@@ -22,6 +22,7 @@ interface AppContainer {
 }
 
 // Expect function to create platform-specific AuthRepository
+expect fun createAuthPreferencesRepository(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository
 expect fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferencesRepository): AuthRepository
 
 expect fun createAnalyzerRepository(): AnalyzerRepository
@@ -34,10 +35,12 @@ expect fun createGroupApiService(): org.example.project.data.network.GroupApiSer
 class DefaultAppContainer(
     dataStore: DataStore<Preferences>,
     database: org.example.project.data.database.AppDatabase
-): AppContainer {
-    private val userAuthPreferencesRepository = UserAuthPreferencesRepository(dataStore)
+) : AppContainer {
+    private val userAuthPreferencesRepository: UserAuthPreferencesRepository =
+        createAuthPreferencesRepository(dataStore)
 
-    override val authRepository: AuthRepository = createAuthRepository(userAuthPreferencesRepository)
+    override val authRepository: AuthRepository =
+        createAuthRepository(userAuthPreferencesRepository)
 
     override val analyzerRepository: AnalyzerRepository = createAnalyzerRepository()
 

@@ -61,12 +61,18 @@ class UserAuthPreferencesRepository(
         }
     }
 
-    private companion object {
+    companion object {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
 
         val USER_ID = stringPreferencesKey("user_id")
 
         const val TAG = "UserAuthPreferencesRepo"
+
+        private var _instance: UserAuthPreferencesRepository? = null
+
+        fun getInstance(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository {
+            return _instance ?: UserAuthPreferencesRepository(dataStore).also { _instance = it }
+        }
     }
 }

@@ -1,6 +1,8 @@
 package org.example.project.data.auth
 
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.first
@@ -15,17 +17,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class NetworkAuthRepository(
-    private val userAuthPreferencesRepository: UserAuthPreferencesRepository
+    private val userAuthPreferencesRepository: UserAuthPreferencesRepository,
+    private val authApiService: AuthApiService
 ): AuthRepository {
-    private val baseAuthUrl = "http://10.199.58.103:8090/"
-    private val authRetrofit: Retrofit = Retrofit.Builder()
-        .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl(baseAuthUrl)
-        .build()
-
-    private val authApiService: AuthApiService by lazy {
-        authRetrofit.create(AuthApiService::class.java)
-    }
 
     private suspend fun parseAndSaveJWT(token: String) {
         try {
@@ -126,6 +120,16 @@ class NetworkAuthRepository(
             response.isSuccessful
         } catch (_: Exception) {
             false
+        }
+    }
+
+
+    companion object {
+        private var _instance: NetworkAuthRepository? = null
+
+        fun getInstance(repo: UserAuthPreferencesRepository, authApiService: AuthApiService): NetworkAuthRepository {
+            return _instance
+                ?: NetworkAuthRepository(repo, authApiService).also { _instance = it }
         }
     }
 }
