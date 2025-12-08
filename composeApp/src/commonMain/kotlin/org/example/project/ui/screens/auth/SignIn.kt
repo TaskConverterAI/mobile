@@ -149,6 +149,7 @@ private fun EnterFormSection(
                 keyboardController?.hide()
             }
         )
+        Spacer(modifier = Modifier.height(200.dp))
     }
 }
 

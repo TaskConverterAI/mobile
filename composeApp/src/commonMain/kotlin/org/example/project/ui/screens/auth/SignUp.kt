@@ -223,6 +223,7 @@ private fun RegistrationFormSection(
                 keyboardController?.hide()
             }
         )
+        Spacer(modifier = Modifier.height(200.dp))
     }
 }
 
