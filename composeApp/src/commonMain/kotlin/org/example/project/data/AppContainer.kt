@@ -12,6 +12,7 @@ import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.database.repository.NoteRepository
 import org.example.project.data.database.repository.TaskRepository
 import org.example.project.data.database.repository.GroupRepository
+import org.example.project.data.geo.GeoTagRepository
 
 interface AppContainer {
     val authRepository: AuthRepository
@@ -19,6 +20,7 @@ interface AppContainer {
     val noteRepository: NoteRepository
     val taskRepository: TaskRepository
     val groupRepository: GroupRepository
+    val geoTagRepository: GeoTagRepository
 }
 
 // Expect function to create platform-specific AuthRepository
@@ -71,4 +73,6 @@ class DefaultAppContainer(
 //    }
 
     override val groupRepository: GroupRepository = GroupRepository(createGroupApiService())
+
+    override val geoTagRepository: GeoTagRepository = GeoTagRepository(dataStore)
 }
