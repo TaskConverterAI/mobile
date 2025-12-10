@@ -48,6 +48,7 @@ import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGr
 import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupViewModel
 import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
+import org.example.project.ui.screens.notesScreen.MapPickerScreen
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
@@ -309,6 +310,20 @@ fun TaskConvertAIApp(
                     onDelete = { noteToDelete ->
                         viewModelNotes.deleteNote(noteToDelete.id)
                     }
+                )
+            }
+
+            composable("map_picker") {
+                MapPickerScreen(
+                    onPicked = { lat, lon, name, colorLong ->
+                        val prev = navController.previousBackStackEntry?.savedStateHandle
+                        prev?.set("map_lat", lat)
+                        prev?.set("map_lon", lon)
+                        prev?.set("map_name", name)
+                        prev?.set("map_color", colorLong)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
