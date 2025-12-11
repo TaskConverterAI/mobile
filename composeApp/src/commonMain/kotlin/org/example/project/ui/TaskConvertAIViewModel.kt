@@ -23,7 +23,6 @@ import org.example.project.data.auth.UserAuthPreferencesRepository
 
 
 data class UiData (
-    var showOverview: Boolean = true,
     var selectedFileUri: String? = null,
     var startSending: Boolean = false,
     var convertVideoAudioPercent: Int = 0,
@@ -44,17 +43,10 @@ class TaskConvertAIViewModel(
 
     init {
         runBlocking {
-            val showOverviewValue: Boolean = authPreferencesRepository.showTutorial.first()
-            _uiData.update { current ->
-                    current.copy(showOverview = showOverviewValue)
-                }
-            showOverview = showOverviewValue
+            showOverview = authPreferencesRepository.showTutorial.first()
             mustLogIn = !authRepository.refresh()
         }
     }
-
-    private val _selectedFileUri = MutableStateFlow<String?>(null)
-    val selectedFileUri: StateFlow<String?> = _selectedFileUri
 
     fun hideOverview() {
         viewModelScope.launch {
