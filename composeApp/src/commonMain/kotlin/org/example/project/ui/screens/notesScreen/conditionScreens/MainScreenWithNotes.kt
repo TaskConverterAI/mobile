@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import org.example.project.data.auth.AuthRepository
 
 import org.example.project.data.commonData.Note
 import org.example.project.ui.viewComponents.commonComponents.BlockType
@@ -27,6 +28,7 @@ fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel)
     var showBottomSheet by remember { mutableStateOf(false) }
 
     // Получаем заметки из viewModel
+    viewModel.loadNotes()
     val notes by viewModel.notes.collectAsState()
 
     Column(
@@ -115,3 +117,4 @@ fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel)
         )
     }
 }
+

@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import org.example.project.AppDependencies
+import org.example.project.data.auth.AuthRepository
 import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
@@ -18,7 +20,8 @@ import org.example.project.data.database.DatabaseProvider
 import org.example.project.data.database.repository.TaskRepository
 
 class TasksViewModel(
-    private val taskRepository: TaskRepository = DatabaseProvider.getTaskRepository()
+    private val taskRepository: TaskRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -30,25 +33,18 @@ class TasksViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    init {
-        loadTasks()
-    }
-
     /**
      * Загрузить все задачи с полными деталями (группа, исполнитель, заметка)
      */
     private fun loadTasks() {
         viewModelScope.launch {
+            val refreshRes = authRepository.refresh()
+            if (!refreshRes) {
+                throw RuntimeException("Refresh error")
+            }
+            val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
             _isLoading.value = true
-            taskRepository.getAllTasks()
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { tasksList ->
-                    _tasks.value = tasksList
-                    _isLoading.value = false
-                }
+            _tasks.value = taskRepository.getAllTasks(userData.first)!!
         }
     }
 
@@ -59,7 +55,13 @@ class TasksViewModel(
     fun addTask(task: Task) {
         viewModelScope.launch {
             try {
-                taskRepository.insertTask(task)
+                val refreshRes = authRepository.refresh()
+                if (!refreshRes) {
+                    throw RuntimeException("Refresh error")
+                }
+                val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
+
+                taskRepository.insertTask(userData.first, task)
                 // Задачи обновятся автоматически через Flow
             } catch (e: Exception) {
                 _error.value = e.message
@@ -125,100 +127,100 @@ class TasksViewModel(
         }
     }
 
-    /**
-     * Загрузить задачи конкретной группы
-     * @param groupId - ID группы
-     */
-    fun getTasksByGroup(groupId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            taskRepository.getTasksByGroup(groupId)
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { tasksList ->
-                    _tasks.value = tasksList
-                    _isLoading.value = false
-                }
-        }
-    }
+//    /**
+//     * Загрузить задачи конкретной группы
+//     * @param groupId - ID группы
+//     */
+//    fun getTasksByGroup(groupId: Long) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            taskRepository.getTasksByGroup(groupId)
+//                .catch { e ->
+//                    _error.value = e.message
+//                    _isLoading.value = false
+//                }
+//                .collect { tasksList ->
+//                    _tasks.value = tasksList
+//                    _isLoading.value = false
+//                }
+//        }
+//    }
 
-    /**
-     * Загрузить задачи конкретного исполнителя
-     * @param assigneeId - ID пользователя (исполнителя)
-     */
-    fun getTasksByAssignee(assigneeId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            taskRepository.getTasksByAssignee(assigneeId)
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { tasksList ->
-                    _tasks.value = tasksList
-                    _isLoading.value = false
-                }
-        }
-    }
+//    /**
+//     * Загрузить задачи конкретного исполнителя
+//     * @param assigneeId - ID пользователя (исполнителя)
+//     */
+//    fun getTasksByAssignee(assigneeId: Long) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            taskRepository.getTasksByAssignee(assigneeId)
+//                .catch { e ->
+//                    _error.value = e.message
+//                    _isLoading.value = false
+//                }
+//                .collect { tasksList ->
+//                    _tasks.value = tasksList
+//                    _isLoading.value = false
+//                }
+//        }
+//    }
 
-    /**
-     * Загрузить задачи конкретной заметки
-     * @param noteId - ID заметки
-     */
-    fun getTasksByNote(noteId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            taskRepository.getTasksByNote(noteId)
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { tasksList ->
-                    _tasks.value = tasksList
-                    _isLoading.value = false
-                }
-        }
-    }
+//    /**
+//     * Загрузить задачи конкретной заметки
+//     * @param noteId - ID заметки
+//     */
+//    fun getTasksByNote(noteId: Long) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            taskRepository.getTasksByNote(noteId)
+//                .catch { e ->
+//                    _error.value = e.message
+//                    _isLoading.value = false
+//                }
+//                .collect { tasksList ->
+//                    _tasks.value = tasksList
+//                    _isLoading.value = false
+//                }
+//        }
+//    }
 
-    /**
-     * Фильтр по статусу
-     * @param status - статус задачи (TODO, IN_PROGRESS, DONE)
-     */
-    fun getTasksByStatus(status: Status) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            taskRepository.getTasksByStatus(status)
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { tasksList ->
-                    _tasks.value = tasksList
-                    _isLoading.value = false
-                }
-        }
-    }
+//    /**
+//     * Фильтр по статусу
+//     * @param status - статус задачи (TODO, IN_PROGRESS, DONE)
+//     */
+//    fun getTasksByStatus(status: Status) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            taskRepository.getTasksByStatus(status)
+//                .catch { e ->
+//                    _error.value = e.message
+//                    _isLoading.value = false
+//                }
+//                .collect { tasksList ->
+//                    _tasks.value = tasksList
+//                    _isLoading.value = false
+//                }
+//        }
+//    }
 
-    /**
-     * Фильтр по приоритету
-     * @param priority - приоритет задачи (HIGH, MEDIUM, LOW)
-     */
-    fun getTasksByPriority(priority: Priority) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            taskRepository.getTasksByPriority(priority)
-                .catch { e ->
-                    _error.value = e.message
-                    _isLoading.value = false
-                }
-                .collect { tasksList ->
-                    _tasks.value = tasksList
-                    _isLoading.value = false
-                }
-        }
-    }
+//    /**
+//     * Фильтр по приоритету
+//     * @param priority - приоритет задачи (HIGH, MEDIUM, LOW)
+//     */
+//    fun getTasksByPriority(priority: Priority) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            taskRepository.getTasksByPriority(priority)
+//                .catch { e ->
+//                    _error.value = e.message
+//                    _isLoading.value = false
+//                }
+//                .collect { tasksList ->
+//                    _tasks.value = tasksList
+//                    _isLoading.value = false
+//                }
+//        }
+//    }
 
     /**
      * Очистить ошибку
@@ -245,7 +247,10 @@ class TasksViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TasksViewModel()
+                TasksViewModel(
+                    AppDependencies.container.taskRepository,
+                    AppDependencies.container.authRepository
+                )
             }
         }
     }

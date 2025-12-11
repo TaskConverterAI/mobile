@@ -2,7 +2,7 @@
 activityCompose = "1.8.0"
 agp = "8.13.1"
 android-compileSdk = "36"
-android-minSdk = "24"
+android-minSdk = "26"
 android-targetSdk = "36"
 androidLame = "1.0.0"
 androidx-activity = "1.11.0"
@@ -35,6 +35,7 @@ room = "2.8.3"
 sqlite = "2.6.1"
 ksp = "2.2.20-2.0.3"
 media3CommonKtx = "1.8.0"
+yandex-maps = "4.26.0-lite"
 
 [libraries]
 androidx-activity-compose-v180 = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -71,6 +72,7 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
+yandex-maps = { module = "com.yandex.android:maps.mobile", version.ref = "yandex-maps" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

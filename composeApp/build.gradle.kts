@@ -34,6 +34,8 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
 
+            implementation(libs.yandex.maps)
+
             // Retrofit
             implementation(libs.retrofit2.kotlinx.serialization.converter)
             implementation(libs.retrofit)
@@ -95,6 +97,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        manifestPlaceholders["YANDEX_MAPKIT_API_KEY"] = providers.gradleProperty("YANDEX_MAPKIT_API_KEY").orNull ?: ""
     }
     packaging {
         resources {

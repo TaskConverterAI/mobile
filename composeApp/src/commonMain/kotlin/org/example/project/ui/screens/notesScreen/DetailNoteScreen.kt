@@ -35,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,9 +48,13 @@ import androidx.navigation.NavController
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.math.absoluteValue
 
+import org.example.project.AppDependencies
 import org.example.project.data.commonData.Group
+import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Note
+import org.example.project.data.geo.GeoTagPreset
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.theme.PrimaryDark
@@ -66,6 +71,7 @@ data class DetailNoteScreenArgs(val noteID: Int?, val isEditMode: Boolean = fals
 @Composable
 fun DetailNoteScreen(
     note: Note?,
+    group: Group?,
     navController: NavController,
     isEditMode: Boolean = false,
     availableGroups: List<Group> = emptyList(), // Передайте список доступных групп
@@ -89,7 +95,11 @@ fun DetailNoteScreen(
     // Состояния для редактируемых полей
     var editableTitle by remember { mutableStateOf("") }
     var editableContent by remember { mutableStateOf("") }
+    // Состояние название тэга
     var editableGeotag: String? by remember { mutableStateOf("") }
+    // Новые состояния для координат
+    var editableLat by remember { mutableStateOf<Double?>(null) }
+    var editableLon by remember { mutableStateOf<Double?>(null) }
     var editableGroup: Group? by remember { mutableStateOf(defaultGroup) }
     var editableColor by remember { mutableStateOf(PrimaryBase) }
 
@@ -99,12 +109,46 @@ fun DetailNoteScreen(
 
     // Обновляем поля при загрузке заметки
     androidx.compose.runtime.LaunchedEffect(note) {
+
         if (note != null) {
             editableTitle = note.title
             editableContent = note.content
-            editableGeotag = note.geotag
-            editableGroup = note.group
+            editableGeotag = note.geotag?.name ?: ""
+            editableGroup = group
             editableColor = note.color
+            // Инициализируем координаты из существующей заметки
+            editableLat = note.geotag?.latitude
+            editableLon = note.geotag?.longitude
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+            handle.getStateFlow("map_lat", editableLat).collect { editableLat = it }
+        }
+        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+            handle.getStateFlow("map_lon", editableLon).collect { editableLon = it }
+        }
+        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+            handle.getStateFlow("map_name", editableGeotag).collect { editableGeotag = it }
+        }
+    }
+
+    // Одноразовое чтение результата при возврате с карты: сразу вставляем в поле "Геометка"
+    LaunchedEffect(navController.currentBackStackEntry) {
+        val handle = navController.currentBackStackEntry?.savedStateHandle
+        val lat: Double? = handle?.get("map_lat")
+        val lon: Double? = handle?.get("map_lon")
+        val name: String? = handle?.get("map_name")
+        val colorLong: Long? = handle?.get("map_color")
+        if (lat != null && lon != null) {
+            editableLat = lat
+            editableLon = lon
+            editableGeotag = name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}"
+            handle.remove<Double>("map_lat")
+            handle.remove<Double>("map_lon")
+            handle.remove<String>("map_name")
+            handle.remove<Long>("map_color")
         }
     }
 
@@ -146,17 +190,25 @@ fun DetailNoteScreen(
                 ) {
                     if (isInEditMode) {
                         Button(
+                            //TODO: add getting location
                             onClick = {
                                 @OptIn(ExperimentalTime::class)
                                 val updatedNote = Note(
                                     id = note?.id ?: 0,
                                     title = editableTitle,
                                     content = editableContent,
-                                    geotag = editableGeotag,
-                                    group = editableGroup,
+                                    geotag = Location(
+                                        editableLat ?: 0.0,
+                                        editableLon ?: 0.0,
+                                        editableGeotag ?: "",
+                                        false
+                                    ),
+                                    groupId = editableGroup?.id,
                                     comments = note?.comments ?: emptyList(),
                                     color = editableColor,
-                                    creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds()
+                                    creationDate = note?.creationDate ?: Clock.System.now()
+                                        .toEpochMilliseconds(),
+                                    authorId = 0
                                 )
                                 onSave(updatedNote)
                                 if (!isNewNote) {
@@ -169,7 +221,7 @@ fun DetailNoteScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = editableTitle.isNotBlank()
+                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -188,9 +240,11 @@ fun DetailNoteScreen(
                                     // Сброс изменений
                                     editableTitle = note.title
                                     editableContent = note.content
-                                    editableGeotag = note.geotag
-                                    editableGroup = note.group
+                                    editableGeotag = note.geotag?.name
+                                    editableGroup = group
                                     editableColor = note.color
+                                    editableLat = note.geotag?.latitude
+                                    editableLon = note.geotag?.longitude
                                     isInEditMode = false
                                 }
                             },
@@ -266,13 +320,86 @@ fun DetailNoteScreen(
 
             // Геометка
             if (isInEditMode) {
-                editableGeotag?.let { it1 ->
+                val geoRepo = remember { AppDependencies.container.geoTagRepository }
+                var presets by remember { mutableStateOf<List<GeoTagPreset>>(emptyList()) }
+                var presetsExpanded by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    geoRepo.presetsFlow().collect { presets = it }
+                }
+
+                Box {
                     OutlinedTextField(
-                        value = it1,
-                        onValueChange = { editableGeotag = it },
-                        label = { Text("Геометка") },
+                        value = editableGeotag ?: "",
+                        onValueChange = { /* read-only via history or map */ },
+                        label = { Text("Геометка (тег)") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        readOnly = true
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { presetsExpanded = true }
+                    )
+
+                    DropdownMenu(
+                        expanded = presetsExpanded,
+                        onDismissRequest = { presetsExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        presets.forEach { preset ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier.size(16.dp).background(
+                                                pastelColorForKey(preset.name),
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = preset.name,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    editableLat = preset.latitude
+                                    editableLon = preset.longitude
+                                    editableGeotag = preset.name
+                                    presetsExpanded = false
+                                },
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Создать новый на карте") },
+                            onClick = {
+                                presetsExpanded = false
+                                navController.navigate("map_picker")
+                            },
+                            colors = androidx.compose.material3.MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (editableLat != null && editableLon != null) {
+                    Text(
+                        text = "${editableLat?.formatLatLon()}, ${editableLon?.formatLatLon()}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Text(
+                        "Координаты не выбраны",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             } else {
@@ -285,6 +412,21 @@ fun DetailNoteScreen(
                     editableGeotag?.let {
                         Text(
                             it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                if (editableLat != null && editableLon != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Координаты: ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "${editableLat?.formatLatLon()}, ${editableLon?.formatLatLon()}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
@@ -529,3 +671,20 @@ internal fun getColorName(color: Color): String {
         else -> "Пользовательский"
     }
 }
+
+private fun pastelColorForKey(key: String): Color {
+    val palette = listOf(
+        Color(0xFFE3F2FD), // пастельно-голубой
+        Color(0xFFFFF9C4), // пастельно-жёлтый
+        Color(0xFFFCE4EC), // пастельно-розовый
+        Color(0xFFE8F5E9), // пастельно-зелёный
+        Color(0xFFFFF3E0), // пастельно-персиковый
+        Color(0xFFEDE7F6), // пастельно-фиолетовый
+        Color(0xFFE0F2F1), // пастельно-бирюзовый
+        Color(0xFFF3E5F5)  // пастельно-сиреневый
+    )
+    val idx = (key.hashCode().absoluteValue) % palette.size
+    return palette[idx]
+}
+
+private fun Double.formatLatLon(): String = this.toString()

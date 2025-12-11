@@ -8,53 +8,52 @@ import org.example.project.data.database.entities.CommentEntity
 import org.example.project.data.database.entities.NoteEntity
 import org.example.project.data.database.entities.NoteWithTasks
 
-// Convert Note to NoteEntity (только для вставки/обновления)
-fun Note.toEntity(): NoteEntity {
-    return NoteEntity(
-        id = id,
-        title = title,
-        content = content,
-        geotag = geotag,
-        groupId = null,
-        colorArgb = color.value.toLong(),
-        creationDate = creationDate,
-        contentMaxLines = contentMaxLines
-    )
-}
+//// Convert Note to NoteEntity (только для вставки/обновления)
+//fun Note.toEntity(): NoteEntity {
+//    return NoteEntity(
+//        id = id,
+//        title = title,
+//        content = content,
+//        geotag = geotag?.name,
+//        groupId = null,
+//        colorArgb = color.value.toLong(),
+//        creationDate = creationDate,
+//        contentMaxLines = contentMaxLines
+//    )
+//}
 
-// Convert NoteWithTasks to Note (полное преобразование с группой и задачами)
-fun NoteWithTasks.toNote(comments: List<Comment> = emptyList()): Note {
-    return Note(
-        id = note.id,
-        title = note.title,
-        content = note.content,
-        geotag = note.geotag,
-        group = null,
-        comments = comments,
-        color = Color(note.colorArgb.toULong()),
-        creationDate = note.creationDate,
-        contentMaxLines = note.contentMaxLines
-    )
-}
+//// Convert NoteWithTasks to Note (полное преобразование с группой и задачами)
+//fun NoteWithTasks.toNote(comments: List<Comment> = emptyList()): Note {
+//    return Note(
+//        id = note.id,
+//        title = note.title,
+//        content = note.content,
+//        geotag = note.geotag,
+//        groupId = null,
+//        comments = comments,
+//        color = Color(note.colorArgb.toULong()),
+//        creationDate = note.creationDate,
+//        contentMaxLines = note.contentMaxLines
+//    )
+//}
 
-// Convert Comment to CommentEntity for Note
-fun Comment.toNoteCommentEntity(noteId: Long): CommentEntity {
-    return CommentEntity(
-        id = id,
-        noteId = noteId,
-        author = author,
-        content = content,
-        timestamp = timestamp
-    )
-}
+//// Convert Comment to CommentEntity for Note
+//fun Comment.toNoteCommentEntity(noteId: Long): CommentEntity {
+//    return CommentEntity(
+//        id = id,
+//        noteId = noteId,
+//        author = author,
+//        content = content,
+//        timestamp = timestamp
+//    )
+//}
 
-// Convert CommentEntity to Comment
-fun CommentEntity.toComment(): Comment {
-    return Comment(
-        id = id,
-        author = author,
-        content = content,
-        timestamp = timestamp
-    )
-}
-
+//// Convert CommentEntity to Comment
+//fun CommentEntity.toComment(): Comment {
+//    return Comment(
+//        id = id,
+//        author = author,
+//        content = content,
+//        timestamp = timestamp
+//    )
+//}

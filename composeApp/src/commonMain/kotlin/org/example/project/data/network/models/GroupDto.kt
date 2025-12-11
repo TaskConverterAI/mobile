@@ -10,7 +10,7 @@ data class GroupDto @OptIn(ExperimentalTime::class) constructor(
     val name: String,
     val description: String,
     val ownerId: Long,
-    val createdAt: Instant,
+    val createdAt: String,
     val memberCount: Int
 )
 
@@ -20,7 +20,7 @@ data class GroupSummaryDto @OptIn(ExperimentalTime::class) constructor(
     val name: String,
     val description: String,
     val memberCount: Int,
-    val createdAt: Instant
+    val createdAt: String
 )
 
 @Serializable
@@ -29,7 +29,7 @@ data class GroupMemberDto @OptIn(ExperimentalTime::class) constructor(
     val username: String,
     val email: String,
     val role: String,
-    val joinedAt: Instant
+    val joinedAt: String
 )
 
 @Serializable
@@ -38,7 +38,7 @@ data class GroupDetailsDto @OptIn(ExperimentalTime::class) constructor(
     val name: String,
     val description: String,
     val ownerId: Long,
-    val createdAt:	Instant,
+    val createdAt:	String,
     val userRole: String,
     val memberCount: Int,
     val members: List<GroupMemberDto>

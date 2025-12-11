@@ -14,15 +14,17 @@ import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.commonData.Group
+import org.example.project.data.commonData.Note
 import org.example.project.data.database.repository.GroupRepository
 import kotlin.collections.emptyList
 
 data class GroupListUi(
-    val showBottom: Boolean = true,
+    val showBottom: Boolean = false,
     val isEmptyList: Boolean = true,
     val groups: List<Group> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val selectedGroup: Group? = null
 )
 
 open class GroupsViewModel(
@@ -80,6 +82,19 @@ open class GroupsViewModel(
                     error = e.message ?: "Unknown error"
                 ) }
             }
+        }
+    }
+
+    /**
+     * Получить конкретную группу по ID
+     * @param groupId - ID группы
+     * @return Group с полными деталями
+     */
+    suspend fun getGroupById(groupId: Long): Group? {
+        return try {
+            groupRepository.getGroupById(groupId = groupId)
+        } catch (_: Exception) {
+            null
         }
     }
 

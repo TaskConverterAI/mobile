@@ -4,41 +4,45 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NoteDto(
-    val id: Long? = null,
+
+    val id: Long,
     val title: String,
-    val content: String,
-    val geotag: String,
-    val groupId: String? = null,
-    val groupName: String? = null,
-    val groupDescription: String? = null,
-    val colorArgb: Long,
-    val creationDate: Long,
-    val contentMaxLines: Int,
-    val comments: List<CommentDto> = emptyList(),
-    val lastModified: Long? = null,
-    val isDeleted: Boolean = false
+    val description: String,
+    val taskType: String? = null,
+    val authorId: Long,
+    val location: LocationDto?,
+    val groupId: Long? = null,
+    val createdAt: String
 )
 
 @Serializable
-data class CommentDto(
-    val id: Long? = null,
-    val text: String,
-    val author: String,
-    val timestamp: Long
+data class NoteDetailsDto(
+
+    val id: Long,
+    val title: String,
+    val description: String,
+    val taskType: String? = null,
+    val authorId: Long,
+    val location: LocationDto?,
+    val groupId: Long? = null,
+    val createdAt: String,
+    val comments: List<CommentDto>
 )
 
 @Serializable
-data class SyncRequest(
-    val lastSyncTimestamp: Long,
-    val notes: List<NoteDto>
+data class CreateNoteRequest(
+
+    val title: String,
+    val description: String,
+    val groupId: Long? = null,
+    val location: LocationDto?,
+    val authorId: Long
 )
 
 @Serializable
-data class SyncResponse(
-    val notes: List<NoteDto>,
-    val deletedNoteIds: List<Long>,
-    val syncTimestamp: Long,
-    val success: Boolean,
-    val message: String? = null
-)
+data class UpdateNoteRequest(
 
+    val title: String,
+    val description: String,
+    val location: LocationDto?,
+)

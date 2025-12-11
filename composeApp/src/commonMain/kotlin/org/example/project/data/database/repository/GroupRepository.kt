@@ -1,5 +1,6 @@
 package org.example.project.data.database.repository
 
+import co.touchlab.kermit.Logger
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.User
@@ -8,6 +9,7 @@ import org.example.project.data.network.models.AddMemberRequest
 import org.example.project.data.network.models.CreateGroupRequest
 import org.example.project.data.network.models.LeaveGroupRequest
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class GroupRepository (private val groupApiService: GroupApiService? = null) {
     /**
@@ -32,7 +34,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                             description = group.description,
                             ownerId = 0,
                             memberCount = group.memberCount,
-                            createdAt = group.createdAt.toEpochMilliseconds(),
+                            createdAt = Instant.parse(group.createdAt).toEpochMilliseconds(),
                             taskCount = 0
                         )
                     )
@@ -76,7 +78,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     ownerId = response.ownerId,
                     memberCount = response.members.size,
                     members = memberList,
-                    createdAt = response.createdAt.toEpochMilliseconds(),
+                    createdAt = Instant.parse(response.createdAt).toEpochMilliseconds(),
                     taskCount = 0
                 )
 
@@ -103,14 +105,21 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     description = response.description,
                     ownerId = response.ownerId,
                     memberCount = response.memberCount,
-                    createdAt = response.createdAt.toEpochMilliseconds(),
+                    createdAt = Instant.parse(response.createdAt).toEpochMilliseconds(),
                     taskCount = 0
                 )
             },
-            onFailure = { _ ->
+            onFailure = { res ->
+                Logger.d { res.message.toString() }
                 null
             }
         )
+
+        if (retVal != null) {
+            Logger.d { "group created" }
+        } else {
+            Logger.d { "group not created" }
+        }
 
         return retVal
     }
