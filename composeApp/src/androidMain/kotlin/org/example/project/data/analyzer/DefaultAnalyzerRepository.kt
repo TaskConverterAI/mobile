@@ -3,6 +3,7 @@ package org.example.project.data.analyzer
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
@@ -37,12 +38,12 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
     private val baseAnalyzerUrl = "http://192.168.31.79:8080/"
 
     @OptIn(ExperimentalTime::class)
-    private val serializersModule = SerializersModule {
+    private val serializerModule = SerializersModule {
         contextual(Instant::class, InstantSerializer)
     }
 
     private val json = Json {
-        serializersModule = serializersModule
+        this.serializersModule = serializerModule
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
@@ -60,36 +61,57 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
 
     override suspend fun transcribeAudio(
         userId: String,
-        audioPath: String
+        audioPath: String,
+        onProgress: (Float) ->Unit
     ): Boolean {
-        Log.i("MY_APP_TAG", "uid: ${userId}, audioPath: ${audioPath}")
         return try {
+            onProgress(0.00F)
             val fileUri = audioPath.toUri()
-            Log.i("MY_APP_TAG", "${appContext}")
-            val inputStream = appContext!!.contentResolver.openInputStream(fileUri)
-            Log.i("MY_APP_TAG", "hello2")
-            inputStream?.use { stream ->
-                Log.i("MY_APP_TAG", "hello3")
-                val fileInfo = getFileInfoFromUri(appContext!!, fileUri)
-                Log.i("MY_APP_TAG", "hello4")
-                val fileName = fileInfo.first ?: "audio_file"
-                val mimeType = fileInfo.second ?: "audio/*"
+            Log.i("MY_APP_TAG","${audioPath}")
+            val fileInfo = getFileInfoFromUri(appContext!!, fileUri)
+            var fileData = ByteArray(0)
 
-                val fileData = stream.readBytes()
+            var fileName = fileInfo.first ?: "audio_file"
+            var mimeType = "audio/mp3"
 
-                val requestBody = fileData.toRequestBody(mimeType.toMediaType())
 
-                val audioPart = MultipartBody.Part.createFormData(
-                    "audio",
-                    fileName,
-                    requestBody
-                )
-                Log.i("MY_APP_TAG", " ${fileInfo.first} ${fileInfo.second} ${mimeType.toMediaType()} ${audioPart.body.contentLength()}")
-                analyzerApiService.getAllJobs(userId)
-                Log.i("MY_APP_TAG", " ${fileInfo.first} ${fileInfo.second} ${mimeType.toMediaType()} ${audioPart.body.contentLength()}")
-                val response = analyzerApiService.transcribe(userId, audioPart)
+            if (fileInfo.second == "video/mp4") {
+                fileName = "audio_file.m4a"
+                mimeType = "audio/m4a"
+                val converter = Mp4ToMp3Converter()
+                val result = converter.extractAndEncodeToAac(appContext!!,fileUri, onProgress)
+                if (result.isSuccess) {
+                    fileData = result.getOrThrow()
+                } else {
+                    Toast.makeText(appContext, "ошибка конвертации", Toast.LENGTH_SHORT)
+                    Log.i("MY_APP_TAG","convertation failed")
+                    return false
+                }
             }
-            true
+            else{
+                val inputStream = appContext!!.contentResolver.openInputStream(fileUri)
+                inputStream?.use { stream ->
+
+                    fileData = stream.readBytes()
+                }
+            }
+
+            val requestBody = fileData.toRequestBody(mimeType.toMediaType())
+            val audioPart = MultipartBody.Part.createFormData(
+                "audio",
+                fileName,
+                requestBody
+            )
+            analyzerApiService.getAllJobs(userId)
+            val response = analyzerApiService.transcribe(userId, audioPart)
+
+            if (response.isSuccessful)
+            {
+                onProgress(1F)
+                return true
+            } else {
+                return false
+            }
         } catch (_: Exception) {
             false
         }

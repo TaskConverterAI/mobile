@@ -46,7 +46,12 @@ kotlin {
             // FilePicker
             implementation(libs.androidx.activity.compose)
 
-            //JWT
+            //AudioConverter
+            implementation(libs.androidx.media3.transformer)
+            implementation(libs.androidx.media3.common)
+            implementation(libs.ffmpeg.kit.full)
+
+            // JWT
             implementation(libs.java.jwt)
         }
         commonMain.dependencies {

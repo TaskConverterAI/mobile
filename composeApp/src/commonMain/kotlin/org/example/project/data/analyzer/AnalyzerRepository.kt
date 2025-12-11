@@ -6,7 +6,7 @@ import org.example.project.model.PublicSpeakerUtterance
 import org.example.project.model.TaskRequest
 
 interface AnalyzerRepository {
-    suspend fun transcribeAudio(userId: String, audioPath: String): Boolean
+    suspend fun transcribeAudio(userId: String, audioPath: String, onProgress: (Float) -> Unit): Boolean
     suspend fun getAllJobs(userId: String): List<AnalysisJob>?
     suspend fun getTranscribingResult(jobId: String): List<PublicSpeakerUtterance>?
     suspend fun analyzeText(userId: String, task: TaskRequest): Boolean
