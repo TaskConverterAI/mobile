@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
 import org.example.project.data.analyzer.AnalyzerRepository
@@ -36,25 +37,32 @@ class TaskConvertAIViewModel(
     fun onFileSelected(uri: String?) {
         if (uri == null)
             return
-        _uiData.value.startSending = true
+        _uiData.update { current ->
+            current.copy(startSending = true)
+        }
         viewModelScope.launch {
             val result = analyzerRepository.transcribeAudio(authRepository.getUserId(), uri) { percents ->
-                _uiData.value.convertVideoAudioPercent = (percents * 100).toInt()
+                _uiData.update { current ->
+                    current.copy(convertVideoAudioPercent = (percents * 100).toInt() )
+                }
             }
 
             if (result) {
-                _uiData.value.selectedFileUri = uri
+                _uiData.update { current ->
+                    current.copy(selectedFileUri = uri)
+                }
             } else {
-                _uiData.value.sendAudioFailed = true
+                _uiData.update { current ->
+                    current.copy(sendAudioFailed = true)
+                }
             }
         }
     }
 
     fun clearFile() {
-        _uiData.value.selectedFileUri = null
-        _uiData.value.sendAudioFailed = false
-        _uiData.value.convertVideoAudioPercent = 0
-        _uiData.value.startSending = false
+        _uiData.update { current ->
+            current.copy(convertVideoAudioPercent = 0, selectedFileUri = null, sendAudioFailed = false, startSending = false)
+        }
     }
 
 

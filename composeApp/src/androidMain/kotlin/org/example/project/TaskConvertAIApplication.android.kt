@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.arthenica.ffmpegkit.FFmpegKitConfig
 import org.example.project.data.analyzer.initAnalyzerRepository
 
 private const val AUTH_PREFERENCES = "auth_preferences"

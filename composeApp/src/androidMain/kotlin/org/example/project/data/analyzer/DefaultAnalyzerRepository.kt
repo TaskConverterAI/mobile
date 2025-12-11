@@ -3,6 +3,7 @@ package org.example.project.data.analyzer
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
@@ -66,11 +67,26 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
         return try {
             onProgress(0.00F)
             val fileUri = audioPath.toUri()
+            Log.i("MY_APP_TAG","${audioPath}")
             val fileInfo = getFileInfoFromUri(appContext!!, fileUri)
             var fileData = ByteArray(0)
+
+            var fileName = fileInfo.first ?: "audio_file"
+            var mimeType = "audio/mp3"
+
+
             if (fileInfo.second == "video/mp4") {
+                fileName = "audio_file.m4a"
+                mimeType = "audio/m4a"
                 val converter = Mp4ToMp3Converter()
-                converter.convertMp4ToMp3(audioPath, onProgress)
+                val result = converter.extractAndEncodeToAac(appContext!!,fileUri, onProgress)
+                if (result.isSuccess) {
+                    fileData = result.getOrThrow()
+                } else {
+                    Toast.makeText(appContext, "ошибка конвертации", Toast.LENGTH_SHORT)
+                    Log.i("MY_APP_TAG","convertation failed")
+                    return false
+                }
             }
             else{
                 val inputStream = appContext!!.contentResolver.openInputStream(fileUri)
@@ -79,9 +95,6 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
                     fileData = stream.readBytes()
                 }
             }
-
-            val fileName = fileInfo.first ?: "audio_file"
-            val mimeType = fileInfo.second ?: "audio/*"
 
             val requestBody = fileData.toRequestBody(mimeType.toMediaType())
             val audioPart = MultipartBody.Part.createFormData(

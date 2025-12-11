@@ -168,7 +168,7 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
+            startDestination = if (false) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
 //            startDestination = Destination.NOTES.route
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
