@@ -99,7 +99,6 @@ fun DetailNoteScreen(
     var editableContent by remember { mutableStateOf("") }
     // Состояние название тэга
     var editableGeotag: String? by remember { mutableStateOf("") }
-    var editableGroup: Group by remember { mutableStateOf(defaultGroup) }
     // Новые состояния для координат
     var editableLat by remember { mutableStateOf<Double?>(null) }
     var editableLon by remember { mutableStateOf<Double?>(null) }
@@ -109,26 +108,21 @@ fun DetailNoteScreen(
     // Инициализируем isNewNote на основе параметра isEditMode, если он true и note == null
     val isNewNote = remember(note, isEditMode) { isEditMode && note == null }
     var isInEditMode by remember { mutableStateOf(isEditMode) }
-
+    var group = defaultGroup
     // Обновляем поля при загрузке заметки
     androidx.compose.runtime.LaunchedEffect(note) {
 
         if (note != null) {
-
-            if (note.groupId == null) {
-                editableGroup = defaultGroup
-            } else {
-                for (gr in availableGroups) {
-                    if (gr.id == note.groupId) {
-                        editableGroup = gr
-                    }
+            for (gr in availableGroups) {
+                if (gr.id == note.groupId) {
+                    group = gr
                 }
             }
 
             editableTitle = note.title
             editableContent = note.content
             editableGeotag = note.geotag?.name ?: ""
-            //editableGroup = group
+            editableGroup = group
             editableColor = note.color
             // Инициализируем координаты из существующей заметки
             editableLat = note.geotag?.latitude
@@ -211,7 +205,6 @@ fun DetailNoteScreen(
                                     id = note?.id ?: 0,
                                     title = editableTitle,
                                     content = editableContent,
-                                    geotag = Location(45.0, 45.0, editableGeotag.toString(), false),
                                     geotag = Location(
                                         editableLat ?: 0.0,
                                         editableLon ?: 0.0,
@@ -223,9 +216,6 @@ fun DetailNoteScreen(
                                     color = editableColor,
                                     creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds(),
                                     authorId = userId
-                                    creationDate = note?.creationDate ?: Clock.System.now()
-                                        .toEpochMilliseconds(),
-                                    authorId = 0
                                 )
                                 onSave(updatedNote)
                                 if (!isNewNote) {

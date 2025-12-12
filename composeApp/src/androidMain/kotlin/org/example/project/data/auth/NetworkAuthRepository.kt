@@ -21,15 +21,15 @@ class NetworkAuthRepository(
     private val userAuthPreferencesRepository: UserAuthPreferencesRepository,
     private val authApiService: AuthApiService
 ): AuthRepository {
-    private val baseAuthUrl = "http://10.199.58.103:8090/"
+    private val baseAuthUrl = "http://192.168.1.153:8090/"
     private val authRetrofit: Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl(baseAuthUrl)
         .build()
 
-    private val authApiService: AuthApiService by lazy {
-        authRetrofit.create(AuthApiService::class.java)
-    }
+//    private val authApiService: AuthApiService by lazy {
+//        authRetrofit.create(AuthApiService::class.java)
+//    }
 
     private suspend fun parseAndSaveJWT(token: String) {
         try {
@@ -71,7 +71,7 @@ class NetworkAuthRepository(
                 false
             }
         } catch (e: Exception) {
-            Logger.i { e.message.toString() }
+            //Logger.i { e.message.toString() }
             false
         }
     }
