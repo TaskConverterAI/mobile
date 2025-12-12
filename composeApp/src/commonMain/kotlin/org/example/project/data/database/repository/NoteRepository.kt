@@ -1,5 +1,6 @@
 package org.example.project.data.database.repository
 
+import coil3.util.Logger
 import kotlinx.coroutines.flow.Flow
 import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Note
@@ -152,6 +153,7 @@ class NoteRepository(
     @OptIn(ExperimentalTime::class)
     suspend fun updateNote(note: Note) {
 
+        co.touchlab.kermit.Logger.i{"updaaaaaate note"}
 
         val result = noteApiService?.updateNote(note.id,
             note.toUpdateNoteRequest())
@@ -169,6 +171,7 @@ class NoteRepository(
 
 //        val noteEntity = note.toEntity()
 //        noteDao.updateNote(noteEntity)
+
 
     }
 

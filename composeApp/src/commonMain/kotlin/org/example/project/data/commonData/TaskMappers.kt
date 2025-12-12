@@ -1,26 +1,31 @@
 package org.example.project.data.commonData
 
 import androidx.compose.material3.PrimaryTabRow
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.offsetAt
 import org.example.project.data.database.entities.TaskEntity
 import org.example.project.data.network.models.CreateTaskRequest
 import org.example.project.data.network.models.TaskDetailsDto
 import org.example.project.data.network.models.TaskDto
 import org.example.project.data.network.models.UpdateTaskRequest
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 @OptIn(ExperimentalTime::class)
 fun Task.toTaskDto(): TaskDto {
+
     return TaskDto(
         id = id,
         title = title,
         description = description,
         authorId = authorId,
-        priority = priority.name,
+        priority = priority.value,
         groupId = groupId,
-        status = status.toString(),
+        status = status.value,
         doerId = assignee,
-        createdAt = Instant.fromEpochMilliseconds(createAt).toString(),
+        createdAt = Instant.fromEpochMilliseconds(createAt ).toString()
+                ,
         deadline = dueDate?.toDeadlineDto(),
         location =  geotag?.toLocationDto()
     )
@@ -37,7 +42,8 @@ fun TaskDto.toTask(): Task {
         groupId = groupId,
         status = Status.valueOf(status),
         assignee = doerId,
-        createAt = Instant.parse(createdAt).toEpochMilliseconds(),
+        createAt = Instant.parse(createdAt
+                +  TimeZone.currentSystemDefault().offsetAt(Clock.System.now())).toEpochMilliseconds(),
         comments = emptyList(),
         dueDate = deadline?.toDeadline(),
         geotag = location?.toLocation()
@@ -52,11 +58,12 @@ fun Task.toTaskDetailsDto(): TaskDetailsDto {
         title = title,
         description = description,
         authorId = authorId,
-        priority = priority.name,
+        priority = priority.value,
         groupId = groupId,
-        status = status.toString(),
+        status = status.value,
         doerId = assignee,
-        createdAt = Instant.fromEpochMilliseconds(createAt).toString(),
+        createdAt = Instant.fromEpochMilliseconds(createAt).toString()
+        + TimeZone.currentSystemDefault().offsetAt(Clock.System.now()),
         deadline = dueDate?.toDeadlineDto(),
         location =  geotag?.toLocationDto(),
         comments = comments.map { comment -> comment.toCommentDto() }
@@ -74,7 +81,7 @@ fun TaskDetailsDto.toTask(): Task {
         groupId = groupId,
         status = Status.valueOf(status),
         assignee = doerId,
-        createAt = Instant.parse(createdAt).toEpochMilliseconds(),
+        createAt = Instant.parse(createdAt +  TimeZone.currentSystemDefault().offsetAt(Clock.System.now())).toEpochMilliseconds(),
         comments = comments.map { comment -> comment.toComment()},
         dueDate = deadline?.toDeadline(),
         geotag = location?.toLocation()
@@ -88,7 +95,7 @@ fun Task.toCreateRequest() : CreateTaskRequest {
         title = title,
         description = description,
         authorId = authorId,
-        priority = priority.name,
+        priority = priority.value,
         groupId = groupId,
         doerId = assignee,
         deadline = dueDate?.toDeadlineDto(),
@@ -102,10 +109,10 @@ fun Task.toUpdateRequest() : UpdateTaskRequest {
         id = id,
         title = title,
         description = description,
-        priority = priority.name,
+        priority = priority.value,
         doerId = assignee,
         deadline = dueDate?.toDeadlineDto(),
         location = geotag?.toLocationDto(),
-        status = status.name
+        status = status.value
     )
 }

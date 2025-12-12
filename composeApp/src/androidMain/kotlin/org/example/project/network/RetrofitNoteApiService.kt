@@ -19,13 +19,13 @@ import retrofit2.http.*
  */
 interface RetrofitNoteApiService {
 
-    @GET("tasks/personal/{userId}")
+    @GET("tasks/user/{userId}")
     suspend fun getAllTasks(@Path("userId") userId: Long) : Response<List<TaskDto>>
 
-    @GET("task/details/{taskId}")
+    @GET("tasks/details/{taskId}")
     suspend fun getTaskDetails(@Path("taskId") taskId: Long) : Response<TaskDetailsDto>
 
-    @GET("task/group/{groupId}")
+    @GET("tasks/group/{groupId}")
     suspend fun getAllGroupTasks(@Path("groupId") groupId: Long) : Response<List<TaskDto>>
 
     @POST("tasks")
@@ -37,34 +37,34 @@ interface RetrofitNoteApiService {
     @DELETE("tasks/{taskId}")
     suspend fun deleteTask(@Path("taskId") taskId: Long) : Response<UInt>
 
-    @PUT("task/{taskId}/comment")
+    @PUT("tasks/{taskId}/comment")
     suspend fun addCommentToTask(@Path("taskId") taskId: Long, @Body commentRequest: AddCommentRequest) : Response<CommentDto>
 
-    @DELETE("task/comment/{commentId}")
+    @DELETE("tasks/comment/{commentId}")
     suspend fun deleteCommentFromTask(@Path("commentId") commentId: Long) : Response<TaskDto>
 
-    @GET("tasks/note/personal/{userId")
+    @GET("tasks/note/user/{userId}")
     suspend fun getAllNotes(@Path("userId") userId: Long): Response<List<NoteDto>>
 
     @GET("tasks/note/details/{noteId}")
     suspend fun getNoteDetails(@Path("noteId") noteId: Long) : Response<NoteDetailsDto>
 
-    @GET("tasks/note/group/{groupId")
+    @GET("tasks/note/group/{groupId}")
     suspend fun getAllGroupNotes(@Path("groupId") groupId: Long) : Response<List<NoteDto>>
 
     @POST("tasks/note")
     suspend fun createNote(@Body createNoteRequest: CreateNoteRequest) : Response<NoteDto>
 
-    @PUT("tasks/note/{nodeId}")
+    @PUT("tasks/note/{noteId}")
     suspend fun updateNote(@Path("noteId") noteId: Long, @Body updateNoteRequest: UpdateNoteRequest): Response<NoteDto>
 
     @DELETE("tasks/note/{noteId}")
     suspend fun deleteNote(@Path("noteId") noteId: Long) : Response<UInt>
 
-    @PUT("task/note/{noteId}/comment")
+    @PUT("tasks/note/{noteId}/comment")
     suspend fun addCommentToNote(@Path("noteId") noteId: Long, @Body commentRequest: AddCommentRequest) : Response<CommentDto>
 
-    @DELETE("task/note/comment/{commentId}")
+    @DELETE("tasks/note/comment/{commentId}")
     suspend fun deleteCommentFromNote(@Path("commentId") commentId: Long) : Response<NoteDto>
 
 

@@ -14,6 +14,7 @@ import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.commonData.Group
+import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.User
 
 data class CreateGroupUiState(
@@ -96,12 +97,22 @@ class CreateGroupViewModel(
                 val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
                 val userMembers:  MutableList<User> = mutableListOf()
 
-                groupRepository.createGroup(Group(0,
+                val group = groupRepository.createGroup(
+                    Group(0,
                     uiState.value.groupName,
                     uiState.value.description,
                     0, 0,
                     userMembers, 0),
                     userData.first)
+
+                if (group != null) {
+                    for (emailOrName in uiState.value.participants) {
+                        groupRepository.addMemberInGroup(
+                            group.id,
+                            emailOrName,
+                            Privileges.member)
+                    }
+                }
 
                 onComplete()
             } catch (e: Exception) {

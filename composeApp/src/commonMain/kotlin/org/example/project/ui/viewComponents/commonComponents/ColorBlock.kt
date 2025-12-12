@@ -200,7 +200,7 @@ private fun AdvancedTaskBlock(
                     LowPriority()
                 }
 
-                Priority.MEDIUM -> {
+                Priority.MIDDLE -> {
                     MediumPriority()
                 }
 
@@ -212,13 +212,11 @@ private fun AdvancedTaskBlock(
             Spacer(modifier = modifier.width(8.dp))
 
             when (task.status) {
-                Status.TODO -> {
+                Status.UNDONE -> {
                     ToDoStatus()
                 }
 
-                Status.IN_PROGRESS -> {
-                    InProgressStatus()
-                }
+
 
                 Status.DONE -> {
                     DoneStatus()

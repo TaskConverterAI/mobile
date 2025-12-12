@@ -46,7 +46,7 @@ class DefaultAppContainer(
 
     // Создать репозитории
     override val noteRepository: NoteRepository = NoteRepository(database, noteApiService)
-    override val taskRepository: TaskRepository = TaskRepository(database)
+    override val taskRepository: TaskRepository = TaskRepository(database, noteApiService)
 
     // Создать sync preferences
     private val syncPreferences = org.example.project.data.sync.SyncPreferences(dataStore)

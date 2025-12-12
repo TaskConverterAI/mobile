@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import co.touchlab.kermit.Logger
 import org.example.project.data.auth.AuthRepository
 
 import org.example.project.data.commonData.Note
@@ -22,15 +23,17 @@ import org.example.project.ui.viewmodels.NotesViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel) {
+    Logger.i{"l1"}
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
 
     var showBottomSheet by remember { mutableStateOf(false) }
-
+    Logger.i{"l2"}
     // Получаем заметки из viewModel
-    viewModel.loadNotes()
-    val notes by viewModel.notes.collectAsState()
 
+    val notes by viewModel.notes.collectAsState()
+    Logger.i{"l3"}
+    Logger.i{notes.toString()}
     Column(
         modifier = Modifier
             .fillMaxSize()

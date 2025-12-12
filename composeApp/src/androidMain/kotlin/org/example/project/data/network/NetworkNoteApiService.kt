@@ -1,5 +1,7 @@
 package org.example.project.data.network
 
+import co.touchlab.kermit.Logger
+import kotlinx.datetime.LocalDate
 import org.example.project.data.network.models.AddCommentRequest
 import org.example.project.data.network.models.CommentDto
 import org.example.project.data.network.models.CreateNoteRequest
@@ -40,6 +42,7 @@ class NetworkNoteApiService(
                 Result.failure(Exception(response.message()))
             }
         } catch (e: Exception) {
+
             Result.failure(e)
         }
     }
@@ -196,7 +199,7 @@ class NetworkNoteApiService(
     override suspend fun getAllGroupNotes(groupId: Long): Result<List<NoteDto>> {
 
         return try {
-            val response = retrofitService.getAllNotes(groupId)
+            val response = retrofitService.getAllGroupNotes(groupId)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {

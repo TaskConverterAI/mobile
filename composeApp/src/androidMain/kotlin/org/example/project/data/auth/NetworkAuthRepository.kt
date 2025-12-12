@@ -1,6 +1,7 @@
 package org.example.project.data.auth
 
 import android.util.Log
+import co.touchlab.kermit.Logger
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.first
@@ -13,11 +14,12 @@ import org.example.project.network.AuthApiService
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlin.RuntimeException
 
 class NetworkAuthRepository(
     private val userAuthPreferencesRepository: UserAuthPreferencesRepository
 ): AuthRepository {
-    private val baseAuthUrl = "http://10.199.58.103:8090/"
+    private val baseAuthUrl = "http://192.168.1.153:8090/"
     private val authRetrofit: Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl(baseAuthUrl)
@@ -38,24 +40,39 @@ class NetworkAuthRepository(
         }
     }
 
+    override suspend fun getUserIdByToken(): Long {
+
+        val refreshRes = refresh()
+        if (!refreshRes) {
+            throw RuntimeException("Refresh error")
+        }
+        val userData = decode() ?: throw RuntimeException("Decode error")
+        return userData.first
+
+    }
+
     override suspend fun signUp(
         login: String,
         email: String,
         password: String
     ): Boolean {
         return try {
+
             val response = authApiService.signUp(SignUpUserRequest(login, email, password))
 
             if (response.isSuccessful) {
+
                 val signInResponse = response.body()
                 userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken)
                 userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken)
                 parseAndSaveJWT(signInResponse.accessToken)
                 true
             } else {
+
                 false
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.i { e.message.toString() }
             false
         }
     }

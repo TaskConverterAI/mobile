@@ -64,6 +64,7 @@ open class GroupsViewModel(
                 val groups = groupRepository.getAllGroups(userData.first)
                 Logger.d("GroupsViewModel: Received ${groups?.size ?: 0} groups from repository")
 
+
                 _listUi.update { currentState ->
                     currentState.copy(
                         groups = groups ?: emptyList(),
@@ -93,7 +94,8 @@ open class GroupsViewModel(
     suspend fun getGroupById(groupId: Long): Group? {
         return try {
             groupRepository.getGroupById(groupId = groupId)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Logger.e {e.message.toString() + "ERRROOOOOOR"}
             null
         }
     }

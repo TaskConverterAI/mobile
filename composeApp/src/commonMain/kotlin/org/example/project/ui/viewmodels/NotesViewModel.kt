@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,11 +14,13 @@ import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Note
+import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.database.repository.NoteRepository
 
 class NotesViewModel(
     private val noteRepository: NoteRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val groupRepository: GroupRepository
 ) : ViewModel() {
 
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
@@ -29,22 +32,31 @@ class NotesViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-
     /**
      * Загрузить все заметки
      */
     fun loadNotes() {
         viewModelScope.launch {
-
-            val refreshRes = authRepository.refresh()
-            if (!refreshRes) {
-                throw RuntimeException("Refresh error")
-            }
-            val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
-
             _isLoading.value = true
-            _notes.value = noteRepository.getAllNotes(userData.first)!!
+            try {
+                val userId = authRepository.getUserIdByToken()
+                val response = noteRepository.getAllNotes(userId)
+                if (response != null) {
+                    _notes.value = response.filter { note -> note.groupId ==  null  }
+                }
 
+                val groups = groupRepository.getAllGroups(userId = userId)
+                groups?.forEach { group ->
+                    val groupNotes = noteRepository.getNotesByGroup(group.id)
+                    if (groupNotes != null) {
+                        _notes.value = _notes.value.plus(groupNotes)
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
         }
         notes
     }
@@ -56,12 +68,8 @@ class NotesViewModel(
     fun addNote(note: Note) {
         viewModelScope.launch {
             try {
-                val refreshRes = authRepository.refresh()
-                if (!refreshRes) {
-                    throw RuntimeException("Refresh error")
-                }
-                val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
-                noteRepository.insertNote(userData.first, note)
+                val userId = authRepository.getUserIdByToken()
+                noteRepository.insertNote(userId, note)
                 // Заметки обновятся автоматически через Flow
             } catch (e: Exception) {
                 _error.value = e.message
@@ -167,11 +175,10 @@ class NotesViewModel(
             initializer {
                 NotesViewModel(
                     AppDependencies.container.noteRepository,
-                    AppDependencies.container.authRepository
+                    AppDependencies.container.authRepository,
+                    AppDependencies.container.groupRepository
                 )
             }
         }
     }
 }
-
-

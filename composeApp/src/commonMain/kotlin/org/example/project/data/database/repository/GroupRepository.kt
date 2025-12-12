@@ -65,6 +65,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     memberList.add(
                         User(
                             id = member.userId,
+                            email = member.email,
                             username = member.username,
                             privileges = Privileges.valueOf(member.role)
                         )
@@ -84,7 +85,8 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
 
                 group
             },
-            onFailure = { _ ->
+            onFailure = { e ->
+                Logger.e {e.message.toString() + "EROOOOR"}
                 null
             }
         )
@@ -152,14 +154,15 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
         groupApiService?.deleteGroup(groupId = groupId, userId)
     }
 
-    suspend fun addMemberInGroup(groupId: Long, user: User) : User? {
-        val addMemberRequest = AddMemberRequest(usernameOrEmail = user.email)
+    suspend fun addMemberInGroup(groupId: Long, userNameOrEmail: String, role: Privileges) : User? {
+        val addMemberRequest = AddMemberRequest(userNameOrEmail, role.name)
         val result = groupApiService?.addMemberInGroup(groupId, addMemberRequest)
 
         val retVal = result?.fold(
             onSuccess = { response ->
                 User(
                     id = response.userId,
+                    email = response.email,
                     username = response.username,
                     privileges = Privileges.valueOf(response.role)
                 )

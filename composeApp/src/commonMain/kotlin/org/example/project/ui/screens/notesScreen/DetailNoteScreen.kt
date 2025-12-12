@@ -1,5 +1,5 @@
 package org.example.project.ui.screens.notesScreen
-
+import kotlinx.datetime.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +25,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil3.util.Logger
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -67,16 +70,17 @@ data class DetailNoteScreenArgs(val noteID: Int?, val isEditMode: Boolean = fals
 @Composable
 fun DetailNoteScreen(
     note: Note?,
-    group: Group?,
     navController: NavController,
+    userId: Long,
     isEditMode: Boolean = false,
     availableGroups: List<Group> = emptyList(), // Передайте список доступных групп
     onSave: (Note) -> Unit = {}, // Callback для сохранения
-    onDelete: (Note) -> Unit = {} // Callback для удаления
+    onDelete: (Note) -> Unit = {} // Callback для удаления,
 ) {
+
     // Default group для новых заметок
     val defaultGroup = remember {
-        availableGroups.firstOrNull() ?: Group(
+        Group(
             id = 0L,
             name = "Без группы",
             description = "",
@@ -87,12 +91,12 @@ fun DetailNoteScreen(
             taskCount = 0
         )
     }
-
+    val _availableGroups = listOf<Group>(defaultGroup).plus(availableGroups)
     // Состояния для редактируемых полей
     var editableTitle by remember { mutableStateOf("") }
     var editableContent by remember { mutableStateOf("") }
     var editableGeotag: String? by remember { mutableStateOf("") }
-    var editableGroup: Group? by remember { mutableStateOf(defaultGroup) }
+    var editableGroup: Group by remember { mutableStateOf(defaultGroup) }
     var editableColor by remember { mutableStateOf(PrimaryBase) }
 
     // Инициализируем isNewNote на основе параметра isEditMode, если он true и note == null
@@ -103,10 +107,21 @@ fun DetailNoteScreen(
     androidx.compose.runtime.LaunchedEffect(note) {
 
         if (note != null) {
+
+            if (note.groupId == null) {
+                editableGroup = defaultGroup
+            } else {
+                for (gr in availableGroups) {
+                    if (gr.id == note.groupId) {
+                        editableGroup = gr
+                    }
+                }
+            }
+
             editableTitle = note.title
             editableContent = note.content
             editableGeotag = note.geotag?.name ?: ""
-            editableGroup = group
+            //editableGroup = group
             editableColor = note.color
         }
     }
@@ -156,14 +171,15 @@ fun DetailNoteScreen(
                                     id = note?.id ?: 0,
                                     title = editableTitle,
                                     content = editableContent,
-                                    geotag = Location(0.0, 0.0, "", false),
+                                    geotag = Location(45.0, 45.0, editableGeotag.toString(), false),
                                     groupId = editableGroup?.id,
                                     comments = note?.comments ?: emptyList(),
                                     color = editableColor,
                                     creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds(),
-                                    authorId = 0
+                                    authorId = userId
                                 )
                                 onSave(updatedNote)
+
                                 if (!isNewNote) {
                                     isInEditMode = false
                                 } else {
@@ -194,7 +210,7 @@ fun DetailNoteScreen(
                                     editableTitle = note.title
                                     editableContent = note.content
                                     editableGeotag = note.geotag?.name
-                                    editableGroup = group
+                                    //editableGroup = group
                                     editableColor = note.color
                                     isInEditMode = false
                                 }
@@ -303,28 +319,29 @@ fun DetailNoteScreen(
             if (isInEditMode) {
                 var groupExpanded by remember { mutableStateOf(false) }
 
-                Box {
+                ExposedDropdownMenuBox(
+                    expanded = groupExpanded,
+                    onExpandedChange = { groupExpanded = !groupExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
-                        value = editableGroup?.name ?: "None",
-                        onValueChange = { },
-                        label = { Text("Группа") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true
-                    )
-
-                    // Transparent clickable overlay
-                    Box(
+                        value = editableGroup.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
                         modifier = Modifier
-                            .matchParentSize()
-                            .clickable { groupExpanded = true }
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        label = { Text("Группа") }
                     )
 
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = groupExpanded,
                         onDismissRequest = { groupExpanded = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
-                        availableGroups.forEach { group ->
+                        availableGroups.forEach {  group ->
                             DropdownMenuItem(
                                 text = {
                                     Text(

@@ -15,6 +15,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthApiService {
+
     @POST("auth/register")
     suspend fun signUp(@Body user: SignUpUserRequest): Response<SignUpUserResponse>
 

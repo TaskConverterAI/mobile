@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class LocationDto(
     val latitude: Double,
     val longitude: Double,
-    val name: String,
+    val name: String?,
     val remindByLocation: Boolean
 )
 

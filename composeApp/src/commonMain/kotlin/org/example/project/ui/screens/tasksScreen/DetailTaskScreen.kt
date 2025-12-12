@@ -28,6 +28,8 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,10 +50,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import co.touchlab.kermit.Logger
 import kotlinx.serialization.Serializable
+import org.example.project.data.commonData.Deadline
 import kotlin.time.ExperimentalTime
 
 import org.example.project.data.commonData.Group
+import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
@@ -64,6 +69,7 @@ import org.example.project.ui.viewComponents.taskScreenComponents.MediumPriority
 import org.example.project.ui.viewComponents.taskScreenComponents.ToDoStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.InProgressStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
+import kotlin.time.Instant
 
 @Serializable
 data class DetailTaskScreenArgs(val taskID: Long?, val isEditMode: Boolean = false)
@@ -72,18 +78,18 @@ data class DetailTaskScreenArgs(val taskID: Long?, val isEditMode: Boolean = fal
 @Composable
 fun DetailTaskScreen(
     task: Task?,
-    group: Group?,
     navController: NavController,
     isEditMode: Boolean = false,
     availableGroups: List<Group> = emptyList(),
-    availableUsers: List<User> = emptyList(),
+    availableUsers: HashMap<Long, List<User>> = hashMapOf(),
     onSave: (Task) -> Unit = {},
-    onDelete: (Task) -> Unit = {}
+    onDelete: (Task) -> Unit = {},
+    userId: Long
 ) {
     // Default values for new tasks
     val defaultGroup = remember {
-        availableGroups.firstOrNull() ?: Group(
-            id = 0,
+       Group(
+            id = -1,
             name = "Без группы",
             description = "",
             ownerId = 0,
@@ -94,37 +100,62 @@ fun DetailTaskScreen(
         )
     }
 
+
     val defaultUser = remember {
-        availableUsers.firstOrNull() ?: User(
-            id = 0,
-            email = "Не назначен",
+        User(
+            id = userId,
+            email = "Я",
             username = "Не назначен",
             privileges = org.example.project.data.commonData.Privileges.member
         )
     }
+    val _availableGroups = listOf<Group>(defaultGroup).plus(availableGroups)
+    availableUsers.put(defaultGroup.id, listOf(defaultUser))
 
     // Editable state variables
     var editableTitle by remember { mutableStateOf("") }
     var editableDescription by remember { mutableStateOf("") }
     var editableGeotag by remember { mutableStateOf("") }
     var editableGroup by remember { mutableStateOf(defaultGroup) }
-    var editableAssignee by remember { mutableStateOf(defaultUser) }
+    //var editableAssignee by remember { mutableStateOf(defaultUser) }
     @OptIn(ExperimentalTime::class)
     var editableDueDate by remember { mutableStateOf(kotlin.time.Clock.System.now().toEpochMilliseconds()) }
-    var editablePriority by remember { mutableStateOf(Priority.MEDIUM) }
-    var editableStatus by remember { mutableStateOf(Status.TODO) }
+    var editablePriority by remember { mutableStateOf(Priority.MIDDLE) }
+    var editableStatus by remember { mutableStateOf(Status.UNDONE) }
+
+    val currentUsers = remember(editableGroup.id) {
+        mutableStateOf(availableUsers[editableGroup.id] ?: emptyList())
+    }.value
+
+    var editableAssignee = remember (editableGroup.id) {
+            availableUsers[editableGroup.id]?.get(0) ?: defaultUser
+    }
 
     val isNewTask = remember(task, isEditMode) { isEditMode && task == null }
     var isInEditMode by remember { mutableStateOf(isEditMode) }
 
-    // Initialize fields when task is loaded
     LaunchedEffect(task) {
         if (task != null) {
+            if (task.groupId == null) {
+                editableGroup = defaultGroup
+            } else {
+                for (gr in availableGroups) {
+                    if (gr.id == task.groupId) {
+                        editableGroup = gr
+                    }
+                }
+            }
+
+            val users = availableUsers[editableGroup.id]
+            users?.forEach { usr ->
+                if (usr.id == task.assignee) {
+                    editableAssignee = usr
+                }
+            }
+
             editableTitle = task.title
             editableDescription = task.description
             editableGeotag = task.geotag?.name ?: ""
-            editableGroup = group ?: defaultGroup
-//            editableAssignee = task.assignee ?: defaultUser
             editableDueDate = task.dueDate?.time ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
             editablePriority = task.priority
             editableStatus = task.status
@@ -175,11 +206,11 @@ fun DetailTaskScreen(
                                     title = editableTitle,
                                     description = editableDescription,
                                     comments = task?.comments ?: emptyList(),
-                                    authorId = 1,
-                                    groupId = 1,
-                                    assignee = 2,
-                                    dueDate = null,
-                                    geotag = null,
+                                    authorId = userId,
+                                    groupId = if (editableGroup.id == -1L) null else editableGroup.id,
+                                    assignee = editableAssignee.id,
+                                    dueDate = Deadline(editableDueDate, false),
+                                    geotag = Location(45.0, 45.0, editableGeotag.toString(), false),
                                     priority = editablePriority,
                                     status = editableStatus
                                 )
@@ -213,10 +244,8 @@ fun DetailTaskScreen(
                                     // Reset changes
                                     editableTitle = task.title
                                     editableDescription = task.description
-//                                    editableGeotag = task.geotag ?: ""
-//                                    editableGroup = task.group ?: defaultGroup
-//                                    editableAssignee = task.assignee ?: defaultUser
-//                                    editableDueDate = task.dueDate ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
+                                    editableGeotag = task.geotag?.name ?: ""
+                                    editableDueDate = task.dueDate?.time ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
                                     editablePriority = task.priority
                                     editableStatus = task.status
                                     isInEditMode = false
@@ -296,53 +325,53 @@ fun DetailTaskScreen(
             if (isInEditMode) {
                 var priorityExpanded by remember { mutableStateOf(false) }
 
-                Box {
-                    OutlinedTextField(
-                        value = when (editablePriority) {
-                            Priority.LOW -> "Низкий"
-                            Priority.MEDIUM -> "Средний"
-                            Priority.HIGH -> "Высокий"
-                        },
-                        onValueChange = { },
-                        label = { Text("Приоритет") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true
-                    )
-
-                    // Transparent clickable overlay
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable { priorityExpanded = true }
-                    )
-
-                    DropdownMenu(
+                    ExposedDropdownMenuBox(
                         expanded = priorityExpanded,
-                        onDismissRequest = { priorityExpanded = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        onExpandedChange = { priorityExpanded = !priorityExpanded },
+                        modifier = Modifier.clickable { priorityExpanded = true }
                     ) {
-                        Priority.entries.forEach { priority ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = when (priority) {
-                                            Priority.LOW -> "Низкий"
-                                            Priority.MEDIUM -> "Средний"
-                                            Priority.HIGH -> "Высокий"
-                                        },
-                                        color = MaterialTheme.colorScheme.onSurface
+                        OutlinedTextField(
+                            value = when (editablePriority) {
+                                Priority.LOW -> "Низкий"
+                                Priority.MIDDLE -> "Средний"
+                                Priority.HIGH -> "Высокий"
+                            },
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = priorityExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            label = { Text("Приоритет") }
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = priorityExpanded,
+                            onDismissRequest = { priorityExpanded = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            Priority.entries.forEach { priorityOption ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            when (priorityOption) {
+                                                Priority.LOW -> "Низкий"
+                                                Priority.MIDDLE -> "Средний"
+                                                Priority.HIGH -> "Высокий"
+                                            }
+                                        )
+                                    },
+                                    onClick = {
+                                        editablePriority = priorityOption
+//                                      priorityExpanded = false
+                                    },
+                                    colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                        textColor = MaterialTheme.colorScheme.onSurface
                                     )
-                                },
-                                onClick = {
-                                    editablePriority = priority
-                                    priorityExpanded = false
-                                },
-                                colors = androidx.compose.material3.MenuDefaults.itemColors(
-                                    textColor = MaterialTheme.colorScheme.onSurface
                                 )
-                            )
+                            }
                         }
-                    }
                 }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -354,7 +383,7 @@ fun DetailTaskScreen(
                     Row(modifier = Modifier.weight(1f)) {
                         when (editablePriority) {
                             Priority.LOW -> LowPriority()
-                            Priority.MEDIUM -> MediumPriority()
+                            Priority.MIDDLE -> MediumPriority()
                             Priority.HIGH -> HighPriority()
                         }
                     }
@@ -367,45 +396,46 @@ fun DetailTaskScreen(
             if (isInEditMode) {
                 var statusExpanded by remember { mutableStateOf(false) }
 
-                Box {
+                ExposedDropdownMenuBox(
+                    expanded = statusExpanded,
+                    onExpandedChange = { statusExpanded = !statusExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
                         value = when (editableStatus) {
-                            Status.TODO -> "ToDo"
-                            Status.IN_PROGRESS -> "В процессе"
                             Status.DONE -> "Завершено"
+                            Status.UNDONE -> "Не завершено"
+//
+
                         },
-                        onValueChange = { },
-                        label = { Text("Статус") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true
-                    )
-
-                    // Transparent clickable overlay
-                    Box(
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded) },
                         modifier = Modifier
-                            .matchParentSize()
-                            .clickable { statusExpanded = true }
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        label = { Text("Статус") }
                     )
 
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = statusExpanded,
                         onDismissRequest = { statusExpanded = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
-                        Status.entries.forEach { status ->
+                        Status.entries.forEach { statusOption ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        text = when (status) {
-                                            Status.TODO -> "ToDo"
-                                            Status.IN_PROGRESS -> "В процессе"
+                                        when (statusOption) {
                                             Status.DONE -> "Завершено"
-                                        },
-                                        color = MaterialTheme.colorScheme.onSurface
+                                            Status.UNDONE -> "Не завершено"
+//
+                                        }
                                     )
                                 },
                                 onClick = {
-                                    editableStatus = status
+                                    editableStatus = statusOption
                                     statusExpanded = false
                                 },
                                 colors = androidx.compose.material3.MenuDefaults.itemColors(
@@ -424,8 +454,7 @@ fun DetailTaskScreen(
                     )
                     Row(modifier = Modifier.weight(1f)) {
                         when (editableStatus) {
-                            Status.TODO -> ToDoStatus()
-                            Status.IN_PROGRESS -> InProgressStatus()
+                            Status.UNDONE -> ToDoStatus()
                             Status.DONE -> DoneStatus()
                         }
                     }
@@ -438,28 +467,29 @@ fun DetailTaskScreen(
             if (isInEditMode) {
                 var groupExpanded by remember { mutableStateOf(false) }
 
-                Box {
+                ExposedDropdownMenuBox(
+                    expanded = groupExpanded,
+                    onExpandedChange = { groupExpanded = !groupExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
                         value = editableGroup.name,
-                        onValueChange = { },
-                        label = { Text("Группа") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true
-                    )
-
-                    // Transparent clickable overlay
-                    Box(
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
                         modifier = Modifier
-                            .matchParentSize()
-                            .clickable { groupExpanded = true }
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        label = { Text("Группа") }
                     )
 
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = groupExpanded,
                         onDismissRequest = { groupExpanded = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
-                        availableGroups.forEach { group ->
+                        _availableGroups.forEach {  group ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -499,28 +529,30 @@ fun DetailTaskScreen(
             if (isInEditMode) {
                 var assigneeExpanded by remember { mutableStateOf(false) }
 
-                Box {
+
+                ExposedDropdownMenuBox(
+                    expanded = assigneeExpanded,
+                    onExpandedChange = { assigneeExpanded = !assigneeExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
                         value = editableAssignee.email,
-                        onValueChange = { },
-                        label = { Text("Исполнитель") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true
-                    )
-
-                    // Transparent clickable overlay
-                    Box(
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = assigneeExpanded) },
                         modifier = Modifier
-                            .matchParentSize()
-                            .clickable { assigneeExpanded = true }
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        label = { Text("Исполнитель") }
                     )
 
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = assigneeExpanded,
                         onDismissRequest = { assigneeExpanded = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
-                        availableUsers.forEach { user ->
+                        currentUsers.forEach {  user ->
                             DropdownMenuItem(
                                 text = {
                                     Text(

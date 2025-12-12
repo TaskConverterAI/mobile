@@ -131,8 +131,8 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                             assignee = 2,
                             dueDate = null,
                             geotag = null,
-                            priority = Priority.MEDIUM,
-                            status = Status.TODO
+                            priority = Priority.MIDDLE,
+                            status = Status.UNDONE
                         ),
                         isEnabled = taskCell.isUsed,
                         onEnabledChange = { newValue ->

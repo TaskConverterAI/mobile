@@ -4,9 +4,11 @@ import org.example.project.data.network.models.CreateNoteRequest
 import org.example.project.data.network.models.NoteDetailsDto
 import org.example.project.data.network.models.NoteDto
 import org.example.project.data.network.models.UpdateNoteRequest
-import org.example.project.ui.screens.notesScreen.NotesScreen
+
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+import kotlinx.datetime.*
+import kotlin.time.Clock
 
 @OptIn(ExperimentalTime::class)
 fun Note.toNoteDto() : NoteDto {
@@ -28,7 +30,8 @@ fun NoteDto.toNote() : Note {
         title = title,
         content = description,
         geotag = location?.toLocation(),
-        creationDate = Instant.parse(createdAt).toEpochMilliseconds(),
+        creationDate = Instant.parse(createdAt +
+                TimeZone.currentSystemDefault().offsetAt(Clock.System.now())).toEpochMilliseconds(),
         groupId = groupId,
         authorId = authorId,
         comments = emptyList()
@@ -56,7 +59,8 @@ fun NoteDetailsDto.toNote() : Note {
         title = title,
         content = description,
         geotag = location?.toLocation(),
-        creationDate = Instant.parse(createdAt).toEpochMilliseconds(),
+        creationDate = Instant.parse(createdAt +
+                TimeZone.currentSystemDefault().offsetAt(Clock.System.now())).toEpochMilliseconds(),
         groupId = groupId,
         authorId = authorId,
         comments = comments.map { comment -> comment.toComment() }

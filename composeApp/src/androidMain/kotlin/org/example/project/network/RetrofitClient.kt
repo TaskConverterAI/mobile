@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  * Фабрика для создания Retrofit клиента и API сервисов
  */
 object RetrofitClient {
-    private const val BASE_URL = "http://10.199.58.103:8090/"
+    private const val BASE_URL = "http://192.168.1.153:8083/"
 
     private val gson = GsonBuilder()
         .setLenient()
@@ -34,12 +34,20 @@ object RetrofitClient {
             .build()
     }
 
+    private val groupRetrofit : Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl("http://192.168.1.153:8090/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
     val retrofitNoteApiService: RetrofitNoteApiService by lazy {
         retrofit.create(RetrofitNoteApiService::class.java)
     }
 
     val retrofitGroupApiService: RetrofitGroupApiService by lazy {
-        retrofit.create(RetrofitGroupApiService::class.java)
+        groupRetrofit.create(RetrofitGroupApiService::class.java)
     }
 
     /**

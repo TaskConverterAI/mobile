@@ -1,15 +1,14 @@
 package org.example.project.data.commonData
 
-enum class Priority {
-    HIGH,
-    MEDIUM,
-    LOW
+enum class Priority(val value: String) {
+    HIGH("HIGH"),
+    MIDDLE("MIDDLE"),
+    LOW("LOW")
 }
 
-enum class Status {
-    TODO,
-    IN_PROGRESS,
-    DONE
+enum class Status(val value: String) {
+    UNDONE("UNDONE"),
+    DONE("DONE")
 }
 
 data class Task(

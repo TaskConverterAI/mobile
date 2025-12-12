@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import coil3.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,11 +18,14 @@ import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.data.database.DatabaseProvider
+import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.database.repository.TaskRepository
+import kotlin.collections.plus
 
 class TasksViewModel(
     private val taskRepository: TaskRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val groupRepository: GroupRepository
 ) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -36,15 +40,28 @@ class TasksViewModel(
     /**
      * Загрузить все задачи с полными деталями (группа, исполнитель, заметка)
      */
-    private fun loadTasks() {
+    fun loadTasks() {
         viewModelScope.launch {
-            val refreshRes = authRepository.refresh()
-            if (!refreshRes) {
-                throw RuntimeException("Refresh error")
-            }
-            val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
             _isLoading.value = true
-            _tasks.value = taskRepository.getAllTasks(userData.first)!!
+            try {
+                val userId = authRepository.getUserIdByToken()
+                val response = taskRepository.getAllTasks(userId)
+                if (response != null) {
+                    _tasks.value = response.filter { note -> note.groupId ==  null  }
+                }
+
+                val groups = groupRepository.getAllGroups(userId = userId)
+                groups?.forEach { group ->
+                    val groupNotes = taskRepository.getTasksByGroup(group.id)
+                    if (groupNotes != null) {
+                        _tasks.value = _tasks.value.plus(groupNotes)
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -55,13 +72,8 @@ class TasksViewModel(
     fun addTask(task: Task) {
         viewModelScope.launch {
             try {
-                val refreshRes = authRepository.refresh()
-                if (!refreshRes) {
-                    throw RuntimeException("Refresh error")
-                }
-                val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
-
-                taskRepository.insertTask(userData.first, task)
+                val userId = authRepository.getUserIdByToken()
+                taskRepository.insertTask(userId, task)
                 // Задачи обновятся автоматически через Flow
             } catch (e: Exception) {
                 _error.value = e.message
@@ -120,8 +132,12 @@ class TasksViewModel(
      */
     suspend fun getTaskById(taskId: Long): Task? {
         return try {
-            taskRepository.getTaskById(taskId)
+            co.touchlab.kermit.Logger.i{"HERE "}
+            val test = taskRepository.getTaskById(taskId)
+            co.touchlab.kermit.Logger.i{"HERE " + test.toString()}
+            test
         } catch (e: Exception) {
+            co.touchlab.kermit.Logger.i{"ERROR " + e.message.toString()}
             _error.value = e.message
             null
         }
@@ -249,10 +265,10 @@ class TasksViewModel(
             initializer {
                 TasksViewModel(
                     AppDependencies.container.taskRepository,
-                    AppDependencies.container.authRepository
+                    AppDependencies.container.authRepository,
+                    AppDependencies.container.groupRepository
                 )
             }
         }
     }
 }
-
