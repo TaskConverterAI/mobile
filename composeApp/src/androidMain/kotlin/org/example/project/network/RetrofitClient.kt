@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit
  * Фабрика для создания Retrofit клиента и API сервисов
  */
 object RetrofitClient {
-    private const val BASE_URL = "http://10.199.58.103:8090/"
+    private const val BASE_URL_AUTH = "http://10.54.193.150:8081/"
+    private const val BASE_URL_TASK = "http://10.54.193.150:8083/"
 
     private val gson = GsonBuilder()
         .setLenient()
@@ -29,9 +30,17 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val retrofit: Retrofit by lazy {
+    private val retrofit_auth: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BASE_URL_AUTH)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
+    private val retrofit_task: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL_TASK)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -46,11 +55,11 @@ object RetrofitClient {
     }
 
     val retrofitAuthService: AuthApiService by lazy {
-        retrofit.create(AuthApiService::class.java)
+        retrofit_auth.create(AuthApiService::class.java)
     }
 
     val retrofitNoteApiService: RetrofitNoteApiService by lazy {
-        retrofit.create(RetrofitNoteApiService::class.java)
+        retrofit_task.create(RetrofitNoteApiService::class.java)
     }
 
     val retrofitGroupApiService: RetrofitGroupApiService by lazy {

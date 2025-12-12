@@ -35,7 +35,7 @@ fun initAnalyzerRepository(context: Context) {
 
 class DefaultAnalyzerRepository() : AnalyzerRepository {
 
-    private val baseAnalyzerUrl = "http://192.168.31.79:8080/"
+    private val baseAnalyzerUrl = "http://10.154.121.184:8082/"
 
     @OptIn(ExperimentalTime::class)
     private val serializerModule = SerializersModule {

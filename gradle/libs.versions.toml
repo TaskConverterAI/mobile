@@ -36,6 +36,9 @@ sqlite = "2.6.1"
 ksp = "2.2.20-2.0.3"
 media3CommonKtx = "1.8.0"
 yandex-maps = "4.26.0-lite"
+work-runtime-ktx = "2.10.0"
+play-services-location = "21.3.0"
+lifecycle-process = "2.8.4"
 
 [libraries]
 androidx-activity-compose-v180 = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -73,6 +76,9 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 yandex-maps = { module = "com.yandex.android:maps.mobile", version.ref = "yandex-maps" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work-runtime-ktx" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle-process" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

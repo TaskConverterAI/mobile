@@ -53,6 +53,10 @@ kotlin {
 
             // JWT
             implementation(libs.java.jwt)
+
+            implementation(libs.androidx.work.runtime.ktx)
+            implementation(libs.play.services.location)
+            implementation(libs.androidx.lifecycle.process)
         }
         commonMain.dependencies {
             implementation(libs.kermit)
