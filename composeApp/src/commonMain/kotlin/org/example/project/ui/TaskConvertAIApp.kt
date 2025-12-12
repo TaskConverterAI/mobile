@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +49,7 @@ import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGr
 import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupViewModel
 import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
+import org.example.project.ui.screens.notesScreen.MapPickerScreen
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
@@ -73,7 +73,6 @@ import org.example.project.ui.viewmodels.TasksViewModel
 import org.jetbrains.compose.resources.StringResource
 import taskconvertaiapp.composeapp.generated.resources.Res
 import taskconvertaiapp.composeapp.generated.resources.*
-import kotlin.collections.emptyMap
 
 enum class TaskConvertAIAppScreens(val title: StringResource) {
     Overview(title = Res.string.overview_screen),
@@ -97,7 +96,12 @@ fun ChooseCreateDialog(
                 onConfirm = { route ->
                     onDismiss()
                     if (route == "create_manual_note") {
-                        navController.navigate(DetailNoteScreenArgs(noteID = null, isEditMode = true))
+                        navController.navigate(
+                            DetailNoteScreenArgs(
+                                noteID = null,
+                                isEditMode = true
+                            )
+                        )
                     } else {
                         navController.navigate(route)
                     }
@@ -131,7 +135,6 @@ fun TaskConvertAIApp(
     val viewModelTasks: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
     val  viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
     val viewModelGroups : GroupsViewModel = viewModel(factory = GroupsViewModel.Factory)
-    val viewModelAuth : AuthViewModel = viewModel(factory = AuthViewModel.Factory)
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     //viewModelAuth.getUserIdByToken()
@@ -178,13 +181,19 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
-//            startDestination = Destination.NOTES.route
+            startDestination = if (viewModel.showOverview) {
+                TaskConvertAIAppScreens.Overview.name
+            } else if (viewModel.mustLogIn) {
+                TaskConvertAIAppScreens.SignIn.name
+            } else {
+                Destination.NOTES.route
+            }
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
                 OverviewScreen(
                     onCompleteOverviewButtonClicked = {
+                        viewModel.hideOverview()
                         navController.navigate(TaskConvertAIAppScreens.SignUp.name)
                     }
                 )
@@ -236,10 +245,7 @@ fun TaskConvertAIApp(
                             viewModel(factory = GroupsViewModel.Factory)
                         )
 
-                        Destination.SETTINGS -> SettingsScreen(
-                            navController,
-                            viewModelAuth
-                        )
+                        Destination.SETTINGS -> SettingsScreen()
                     }
                 }
             }
@@ -277,7 +283,7 @@ fun TaskConvertAIApp(
                 val isEditMode = detailNoteScreenArgs.isEditMode
 
                 var note by remember { mutableStateOf<Note?>(null) }
-                var groups by remember { mutableStateOf<List<Group>>(emptyList())}
+                var group by remember { mutableStateOf<Group?>(null)}
                 // Загружаем данные в корутине, если noteID не null
                 LaunchedEffect(noteID) {
                     note = if (noteID != null) {
@@ -285,24 +291,23 @@ fun TaskConvertAIApp(
                     } else {
                         null
                     }
+
+                    if (note != null && note?.groupId != null) {
+                        group = viewModelGroups.getGroupById(note!!.groupId!!)
+                    }
                 }
 
-                viewModelGroups.loadGroups()
-                groups = viewModelGroups.listUi.value.groups
-                viewModelAuth.getUserIdByToken()
                 DetailNoteScreen(
                     note = note,
+                    group = group,
                     navController = navController,
                     isEditMode = isEditMode,
-                    userId = userId,
-                    availableGroups = groups,
+                    availableGroups = emptyList(),
                     onSave = { updatedNote ->
                         if (updatedNote.id == 0L || noteID == null) {
-                            co.touchlab.kermit.Logger.i{"is add note"}
                             // Создание новой заметки
                             viewModelNotes.addNote(updatedNote)
                         } else {
-                            co.touchlab.kermit.Logger.i{"is upd note"}
                             // Обновление существующей заметки
                             viewModelNotes.updateNote(updatedNote)
                         }
@@ -313,15 +318,27 @@ fun TaskConvertAIApp(
                 )
             }
 
+            composable("map_picker") {
+                MapPickerScreen(
+                    onPicked = { lat, lon, name, colorLong ->
+                        val prev = navController.previousBackStackEntry?.savedStateHandle
+                        prev?.set("map_lat", lat)
+                        prev?.set("map_lon", lon)
+                        prev?.set("map_name", name)
+                        prev?.set("map_color", colorLong)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
             composable<DetailTaskScreenArgs> { currentBackStackEntry ->
                 val detailTaskScreenArgs: DetailTaskScreenArgs = currentBackStackEntry.toRoute()
                 val taskID = detailTaskScreenArgs.taskID
                 val isEditMode = detailTaskScreenArgs.isEditMode
 
                 var task by remember { mutableStateOf<Task?>(null) }
-                var groups by remember { mutableStateOf<List<Group>>(emptyList())}
-                var users by remember { mutableStateOf<HashMap<Long, List<User>>>(hashMapOf())}
-
+                var group by remember { mutableStateOf<Group?>(null)}
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
                     task = if (taskID != null) {
@@ -329,7 +346,6 @@ fun TaskConvertAIApp(
                     } else {
                         null
                     }
-                }
 
                 viewModelGroups.loadGroups()
                 groups = viewModelGroups.listUi.value.groups
@@ -344,23 +360,26 @@ fun TaskConvertAIApp(
 
                     }
                 }
+
                 DetailTaskScreen(
                     task = task,
+                    group=  group,
                     navController = navController,
                     isEditMode = isEditMode,
-                    availableGroups = groups,
-                    availableUsers = users,
+                    availableGroups = emptyList(),
+                    availableUsers = emptyList(),
                     onSave = { updatedTask ->
                         if (updatedTask.id == 0L || taskID == null) {
+                            // Создание новой задачи
                             viewModelTasks.addTask(updatedTask)
                         } else {
+                            // Обновление существующей задачи
                             viewModelTasks.updateTask(updatedTask.id, updatedTask)
                         }
                     },
                     onDelete = { taskToDelete ->
                         viewModelTasks.deleteTask(taskToDelete.id)
-                    },
-                    userId = userId
+                    }
                 )
             }
 
@@ -379,8 +398,6 @@ fun TaskConvertAIApp(
                 groupVM.setGroup(groupName)
                 DetailGroupScreen(groupVM, navController)
             }
-
-
 
         }
     }

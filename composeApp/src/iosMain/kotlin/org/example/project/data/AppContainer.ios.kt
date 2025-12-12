@@ -1,5 +1,7 @@
 package org.example.project.data
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
@@ -49,5 +51,9 @@ actual fun createNoteApiService(): NoteApiService? {
 }
 
 actual fun createGroupApiService(): GroupApiService? {
+    TODO("Not yet implemented")
+}
+
+actual fun createAuthPreferencesRepository(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository {
     TODO("Not yet implemented")
 }

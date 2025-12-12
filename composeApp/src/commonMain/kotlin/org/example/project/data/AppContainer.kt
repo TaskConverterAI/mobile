@@ -12,16 +12,20 @@ import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.database.repository.NoteRepository
 import org.example.project.data.database.repository.TaskRepository
 import org.example.project.data.database.repository.GroupRepository
+import org.example.project.data.geo.GeoTagRepository
 
 interface AppContainer {
+    val userAuthPreferencesRepository: UserAuthPreferencesRepository
     val authRepository: AuthRepository
     val analyzerRepository: AnalyzerRepository
     val noteRepository: NoteRepository
     val taskRepository: TaskRepository
     val groupRepository: GroupRepository
+    val geoTagRepository: GeoTagRepository
 }
 
 // Expect function to create platform-specific AuthRepository
+expect fun createAuthPreferencesRepository(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository
 expect fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferencesRepository): AuthRepository
 
 expect fun createAnalyzerRepository(): AnalyzerRepository
@@ -34,10 +38,12 @@ expect fun createGroupApiService(): org.example.project.data.network.GroupApiSer
 class DefaultAppContainer(
     dataStore: DataStore<Preferences>,
     database: org.example.project.data.database.AppDatabase
-): AppContainer {
-    private val userAuthPreferencesRepository = UserAuthPreferencesRepository(dataStore)
+) : AppContainer {
+    override val userAuthPreferencesRepository: UserAuthPreferencesRepository =
+        createAuthPreferencesRepository(dataStore)
 
-    override val authRepository: AuthRepository = createAuthRepository(userAuthPreferencesRepository)
+    override val authRepository: AuthRepository =
+        createAuthRepository(userAuthPreferencesRepository)
 
     override val analyzerRepository: AnalyzerRepository = createAnalyzerRepository()
 
@@ -71,4 +77,6 @@ class DefaultAppContainer(
 //    }
 
     override val groupRepository: GroupRepository = GroupRepository(createGroupApiService())
+
+    override val geoTagRepository: GeoTagRepository = GeoTagRepository(dataStore)
 }
