@@ -323,6 +323,20 @@ fun TaskConvertAIApp(
                 )
             }
 
+            composable("map_picker") {
+                MapPickerScreen(
+                    onPicked = { lat, lon, name, colorLong ->
+                        val prev = navController.previousBackStackEntry?.savedStateHandle
+                        prev?.set("map_lat", lat)
+                        prev?.set("map_lon", lon)
+                        prev?.set("map_name", name)
+                        prev?.set("map_color", colorLong)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
             composable<DetailTaskScreenArgs> { currentBackStackEntry ->
                 val detailTaskScreenArgs: DetailTaskScreenArgs = currentBackStackEntry.toRoute()
                 val taskID = detailTaskScreenArgs.taskID

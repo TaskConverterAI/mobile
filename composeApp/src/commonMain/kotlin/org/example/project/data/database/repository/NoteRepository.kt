@@ -50,6 +50,7 @@ class NoteRepository(
     suspend fun getAllNotes(userId: Long): List<Note>? {
 
         val result =  noteApiService?.getAllNotes(userId)
+        co.touchlab.kermit.Logger.i {result.toString()}
         val retVal = result?.fold(
             onSuccess = { response ->
                 response.map { noteDto -> noteDto.toNote() }
@@ -152,8 +153,6 @@ class NoteRepository(
      */
     @OptIn(ExperimentalTime::class)
     suspend fun updateNote(note: Note) {
-
-        co.touchlab.kermit.Logger.i{"updaaaaaate note"}
 
         val result = noteApiService?.updateNote(note.id,
             note.toUpdateNoteRequest())

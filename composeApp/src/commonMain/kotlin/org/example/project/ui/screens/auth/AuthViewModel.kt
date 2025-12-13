@@ -212,7 +212,6 @@ class AuthViewModel(
             !_signUpUiState.value.isConfirmPasswordCorrect
         )
             return
-        Logger.i{"validate sing up "}
         validateSignUp()
     }
 

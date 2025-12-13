@@ -83,7 +83,7 @@ fun DetailNoteScreen(
     // Default group для новых заметок
     val defaultGroup = remember {
         Group(
-            id = 0L,
+            id = -1L,
             name = "Без группы",
             description = "",
             ownerId = 0L,
@@ -211,7 +211,7 @@ fun DetailNoteScreen(
                                         editableGeotag ?: "",
                                         false
                                     ),
-                                    groupId = editableGroup?.id,
+                                    groupId = if (editableGroup?.id != -1L) editableGroup?.id else null,
                                     comments = note?.comments ?: emptyList(),
                                     color = editableColor,
                                     creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds(),

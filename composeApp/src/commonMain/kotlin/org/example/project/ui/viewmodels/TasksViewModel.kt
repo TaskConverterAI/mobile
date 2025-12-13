@@ -132,12 +132,8 @@ class TasksViewModel(
      */
     suspend fun getTaskById(taskId: Long): Task? {
         return try {
-            co.touchlab.kermit.Logger.i{"HERE "}
-            val test = taskRepository.getTaskById(taskId)
-            co.touchlab.kermit.Logger.i{"HERE " + test.toString()}
-            test
+            taskRepository.getTaskById(taskId)
         } catch (e: Exception) {
-            co.touchlab.kermit.Logger.i{"ERROR " + e.message.toString()}
             _error.value = e.message
             null
         }

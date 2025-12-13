@@ -23,16 +23,13 @@ import org.example.project.ui.viewmodels.NotesViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel) {
-    Logger.i{"l1"}
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
 
     var showBottomSheet by remember { mutableStateOf(false) }
-    Logger.i{"l2"}
     // Получаем заметки из viewModel
 
     val notes by viewModel.notes.collectAsState()
-    Logger.i{"l3"}
     Logger.i{notes.toString()}
     Column(
         modifier = Modifier

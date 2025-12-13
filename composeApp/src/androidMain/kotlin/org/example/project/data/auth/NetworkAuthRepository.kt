@@ -21,16 +21,6 @@ class NetworkAuthRepository(
     private val userAuthPreferencesRepository: UserAuthPreferencesRepository,
     private val authApiService: AuthApiService
 ): AuthRepository {
-    private val baseAuthUrl = "http://192.168.1.153:8090/"
-    private val authRetrofit: Retrofit = Retrofit.Builder()
-        .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl(baseAuthUrl)
-        .build()
-
-//    private val authApiService: AuthApiService by lazy {
-//        authRetrofit.create(AuthApiService::class.java)
-//    }
-
     private suspend fun parseAndSaveJWT(token: String) {
         try {
             val decodedJWT: DecodedJWT = JWT.decode(token)
