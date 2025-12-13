@@ -1,4 +1,5 @@
 package org.example.project.ui.screens.notesScreen
+import CommentDialog
 import kotlinx.datetime.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -6,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +34,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -47,16 +51,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil3.util.Logger
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.math.absoluteValue
 
 import org.example.project.AppDependencies
+import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Note
+import org.example.project.data.commonData.User
 import org.example.project.data.geo.GeoTagPreset
+import org.example.project.ui.screens.commentElems.CommentList
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.theme.PrimaryDark
@@ -65,6 +73,7 @@ import org.example.project.ui.theme.SecondaryBase
 import org.example.project.ui.theme.SecondaryDark
 import org.example.project.ui.theme.SecondaryLight
 import org.example.project.ui.theme.DarkGray
+import kotlin.time.Instant
 
 @Serializable
 data class DetailNoteScreenArgs(val noteID: Int?, val isEditMode: Boolean = false)
@@ -75,10 +84,13 @@ fun DetailNoteScreen(
     note: Note?,
     navController: NavController,
     userId: Long,
+    group: Group?,
     isEditMode: Boolean = false,
     availableGroups: List<Group> = emptyList(), // Передайте список доступных групп
     onSave: (Note) -> Unit = {}, // Callback для сохранения
-    onDelete: (Note) -> Unit = {} // Callback для удаления,
+    onDelete: (Note) -> Unit = {}, // Callback для удаления,
+    onSaveComment: (Comment) -> Unit = {},
+    onDeleteComment: (Long) -> Unit = {}
 ) {
     // Default group для новых заметок
     val defaultGroup = remember {
@@ -89,7 +101,7 @@ fun DetailNoteScreen(
             ownerId = 0L,
             memberCount = 0,
             members = mutableListOf(),
-            createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            createdAt = Clock.System.now().toEpochMilliseconds(),
             taskCount = 0
         )
     }
@@ -108,21 +120,14 @@ fun DetailNoteScreen(
     // Инициализируем isNewNote на основе параметра isEditMode, если он true и note == null
     val isNewNote = remember(note, isEditMode) { isEditMode && note == null }
     var isInEditMode by remember { mutableStateOf(isEditMode) }
-    var group = defaultGroup
-    // Обновляем поля при загрузке заметки
-    androidx.compose.runtime.LaunchedEffect(note) {
+
+    LaunchedEffect(note) {
 
         if (note != null) {
-            for (gr in availableGroups) {
-                if (gr.id == note.groupId) {
-                    group = gr
-                }
-            }
-
             editableTitle = note.title
             editableContent = note.content
             editableGeotag = note.geotag?.name ?: ""
-            editableGroup = group
+            editableGroup = group ?: defaultGroup
             editableColor = note.color
             // Инициализируем координаты из существующей заметки
             editableLat = note.geotag?.latitude
@@ -198,7 +203,6 @@ fun DetailNoteScreen(
                 ) {
                     if (isInEditMode) {
                         Button(
-                            //TODO: add getting location
                             onClick = {
                                 @OptIn(ExperimentalTime::class)
                                 val updatedNote = Note(
@@ -296,12 +300,12 @@ fun DetailNoteScreen(
             }
         }
     ) { paddingValues ->
-        Column(
+        Column (
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             // Заголовок
             if (isInEditMode) {
@@ -376,7 +380,7 @@ fun DetailNoteScreen(
                                     editableGeotag = preset.name
                                     presetsExpanded = false
                                 },
-                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                colors = MenuDefaults.itemColors(
                                     textColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
@@ -388,7 +392,7 @@ fun DetailNoteScreen(
                                 presetsExpanded = false
                                 navController.navigate("map_picker")
                             },
-                            colors = androidx.compose.material3.MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.primary)
+                            colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.primary)
                         )
                     }
                 }
@@ -478,7 +482,7 @@ fun DetailNoteScreen(
                                     editableGroup = group
                                     groupExpanded = false
                                 },
-                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                colors = MenuDefaults.itemColors(
                                     textColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
@@ -578,7 +582,7 @@ fun DetailNoteScreen(
                                     editableColor = color
                                     colorExpanded = false
                                 },
-                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                colors = MenuDefaults.itemColors(
                                     textColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
@@ -638,17 +642,21 @@ fun DetailNoteScreen(
 
             Spacer(Modifier.height(30.dp))
 
-            if (!isNewNote && note != null) {
+            if (!isNewNote && note != null && group != null) {
                 Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
                 Spacer(Modifier.height(15.dp))
-                // Здесь можно добавить отображение комментариев
-                if (note.comments.isEmpty()) {
-                    Text(
-                        "Комментариев пока нет",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+
+                // Комментарии с ограниченной высотой
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp)
+                ) {
+                    CommentList(note.comments, userId, group, onDeleteComment)
                 }
+
+                Spacer(Modifier.height(16.dp))
+                CommentDialog(note.comments as MutableList<Comment>, onSaveComment, userId, note)
             }
         }
     }

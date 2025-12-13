@@ -208,7 +208,7 @@ class NoteRepository(
     }
 
     suspend fun deleteCommentFromNote(commentId: Long) {
-        val result = noteApiService?.deleteNote(commentId)
+        val result = noteApiService?.deleteCommentFromNote(commentId)
     }
 
     /**

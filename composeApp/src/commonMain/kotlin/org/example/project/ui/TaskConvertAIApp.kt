@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -289,12 +290,19 @@ fun TaskConvertAIApp(
 
                 var note by remember { mutableStateOf<Note?>(null) }
                 var groups by remember { mutableStateOf<List<Group>>(emptyList())}
+                var noteGroupDetails by remember { mutableStateOf<Group?>(null)}
+                var refreshTrigger by remember { mutableIntStateOf(0) }
+
                 // Загружаем данные в корутине, если noteID не null
-                LaunchedEffect(noteID) {
-                    note = if (noteID != null) {
-                        viewModelNotes.getNoteById(noteID.toLong())
-                    } else {
-                        null
+                LaunchedEffect(noteID, refreshTrigger) {
+                    if (noteID != null) {
+                        note = viewModelNotes.getNoteById(noteID.toLong())
+                    }
+                    if (note != null) {
+                        val groupId = note?.groupId;
+                        if (groupId != null) {
+                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
+                        }
                     }
                 }
 
@@ -307,6 +315,7 @@ fun TaskConvertAIApp(
                     navController = navController,
                     isEditMode = isEditMode,
                     userId = userId,
+                    group = noteGroupDetails,
                     availableGroups = groups,
                     onSave = { updatedNote ->
                         if (updatedNote.id == 0L || noteID == null) {
@@ -319,6 +328,14 @@ fun TaskConvertAIApp(
                     },
                     onDelete = { noteToDelete ->
                         viewModelNotes.deleteNote(noteToDelete.id)
+                    },
+                    onSaveComment = {comment ->
+                        viewModelNotes.addCommentToNote(comment.taskId, comment)
+                        refreshTrigger++
+                    },
+                    onDeleteComment = { commentId ->
+                        viewModelNotes.deleteCommentFromNote(commentId)
+                        refreshTrigger++
                     }
                 )
             }

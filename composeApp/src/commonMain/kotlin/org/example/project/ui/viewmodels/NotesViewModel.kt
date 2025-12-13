@@ -38,27 +38,40 @@ class NotesViewModel(
     fun loadNotes() {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
+                Logger.d("NotesViewModel") { "Начало загрузки заметок" }
                 val userId = authRepository.getUserIdByToken()
+                Logger.d("NotesViewModel") { "userId = $userId" }
+
                 val response = noteRepository.getAllNotes(userId)
+                Logger.d("NotesViewModel") { "получено ${response?.size ?: 0} заметок" }
+
                 if (response != null) {
-                    _notes.value = response.filter { note -> note.groupId ==  null  }
+                    _notes.value = response.filter { note -> note.groupId == null }
+                    Logger.d("NotesViewModel") { "отфильтровано ${_notes.value.size} заметок без группы" }
                 }
 
                 val groups = groupRepository.getAllGroups(userId = userId)
+                Logger.d("NotesViewModel") { "получено ${groups?.size ?: 0} групп" }
+
                 groups?.forEach { group ->
                     val groupNotes = noteRepository.getNotesByGroup(group.id)
                     if (groupNotes != null) {
                         _notes.value = _notes.value.plus(groupNotes)
+                        Logger.d("NotesViewModel") { "добавлено ${groupNotes.size} заметок из группы ${group.name}" }
                     }
                 }
+
+                Logger.d("NotesViewModel") { "Итого загружено ${_notes.value.size} заметок" }
             } catch (e: Exception) {
+                Logger.e("NotesViewModel", e) { "Ошибка загрузки - ${e.message}" }
                 _error.value = e.message
             } finally {
                 _isLoading.value = false
+                Logger.d("NotesViewModel") { "Загрузка завершена, isLoading = false" }
             }
         }
-        notes
     }
 
     /**
@@ -121,7 +134,7 @@ class NotesViewModel(
         }
     }
 
-    fun deleteCommentToNote(commentId: Long) {
+    fun deleteCommentFromNote(commentId: Long) {
         viewModelScope.launch {
             try {
                 noteRepository.deleteCommentFromNote(commentId)
