@@ -23,6 +23,8 @@ class NotesViewModel(
     private val groupRepository: GroupRepository
 ) : ViewModel() {
 
+    private val logger = Logger.withTag("NotesViewModel")
+
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
     val notes: StateFlow<List<Note>> = _notes.asStateFlow()
 

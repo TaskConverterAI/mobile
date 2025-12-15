@@ -19,13 +19,13 @@ import retrofit2.http.*
  */
 interface RetrofitNoteApiService {
 
-    @GET("tasks/user/{userId}")
+    @GET("tasks/personal/{userId}")
     suspend fun getAllTasks(@Path("userId") userId: Long) : Response<List<TaskDto>>
 
-    @GET("tasks/details/{taskId}")
+    @GET("task/details/{taskId}")
     suspend fun getTaskDetails(@Path("taskId") taskId: Long) : Response<TaskDetailsDto>
 
-    @GET("tasks/group/{groupId}")
+    @GET("task/group/{groupId}")
     suspend fun getAllGroupTasks(@Path("groupId") groupId: Long) : Response<List<TaskDto>>
 
     @POST("tasks")
@@ -37,13 +37,14 @@ interface RetrofitNoteApiService {
     @DELETE("tasks/{taskId}")
     suspend fun deleteTask(@Path("taskId") taskId: Long) : Response<UInt>
 
-    @PUT("tasks/{taskId}/comment")
+    @PUT("task/{taskId}/comment")
     suspend fun addCommentToTask(@Path("taskId") taskId: Long, @Body commentRequest: AddCommentRequest) : Response<CommentDto>
 
-    @DELETE("tasks/comment/{commentId}")
+    @DELETE("task/comment/{commentId}")
     suspend fun deleteCommentFromTask(@Path("commentId") commentId: Long) : Response<TaskDto>
 
-    @GET("tasks/note/user/{userId}")
+    // Notes endpoints
+    @GET("tasks/note/personal/{userId}")
     suspend fun getAllNotes(@Path("userId") userId: Long): Response<List<NoteDto>>
 
     @GET("tasks/note/details/{noteId}")

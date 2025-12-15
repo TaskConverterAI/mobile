@@ -20,6 +20,9 @@ import org.example.project.network.RetrofitNoteApiService
 class NetworkNoteApiService(
     private val retrofitService: RetrofitNoteApiService
 ) : NoteApiService {
+
+    private val logger = Logger.withTag("NetworkNoteApiService")
+
     override suspend fun getAllTasks(userId: Long): Result<List<TaskDto>> {
         return try {
             val response = retrofitService.getAllTasks(userId)
@@ -134,11 +137,15 @@ class NetworkNoteApiService(
         return try {
             val response = retrofitService.getAllNotes(userId)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val body = response.body()!!
+                logger.i { "getAllNotes: success code=${response.code()} count=${body.size}" }
+                Result.success(body)
             } else {
+                logger.e { "getAllNotes: http error code=${response.code()} msg=${response.message()}" }
                 Result.failure(Exception(response.message()))
             }
         } catch (e: Exception) {
+            logger.e(e) { "getAllNotes: exception ${e.message}" }
             Result.failure(e)
         }
     }
@@ -241,4 +248,3 @@ class NetworkNoteApiService(
         }
     }
 }
-

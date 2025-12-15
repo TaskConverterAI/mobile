@@ -117,4 +117,3 @@ fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel)
         )
     }
 }
-
