@@ -22,16 +22,22 @@ class TasksViewModel(
     private val _currentJobs = MutableStateFlow(listOf<AnalysisJob>())
     val currentJobs = _currentJobs.asStateFlow()
 
+    private var _continue = true
+
+    init {
+        startUpdateJobsList()
+    }
+
     fun startUpdateJobsList() {
         viewModelScope.launch {
-            while (true) {
+            while (_continue) {
                 val response = analyzerRepository.getAllJobs(authRepository.getUserId())
 
                 if (response != null) {
                     _currentJobs.update { response }
                 }
 
-                delay(15000)
+                delay(10000)
             }
         }
     }
@@ -47,6 +53,11 @@ class TasksViewModel(
         viewModelScope.launch {
             val response = analyzerRepository.getAnalysisResult(job.jobId)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _continue = false
     }
 
     companion object {

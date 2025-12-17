@@ -1,5 +1,7 @@
 package org.example.project.data
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import org.example.project.data.analyzer.AnalyzerRepository
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.auth.UserAuthPreferencesRepository
@@ -23,6 +25,17 @@ actual fun createAuthRepository(userAuthPreferencesRepository: UserAuthPreferenc
             TODO("Not yet implemented")
         }
 
+        override suspend fun decode(): Pair<Long, String>? {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun logout(userId: Long): Boolean {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun refresh(): Boolean {
+            TODO("Not yet implemented")
+        }
     }
 }
 
@@ -38,5 +51,9 @@ actual fun createNoteApiService(): NoteApiService? {
 }
 
 actual fun createGroupApiService(): GroupApiService? {
+    TODO("Not yet implemented")
+}
+
+actual fun createAuthPreferencesRepository(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository {
     TODO("Not yet implemented")
 }

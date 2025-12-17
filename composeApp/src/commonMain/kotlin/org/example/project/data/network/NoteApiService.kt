@@ -1,43 +1,52 @@
 package org.example.project.data.network
 
+import androidx.compose.animation.SharedTransitionScope
+import org.example.project.data.network.models.AddCommentRequest
+import org.example.project.data.network.models.CommentDto
+import org.example.project.data.network.models.CreateNoteRequest
+import org.example.project.data.network.models.CreateTaskRequest
+import org.example.project.data.network.models.NoteDetailsDto
 import org.example.project.data.network.models.NoteDto
-import org.example.project.data.network.models.SyncRequest
-import org.example.project.data.network.models.SyncResponse
+import org.example.project.data.network.models.TaskDetailsDto
+import org.example.project.data.network.models.TaskDto
+import org.example.project.data.network.models.UpdateNoteRequest
+import org.example.project.data.network.models.UpdateTaskRequest
 
-/**
- * Интерфейс для работы с API заметок
- * Платформенные реализации будут использовать Retrofit (Android) или другие HTTP клиенты
- */
+
 interface NoteApiService {
-    /**
-     * Получить все заметки с сервера
-     */
-    suspend fun getAllNotes(): Result<List<NoteDto>>
 
-    /**
-     * Получить заметку по ID
-     */
-    suspend fun getNoteById(noteId: Long): Result<NoteDto>
+    suspend fun getAllTasks(userId: Long) : Result<List<TaskDto>>
 
-    /**
-     * Создать новую заметку на сервере
-     */
-    suspend fun createNote(note: NoteDto): Result<NoteDto>
+    suspend fun getTaskDetails(taskId: Long) : Result<TaskDetailsDto>
 
-    /**
-     * Обновить заметку на сервере
-     */
-    suspend fun updateNote(noteId: Long, note: NoteDto): Result<NoteDto>
+    suspend fun createTask(createTaskRequest: CreateTaskRequest) : Result<TaskDto>
 
-    /**
-     * Удалить заметку на сервере
-     */
-    suspend fun deleteNote(noteId: Long): Result<Unit>
+    suspend fun updateTask(taskId: Long, updateTaskRequest: UpdateTaskRequest) : Result<TaskDto>
 
-    /**
-     * Синхронизировать заметки с сервером
-     * Отправляет локальные изменения и получает обновления с сервера
-     */
-    suspend fun syncNotes(request: SyncRequest): Result<SyncResponse>
+    suspend fun deleteTask(taskId: Long) : Result<UInt>
+
+    suspend fun addCommentToTask(taskId: Long, commentRequest: AddCommentRequest): Result<CommentDto>
+
+    suspend fun deleteCommentFromTask(commentId: Long) : Result<TaskDto>
+
+    suspend fun getAllGroupTask(groupId: Long) : Result<List<TaskDto>>
+
+
+    suspend fun getAllNotes(userId: Long) : Result<List<NoteDto>>
+
+    suspend fun  getNoteDetails(noteId: Long) : Result<NoteDetailsDto>
+
+    suspend fun createNote(createNoteRequest: CreateNoteRequest) : Result<NoteDto>
+
+    suspend fun updateNote(noteId: Long, updateNoteRequest: UpdateNoteRequest) : Result<NoteDto>
+
+    suspend fun  deleteNote(noteId: Long) : Result<UInt>
+
+    suspend fun addCommentToNote(noteId: Long, commentRequest: AddCommentRequest) : Result<CommentDto>
+
+    suspend fun  deleteCommentFromNote(commentId: Long) : Result<NoteDto>
+
+    suspend fun getAllGroupNotes(groupId: Long) : Result<List<NoteDto>>
+
 }
 

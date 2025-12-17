@@ -1,26 +1,27 @@
 package org.example.project.data.commonData
 
-enum class Priority {
-    HIGH,
-    MEDIUM,
-    LOW
+enum class Priority(val value: String) {
+    HIGH("HIGH"),
+    MIDDLE("MIDDLE"),
+    LOW("LOW")
 }
 
-enum class Status {
-    TODO,
-    IN_PROGRESS,
-    DONE
+enum class Status(val value: String) {
+    UNDONE("UNDONE"),
+    DONE("DONE")
 }
 
 data class Task(
-    val id: String = "",
+    val id: Long,
     val title: String,
     val description: String,
     val comments: List<Comment>,
-    val group: Group,
-    val assignee: User,
-    val dueDate: Long,
-    val geotag: String,
+    val authorId: Long,
+    val groupId: Long?,
+    val assignee: Long,
+    val dueDate: Deadline?,
+    val geotag: Location?,
     val priority: Priority,
-    val status: Status
+    val status: Status,
+    val createAt: Long = 0
 )

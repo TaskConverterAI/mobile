@@ -30,13 +30,10 @@ import androidx.navigation.NavController
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 
-import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
-import org.example.project.data.commonData.User
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.viewComponents.commonComponents.BlockType
@@ -99,15 +96,9 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
             val testNote = Note(
                 title = uiData.noteTitle,
                 content = uiData.summary,
-                geotag = uiData.noteGeotag,
-                group = Group(
-                    id = "work",
-                    name = "Work",
-                    description = "",
-                    ownerId = "",
-                    memberCount = 0,
-                    createdAt = ""
-                ),
+                authorId = 1,
+                geotag = null,
+                groupId = null,
                 comments = emptyList(),
                 color = PrimaryBase,
                 contentMaxLines = 5,
@@ -138,27 +129,17 @@ fun CheckAnalysisScreen(navController: NavController, viewModel: CheckAnalysisVi
                 tasks.forEachIndexed { index, taskCell ->
                     TaskChoosingItem(
                         task = Task(
+                            id = 0,
                             title = taskCell.task.title,
                             description = taskCell.task.description,
                             comments = emptyList(),
-                            group = Group(
-                                id = "standard",
-                                name = "Standard",
-                                description = "",
-                                ownerId = "",
-                                memberCount = 0,
-                                createdAt = ""
-                            ),
-                            assignee = User(
-                                id = taskCell.task.assignee ?: "",
-                                email = "",
-                                username = taskCell.task.assignee ?: "",
-                                privileges = Privileges.member
-                            ),
-                            dueDate = 0,
-                            geotag = "empty",
-                            priority = Priority.MEDIUM,
-                            status = Status.IN_PROGRESS
+                            authorId = 1,
+                            groupId = null,
+                            assignee = 2,
+                            dueDate = null,
+                            geotag = null,
+                            priority = Priority.MIDDLE,
+                            status = Status.UNDONE
                         ),
                         isEnabled = taskCell.isUsed,
                         onEnabledChange = { newValue ->

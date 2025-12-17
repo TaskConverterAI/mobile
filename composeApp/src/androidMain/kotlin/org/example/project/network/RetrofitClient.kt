@@ -2,6 +2,9 @@ package org.example.project.network
 
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
+import org.example.project.data.auth.AuthRepository
+import org.example.project.data.auth.NetworkAuthRepository
+import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.network.GroupApiService
 import org.example.project.data.network.NetworkGroupApiService
 import org.example.project.data.network.NoteApiService
@@ -14,8 +17,7 @@ import java.util.concurrent.TimeUnit
  * Фабрика для создания Retrofit клиента и API сервисов
  */
 object RetrofitClient {
-    // TODO: Замените на URL вашего сервера
-    private const val BASE_URL = "http://192.168.31.79:8090/api/"
+    private const val BASE_URL = "http://10.199.58.103:8090/"
 
     private val gson = GsonBuilder()
         .setLenient()
@@ -35,17 +37,32 @@ object RetrofitClient {
             .build()
     }
 
+    private val groupRetrofit : Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl("http://192.168.1.153:8090/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
+    val retrofitAuthService: AuthApiService by lazy {
+        retrofit.create(AuthApiService::class.java)
+    }
+
     val retrofitNoteApiService: RetrofitNoteApiService by lazy {
         retrofit.create(RetrofitNoteApiService::class.java)
     }
 
     val retrofitGroupApiService: RetrofitGroupApiService by lazy {
-        retrofit.create(RetrofitGroupApiService::class.java)
+        groupRetrofit.create(RetrofitGroupApiService::class.java)
     }
 
     /**
      * Создать NoteApiService для использования в репозиториях
      */
+    fun createAuthRepository(repo: UserAuthPreferencesRepository): AuthRepository {
+        return NetworkAuthRepository.getInstance(repo, retrofitAuthService)
+    }
     fun createNoteApiService(): NoteApiService {
         return NetworkNoteApiService(retrofitNoteApiService)
     }

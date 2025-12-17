@@ -17,11 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import org.example.project.ui.theme.LightGray
-import org.example.project.ui.theme.TaskConvertAIAppTheme
 import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersList
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,10 +118,10 @@ private fun GroupForm(
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             minLines = 4,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.error,
+                focusedContainerColor = MaterialTheme.colorScheme.background,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedTextColor = MaterialTheme.colorScheme.primary,
-                unfocusedTextColor = MaterialTheme.colorScheme.primary
+                unfocusedTextColor = Color.Gray
             ),
             shape = RoundedCornerShape(12.dp)
         )
@@ -134,7 +131,7 @@ private fun GroupForm(
         AdminMembersList(
             state.participants,
             { id -> viewModel.removeParticipant(id) },
-            { viewModel.addParticipant() })
+            { viewModel.openAddDialog() })
     }
 }
 
@@ -188,27 +185,28 @@ private fun AddParticipantDialog(state: CreateGroupUiState, viewModel: CreateGro
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun CreateGroupScreenPreview() {
-    val vm = CreateGroupViewModel()
-
-    vm.onGroupNameChange("Work Group")
-    vm.onDescriptionChange("пара слов о группе")
-    vm.onNewEmailChange("test@gmail.com")
-    vm.addParticipant()
-    vm.onNewEmailChange("user2@gmail.com")
-    vm.addParticipant()
-
-    TaskConvertAIAppTheme {
-        CreateGroupScreen(
-            navController = rememberNavController(),
-            viewModel = vm
-        )
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun CreateGroupScreenPreview() {
+//    val vm = CreateGroupViewModel()
+//
+//    vm.onGroupNameChange("Work Group")
+//    vm.onDescriptionChange("пара слов о группе")
+//    vm.onNewEmailChange("test@gmail.com")
+//    vm.addParticipant()
+//    vm.onNewEmailChange("user2@gmail.com")
+//    vm.addParticipant()
+//
+//    TaskConvertAIAppTheme {
+//        CreateGroupScreen(
+//            navController = rememberNavController(),
+//            viewModel = vm
+//        )
+//    }
+//}

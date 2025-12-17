@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -33,6 +34,8 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
 
+            implementation(libs.yandex.maps)
+
             // Retrofit
             implementation(libs.retrofit2.kotlinx.serialization.converter)
             implementation(libs.retrofit)
@@ -43,10 +46,17 @@ kotlin {
             // FilePicker
             implementation(libs.androidx.activity.compose)
 
-            //JWT
+            //AudioConverter
+            implementation(libs.androidx.media3.transformer)
+            implementation(libs.androidx.media3.common)
+            implementation(libs.ffmpeg.kit.full)
+
+            // JWT
             implementation(libs.java.jwt)
         }
         commonMain.dependencies {
+            implementation(libs.kermit)
+
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -87,6 +97,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        manifestPlaceholders["YANDEX_MAPKIT_API_KEY"] = providers.gradleProperty("YANDEX_MAPKIT_API_KEY").orNull ?: ""
     }
     packaging {
         resources {

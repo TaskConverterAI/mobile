@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,6 +24,12 @@ fun TasksScreen(navController: NavController, jobView: org.example.project.ui.sc
     val notes by viewModel.tasks.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val jobs by jobView.currentJobs.collectAsState()
+
+    // Загружаем задачи только один раз
+    LaunchedEffect(Unit) {
+        viewModel.loadTasks()
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -41,7 +48,10 @@ fun TasksScreen(navController: NavController, jobView: org.example.project.ui.sc
 
             // Показываем пустой экран, если нет заметок
             notes.isEmpty() -> {
-                EmptyMainScreen()
+                if (jobs.isNotEmpty())
+                    MainScreenWithTasks(navController, jobView, viewModel)
+                else
+                    EmptyMainScreen()
             }
 
             // Показываем экран с заметками

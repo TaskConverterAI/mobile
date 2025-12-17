@@ -20,8 +20,6 @@ fun MainScreenWithGroups(
     navController: NavController,
     viewModel: GroupsViewModel = viewModel()
 ) {
-    val groups by viewModel.groups.collectAsState()
-
     val listUi by viewModel.listUi.collectAsState()
 
     Column(
@@ -43,7 +41,7 @@ fun MainScreenWithGroups(
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            groups.forEach { group ->
+            listUi.groups.forEach { group ->
                 ColorBlock(BlockType.GROUP, group = group, backgroundColor = MaterialTheme.colorScheme.primary, navController = navController)
             }
         }

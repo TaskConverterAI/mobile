@@ -2,6 +2,7 @@ package org.example.project.data.auth
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -42,6 +43,16 @@ class UserAuthPreferencesRepository(
             preferences[USER_ID] ?: ""
         }
 
+    val showTutorial: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            // Log error and emit empty preferences
+            println("Error reading refresh token preferences: ${exception.message}")
+            emit(emptyPreferences())
+        }
+        .map { preferences ->
+            preferences[SHOW_TUTORIAL] ?: true
+        }
+
 
     suspend fun saveAccessToken(accessToken: String) {
         dataStore.edit { preferences ->
@@ -61,12 +72,26 @@ class UserAuthPreferencesRepository(
         }
     }
 
-    private companion object {
+    suspend fun saveShowTutorial(showTutorial: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[SHOW_TUTORIAL] = showTutorial
+        }
+    }
+
+    companion object {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
 
         val USER_ID = stringPreferencesKey("user_id")
 
+        val SHOW_TUTORIAL = booleanPreferencesKey("show_tutorial")
+
         const val TAG = "UserAuthPreferencesRepo"
+
+        private var _instance: UserAuthPreferencesRepository? = null
+
+        fun getInstance(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository {
+            return _instance ?: UserAuthPreferencesRepository(dataStore).also { _instance = it }
+        }
     }
 }

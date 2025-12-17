@@ -13,4 +13,3 @@ data class TaskWithComments(
     )
     val comments: List<CommentEntity>
 )
-

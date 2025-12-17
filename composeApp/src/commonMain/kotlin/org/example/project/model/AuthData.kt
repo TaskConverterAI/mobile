@@ -36,3 +36,35 @@ data class SignInUserResponse (
     @SerialName(value = "refreshToken")
     val refreshToken: String
 )
+
+@Serializable
+data class DecodeAccessTokenRequest (
+    @SerialName(value = "accessToken")
+    val accessToken: String
+)
+
+@Serializable
+data class DecodedTokenResponse (
+    @SerialName(value = "userId")
+    val userId: Long,
+    @SerialName(value = "role")
+    val role: String
+)
+
+@Serializable
+data class RefreshAccessTokenRequest (
+    @SerialName(value = "refreshToken")
+    val refreshToken: String
+)
+
+@Serializable
+data class AccessTokenResponse (
+    @SerialName(value = "accessToken")
+    val accessToken: String
+)
+
+@Serializable
+data class InvalidateSessionRequest (
+    @SerialName(value = "userId")
+    val userId: Long
+)

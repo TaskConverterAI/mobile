@@ -15,7 +15,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,8 +34,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 
 import org.example.project.data.commonData.Destination
+import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Task
+import org.example.project.data.commonData.User
 import org.example.project.ui.screens.auth.AuthViewModel
 import org.example.project.ui.screens.auth.EnterScreen
 import org.example.project.ui.screens.auth.OverviewScreen
@@ -43,8 +47,11 @@ import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailGro
 import org.example.project.ui.screens.groupsScreen.detailedGroupScreen.DetailedGroupViewModel
 import org.example.project.ui.screens.groupsScreen.GroupsScreen
 import org.example.project.ui.screens.groupsScreen.conditionScreens.GroupsViewModel
+import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupScreen
+import org.example.project.ui.screens.groupsScreen.creatingGroupScreens.CreateGroupViewModel
 import org.example.project.ui.screens.notesScreen.DetailNoteScreen
 import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
+import org.example.project.ui.screens.notesScreen.MapPickerScreen
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
@@ -91,7 +98,12 @@ fun ChooseCreateDialog(
                 onConfirm = { route ->
                     onDismiss()
                     if (route == "create_manual_note") {
-                        navController.navigate(DetailNoteScreenArgs(noteID = null, isEditMode = true))
+                        navController.navigate(
+                            DetailNoteScreenArgs(
+                                noteID = null,
+                                isEditMode = true
+                            )
+                        )
                     } else {
                         navController.navigate(route)
                     }
@@ -100,23 +112,13 @@ fun ChooseCreateDialog(
         }
 
         Destination.TASKS.route -> {
-            TaskCreateDialog(
-                onDismiss = onDismiss,
-                onConfirm = { route ->
-                    onDismiss()
-                    if (route == "create_manual_task") {
-                        navController.navigate(DetailTaskScreenArgs(taskID = null, isEditMode = true))
-                    } else {
-                        navController.navigate(route)
-                    }
-                },
-                navController = navController
-            )
+            onDismiss()
+            navController.navigate(DetailTaskScreenArgs(taskID = null, isEditMode = true))
         }
 
         Destination.GROUPS.route -> {
-            // Show create group dialog
             onDismiss()
+            navController.navigate("create_group")
         }
 
         else -> {
@@ -134,7 +136,13 @@ fun TaskConvertAIApp(
 //    HideSystemBarsWithInsetsController()
     val viewModelTasks: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
     val  viewModelNotes: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
+    val viewModelGroups : GroupsViewModel = viewModel(factory = GroupsViewModel.Factory)
+    val viewModelAuth : AuthViewModel = viewModel(factory = AuthViewModel.Factory)
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    //viewModelAuth.getUserIdByToken()
+
+    val userId by viewModelAuth.userId.collectAsState()
 
     var showDialog by remember { mutableStateOf(false) }
 
@@ -176,13 +184,19 @@ fun TaskConvertAIApp(
             exitTransition = { fadeOut(animationSpec = tween(300)) },
             popEnterTransition = { fadeIn(animationSpec = tween(300)) },
             popExitTransition = { fadeOut(animationSpec = tween(300)) },
-//            startDestination = if (viewModel.showOverview) TaskConvertAIAppScreens.Overview.name else TaskConvertAIAppScreens.SignIn.name
-            startDestination = Destination.NOTES.route
+            startDestination = if (viewModel.showOverview) {
+                TaskConvertAIAppScreens.Overview.name
+            } else if (viewModel.mustLogIn) {
+                TaskConvertAIAppScreens.SignIn.name
+            } else {
+                Destination.NOTES.route
+            }
         ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
                 OverviewScreen(
                     onCompleteOverviewButtonClicked = {
+                        viewModel.hideOverview()
                         navController.navigate(TaskConvertAIAppScreens.SignUp.name)
                     }
                 )
@@ -234,7 +248,10 @@ fun TaskConvertAIApp(
                             viewModel(factory = GroupsViewModel.Factory)
                         )
 
-                        Destination.SETTINGS -> SettingsScreen()
+                        Destination.SETTINGS -> SettingsScreen(
+                            navController,
+                            viewModelAuth
+                            )
                     }
                 }
             }
@@ -272,33 +289,68 @@ fun TaskConvertAIApp(
                 val isEditMode = detailNoteScreenArgs.isEditMode
 
                 var note by remember { mutableStateOf<Note?>(null) }
+                var groups by remember { mutableStateOf<List<Group>>(emptyList())}
+                var noteGroupDetails by remember { mutableStateOf<Group?>(null)}
+                var refreshTrigger by remember { mutableIntStateOf(0) }
 
                 // Загружаем данные в корутине, если noteID не null
-                LaunchedEffect(noteID) {
-                    note = if (noteID != null) {
-                        viewModelNotes.getNoteById(noteID.toLong())
-                    } else {
-                        null
+                LaunchedEffect(noteID, refreshTrigger) {
+                    if (noteID != null) {
+                        note = viewModelNotes.getNoteById(noteID.toLong())
+                    }
+                    if (note != null) {
+                        val groupId = note?.groupId;
+                        if (groupId != null) {
+                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
+                        }
                     }
                 }
 
+                viewModelGroups.loadGroups()
+                groups = viewModelGroups.listUi.value.groups
+
+                viewModelAuth.getUserIdByToken()
                 DetailNoteScreen(
                     note = note,
                     navController = navController,
                     isEditMode = isEditMode,
-                    availableGroups = emptyList(),
+                    userId = userId,
+                    group = noteGroupDetails,
+                    availableGroups = groups,
                     onSave = { updatedNote ->
                         if (updatedNote.id == 0L || noteID == null) {
                             // Создание новой заметки
                             viewModelNotes.addNote(updatedNote)
                         } else {
                             // Обновление существующей заметки
-                            viewModelNotes.updateNote(updatedNote.id, updatedNote)
+                            viewModelNotes.updateNote(updatedNote)
                         }
                     },
                     onDelete = { noteToDelete ->
                         viewModelNotes.deleteNote(noteToDelete.id)
+                    },
+                    onSaveComment = {comment ->
+                        viewModelNotes.addCommentToNote(comment.taskId, comment)
+                        refreshTrigger++
+                    },
+                    onDeleteComment = { commentId ->
+                        viewModelNotes.deleteCommentFromNote(commentId)
+                        refreshTrigger++
                     }
+                )
+            }
+
+            composable("map_picker") {
+                MapPickerScreen(
+                    onPicked = { lat, lon, name, colorLong ->
+                        val prev = navController.previousBackStackEntry?.savedStateHandle
+                        prev?.set("map_lat", lat)
+                        prev?.set("map_lon", lon)
+                        prev?.set("map_name", name)
+                        prev?.set("map_color", colorLong)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -308,6 +360,8 @@ fun TaskConvertAIApp(
                 val isEditMode = detailTaskScreenArgs.isEditMode
 
                 var task by remember { mutableStateOf<Task?>(null) }
+                var groups by remember { mutableStateOf<List<Group>>(emptyList())}
+                var users by remember { mutableStateOf<HashMap<Long, List<User>>>(hashMapOf())}
 
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
@@ -318,14 +372,28 @@ fun TaskConvertAIApp(
                     }
                 }
 
+                viewModelGroups.loadGroups()
+                groups = viewModelGroups.listUi.value.groups
+
+                viewModelAuth.getUserIdByToken()
+                LaunchedEffect(groups) {
+                    for (group in groups) {
+                        val groupDetails = viewModelGroups.getGroupById(group.id)
+                        if (groupDetails != null) {
+                            users[group.id] = groupDetails.members
+                        }
+
+                    }
+                }
+
                 DetailTaskScreen(
                     task = task,
                     navController = navController,
                     isEditMode = isEditMode,
-                    availableGroups = emptyList(),
-                    availableUsers = emptyList(),
+                    availableGroups = groups,
+                    availableUsers = users,
                     onSave = { updatedTask ->
-                        if (updatedTask.id.isEmpty() || taskID == null) {
+                        if (updatedTask.id == 0L || taskID == null) {
                             // Создание новой задачи
                             viewModelTasks.addTask(updatedTask)
                         } else {
@@ -335,7 +403,15 @@ fun TaskConvertAIApp(
                     },
                     onDelete = { taskToDelete ->
                         viewModelTasks.deleteTask(taskToDelete.id)
-                    }
+                    },
+                    userId = userId
+                )
+            }
+
+            composable("create_group") {
+                CreateGroupScreen(
+                    navController = navController,
+                    viewModel = viewModel(factory = CreateGroupViewModel.Factory)
                 )
             }
 
@@ -347,6 +423,7 @@ fun TaskConvertAIApp(
                 groupVM.setGroup(groupName)
                 DetailGroupScreen(groupVM, navController)
             }
+
         }
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 
 import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
+import org.example.project.ui.viewComponents.taskScreenComponents.LowPriority
 
 data class SignUpUiState(
     val username: String = "",
@@ -46,6 +48,15 @@ class AuthViewModel(
     private val _signInUiState = MutableStateFlow(SignInUiState())
     val signInUiState: StateFlow<SignInUiState> = _signInUiState.asStateFlow()
 
+     private var _userId: MutableStateFlow<Long> = MutableStateFlow(-1L);
+    var userId: StateFlow<Long> = _userId.asStateFlow();
+
+
+    fun getUserIdByToken() {
+        viewModelScope.launch {
+            _userId.value = authRepository.getUserIdByToken()
+        }
+    }
 
     fun checkLogin(login: String) {
         var errorMsg = ""
@@ -194,6 +205,7 @@ class AuthViewModel(
     }
 
     fun signUp() {
+
         if (!_signUpUiState.value.isUsernameCorrect ||
             !_signUpUiState.value.isEmailCorrect ||
             !_signUpUiState.value.isPasswordCorrect ||
@@ -205,6 +217,14 @@ class AuthViewModel(
 
     fun signIn() {
         validateSignIn()
+    }
+
+    fun logout(userId: Long) {
+        _signInUiState.value = SignInUiState()
+        _signUpUiState.value = SignUpUiState()
+        viewModelScope.launch {
+            authRepository.logout(userId)
+        }
     }
 
     companion object {
