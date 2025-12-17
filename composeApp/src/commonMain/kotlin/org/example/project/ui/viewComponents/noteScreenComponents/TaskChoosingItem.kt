@@ -20,7 +20,9 @@ fun TaskChoosingItem(
     task: Task,
     isEnabled: Boolean,
     onEnabledChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTitleEdit: ((String) -> Unit)? = null,
+    onDescriptionEdit: ((String) -> Unit)? = null
 ) {
     val useColor = if (isEnabled) {
         MaterialTheme.colorScheme.primary
@@ -50,7 +52,9 @@ fun TaskChoosingItem(
         ColorBlock(
             blockType = BlockType.SIMPLE_TASK,
             task = task,
-            backgroundColor = useColor
+            backgroundColor = useColor,
+            onTitleEdit = onTitleEdit,
+            onContentEdit = onDescriptionEdit
         )
     }
 }
