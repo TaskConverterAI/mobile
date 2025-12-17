@@ -25,13 +25,13 @@ fun NoteCreateDialog(
 
     if (uiData.value.selectedFileUri != null) {
         viewModel.clearFile()
-        onConfirm("tasks")
+        onConfirm("notes")
     }
 
     if (uiData.value.sendAudioFailed) {
 
         viewModel.clearFile()
-        onConfirm("tasks")
+        onConfirm("notes")
     }
 
     Dialog(onDismissRequest = onDismiss) {
