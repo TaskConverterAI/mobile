@@ -28,6 +28,14 @@ class NotesViewModel(
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
     val notes: StateFlow<List<Note>> = _notes.asStateFlow()
 
+    private val _allNotes = MutableStateFlow<List<Note>>(emptyList())
+
+    private val _groups = MutableStateFlow<List<org.example.project.data.commonData.Group>>(emptyList())
+    val groups: StateFlow<List<org.example.project.data.commonData.Group>> = _groups.asStateFlow()
+
+    private val _selectedGroupId = MutableStateFlow<Long?>(null)
+    val selectedGroupId: StateFlow<Long?> = _selectedGroupId.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -49,23 +57,32 @@ class NotesViewModel(
                 val response = noteRepository.getAllNotes(userId)
                 Logger.d("NotesViewModel") { "получено ${response?.size ?: 0} заметок" }
 
+                val allLoadedNotes = mutableListOf<Note>()
+
                 if (response != null) {
-                    _notes.value = response.filter { note -> note.groupId == null }
-                    Logger.d("NotesViewModel") { "отфильтровано ${_notes.value.size} заметок без группы" }
+                    allLoadedNotes.addAll(response.filter { note -> note.groupId == null })
+                    Logger.d("NotesViewModel") { "добавлено ${allLoadedNotes.size} заметок без группы" }
                 }
 
                 val groups = groupRepository.getAllGroups(userId = userId)
                 Logger.d("NotesViewModel") { "получено ${groups?.size ?: 0} групп" }
 
+                if (groups != null) {
+                    _groups.value = groups
+                }
+
                 groups?.forEach { group ->
                     val groupNotes = noteRepository.getNotesByGroup(group.id)
                     if (groupNotes != null) {
-                        _notes.value = _notes.value.plus(groupNotes)
+                        allLoadedNotes.addAll(groupNotes)
                         Logger.d("NotesViewModel") { "добавлено ${groupNotes.size} заметок из группы ${group.name}" }
                     }
                 }
 
-                Logger.d("NotesViewModel") { "Итого загружено ${_notes.value.size} заметок" }
+                _allNotes.value = allLoadedNotes
+                applyFilter()
+
+                Logger.d("NotesViewModel") { "Итого загружено ${_allNotes.value.size} заметок" }
             } catch (e: Exception) {
                 Logger.e("NotesViewModel", e) { "Ошибка загрузки - ${e.message}" }
                 _error.value = e.message
@@ -74,6 +91,26 @@ class NotesViewModel(
                 Logger.d("NotesViewModel") { "Загрузка завершена, isLoading = false" }
             }
         }
+    }
+
+    /**
+     * Применить фильтр по группе
+     */
+    private fun applyFilter() {
+        _notes.value = if (_selectedGroupId.value == null) {
+            _allNotes.value
+        } else {
+            _allNotes.value.filter { it.groupId == _selectedGroupId.value }
+        }
+        Logger.d("NotesViewModel") { "Фильтр применен: ${_notes.value.size} заметок" }
+    }
+
+    /**
+     * Выбрать фильтр по группе
+     */
+    fun selectGroup(groupId: Long?) {
+        _selectedGroupId.value = groupId
+        applyFilter()
     }
 
     /**

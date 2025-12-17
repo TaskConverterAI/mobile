@@ -12,6 +12,7 @@ import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.database.repository.NoteRepository
 import org.example.project.data.database.repository.TaskRepository
 import org.example.project.data.database.repository.GroupRepository
+import org.example.project.data.database.repository.UserRepository
 import org.example.project.data.geo.GeoTagRepository
 
 interface AppContainer {
@@ -21,6 +22,7 @@ interface AppContainer {
     val noteRepository: NoteRepository
     val taskRepository: TaskRepository
     val groupRepository: GroupRepository
+    val userRepository: UserRepository
     val geoTagRepository: GeoTagRepository
 }
 
@@ -53,6 +55,7 @@ class DefaultAppContainer(
     // Создать репозитории
     override val noteRepository: NoteRepository = NoteRepository(database, noteApiService)
     override val taskRepository: TaskRepository = TaskRepository(database, noteApiService)
+    override val userRepository: UserRepository = UserRepository(database)
 
     // Создать sync preferences
     private val syncPreferences = org.example.project.data.sync.SyncPreferences(dataStore)

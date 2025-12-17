@@ -168,11 +168,21 @@ class NetworkNoteApiService(
 
             val response = retrofitService.createNote(createNoteRequest)
             if (response.isSuccessful && response.body() != null) {
+                logger.i { "createNote: success code=${response.code()}" }
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception(response.message()))
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = "HTTP ${response.code()}: ${response.message()}"
+                logger.e {
+                    "createNote: http error\n" +
+                    "  code=${response.code()}\n" +
+                    "  message=${response.message()}\n" +
+                    "  errorBody=$errorBody"
+                }
+                Result.failure(Exception("$errorMsg - $errorBody"))
             }
         } catch (e: Exception) {
+            logger.e(e) { "createNote: exception ${e.message}\n${e.stackTraceToString()}" }
             Result.failure(e)
         }
     }

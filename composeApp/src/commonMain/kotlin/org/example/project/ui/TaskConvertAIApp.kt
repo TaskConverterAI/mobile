@@ -418,9 +418,9 @@ fun TaskConvertAIApp(
             composable<DetailGroupScreenArgs> { currentBackStackEntry ->
                 val detailGroupScreenArgs: DetailGroupScreenArgs = currentBackStackEntry.toRoute()
 
-                val groupName = detailGroupScreenArgs.groupName
+                val groupId = detailGroupScreenArgs.groupId
                 val groupVM: DetailedGroupViewModel = viewModel(factory = DetailedGroupViewModel.Factory)
-                groupVM.setGroup(groupName)
+                groupVM.loadGroup(groupId)
                 DetailGroupScreen(groupVM, navController)
             }
 

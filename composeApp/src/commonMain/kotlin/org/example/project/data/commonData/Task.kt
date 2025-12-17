@@ -1,5 +1,7 @@
 package org.example.project.data.commonData
 
+import androidx.compose.ui.graphics.Color
+
 enum class Priority(val value: String) {
     HIGH("HIGH"),
     MIDDLE("MIDDLE"),
@@ -23,5 +25,6 @@ data class Task(
     val geotag: Location?,
     val priority: Priority,
     val status: Status,
+    val color: Color = Color.Blue,
     val createAt: Long = 0
 )

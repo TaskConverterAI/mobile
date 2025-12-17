@@ -36,7 +36,7 @@ import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersL
 import org.example.project.ui.viewComponents.GroupScreenComponents.MembersList
 
 @Serializable
-data class DetailGroupScreenArgs(val groupName: String)
+data class DetailGroupScreenArgs(val groupId: Long)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +71,13 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
                 // TODO
             })
         }
+    }
+
+    if (detailsUiState.showAddMemberDialog) {
+        AddMemberDialog(
+            onDismiss = { viewModel.dismissAddMemberDialog() },
+            onConfirm = { email -> viewModel.addParticipantByEmail(email) }
+        )
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,16 +115,6 @@ private fun GroupDetailsForm(
         Spacer(Modifier.height(12.dp))
         Text(detailsUiState.name, style = MaterialTheme.typography.displayLarge)
         Spacer(Modifier.height(24.dp))
-
-        Text(
-            "Можешь отредактировать заметку и задачи к ней, " +
-                    "оставив при этом только нужные",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 20.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(Modifier.height(20.dp))
 
         if (detailsUiState.isAdmin) {
             AdminMembersList(

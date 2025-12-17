@@ -286,7 +286,7 @@ private fun GroupBlock(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = group.members.size.toString(),
+                    text = group.memberCount.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -304,7 +304,7 @@ private fun GroupBlock(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = group.memberCount.toString(),
+                    text = group.taskCount.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -533,7 +533,7 @@ fun ColorBlock(
                     group = group!!,
                     onGroupClick = {
                         navController?.navigate(
-                            DetailGroupScreenArgs(group.name)
+                            DetailGroupScreenArgs(group.id)
                         )
                     }
                 )

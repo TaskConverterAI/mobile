@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit
  * Фабрика для создания Retrofit клиента и API сервисов
  */
 object RetrofitClient {
-    private const val BASE_URL_AUTH = "http://10.54.193.150:8081/"
-    private const val BASE_URL_TASK = "http://10.54.193.150:8083/"
+    private const val BASE_URL_AUTH = "http://10.154.122.79:8081/"
+    private const val BASE_URL_TASK = "http://10.154.122.79:8083/"
 
     private val gson = GsonBuilder()
         .setLenient()
@@ -48,7 +48,7 @@ object RetrofitClient {
 
     private val groupRetrofit : Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl("http://192.168.1.153:8090/")
+            .baseUrl("http://10.154.122.79:8081/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()

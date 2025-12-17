@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
-import org.example.project.ui.viewComponents.taskScreenComponents.LowPriority
+import org.example.project.data.commonData.User
 
 data class SignUpUiState(
     val username: String = "",
@@ -48,13 +48,30 @@ class AuthViewModel(
     private val _signInUiState = MutableStateFlow(SignInUiState())
     val signInUiState: StateFlow<SignInUiState> = _signInUiState.asStateFlow()
 
-     private var _userId: MutableStateFlow<Long> = MutableStateFlow(-1L);
-    var userId: StateFlow<Long> = _userId.asStateFlow();
+     private var _userId: MutableStateFlow<Long> = MutableStateFlow(-1L)
+    var userId: StateFlow<Long> = _userId.asStateFlow()
+
+    private var _currentUser: MutableStateFlow<User?> = MutableStateFlow(null)
+    var currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
 
     fun getUserIdByToken() {
         viewModelScope.launch {
             _userId.value = authRepository.getUserIdByToken()
+        }
+    }
+
+    fun loadCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val userId = authRepository.getUserIdByToken()
+                val user = AppDependencies.container.userRepository.getUserById(userId)
+                if (user != null) {
+                    _currentUser.value = user
+                }
+            } catch (e: Exception) {
+                Logger.e("AuthViewModel", e) { "Error loading user data" }
+            }
         }
     }
 
