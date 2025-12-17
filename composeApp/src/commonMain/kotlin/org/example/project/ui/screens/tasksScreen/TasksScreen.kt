@@ -24,6 +24,7 @@ fun TasksScreen(navController: NavController, jobView: org.example.project.ui.sc
     val notes by viewModel.tasks.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val jobs by jobView.currentJobs.collectAsState()
 
     // Загружаем задачи только один раз
     LaunchedEffect(Unit) {
@@ -47,7 +48,10 @@ fun TasksScreen(navController: NavController, jobView: org.example.project.ui.sc
 
             // Показываем пустой экран, если нет заметок
             notes.isEmpty() -> {
-                EmptyMainScreen()
+                if (jobs.isNotEmpty())
+                    MainScreenWithTasks(navController, jobView, viewModel)
+                else
+                    EmptyMainScreen()
             }
 
             // Показываем экран с заметками
