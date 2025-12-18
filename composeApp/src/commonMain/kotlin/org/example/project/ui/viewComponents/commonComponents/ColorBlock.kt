@@ -230,7 +230,6 @@ private fun AdvancedTaskBlock(
                 }
 
 
-
                 Status.DONE -> {
                     DoneStatus()
                 }
@@ -323,11 +322,17 @@ private fun JobBlock(
 ) {
     val isInProgress = job.status == org.example.project.model.Status.PENDING ||
             job.status == org.example.project.model.Status.RUNNING
-    val progress = when (job.status) {
-        org.example.project.model.Status.PENDING -> 0.25f
-        org.example.project.model.Status.RUNNING -> 0.7f
-        else -> 0f
-    }
+
+    val backgroundColor =
+        when (job.type) {
+            JobType.AUDIO -> Color(0xFFE3F2FD) // Light Blue for AUDIO jobs
+            JobType.TASK -> Color(0xFFFFF3E0) // Light Orange for TASK jobs
+        }
+    val title =
+        when (job.type) {
+            JobType.AUDIO -> "Задача транскрибации #${job.jobId}"
+            JobType.TASK -> "Задача анализа #${job.jobId}"
+        }
 
     Column(
         modifier = modifier
@@ -338,7 +343,7 @@ private fun JobBlock(
             .padding(16.dp)
     ) {
         Text(
-            text = "Задача #${job.jobId}",
+            text = title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -347,7 +352,6 @@ private fun JobBlock(
 
         if (isInProgress) {
             LinearProgressIndicator(
-                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp),
@@ -382,11 +386,20 @@ private fun JobBlock(
             }
 
             if (job.status == org.example.project.model.Status.SUCCEEDED) {
-                TextButton(
-                    onClick = { onToJobClick() },
-                    colors = ButtonDefaults.buttonColors(contentColor = MaterialTheme.colorScheme.primary)
+                Box(
+                    modifier = Modifier
+                        .clickable(onClick = { onToJobClick() })
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Text("к задаче")
+                    Text(
+                        text = "К задаче",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
             }
 
@@ -395,7 +408,7 @@ private fun JobBlock(
                     onClick = { onCloseErrorClick() },
                     colors = ButtonDefaults.buttonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("закрыть")
+                    Text("Закрыть")
                 }
             }
         }
@@ -617,4 +630,3 @@ fun ColorBlock(
         )
     }
 }
-

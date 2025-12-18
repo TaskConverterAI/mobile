@@ -17,8 +17,8 @@ data class AnalysisJob @OptIn(ExperimentalTime::class) constructor(
     val status: Status,
     val submitterUserId: String,
     val type: JobType,
-    @Contextual val createdAt: Instant,
-    @Contextual val updatedAt: Instant,
+    val createdAt: String,
+    val updatedAt: String,
     val errorMessage: String? = null
 )
 

@@ -72,15 +72,6 @@ fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel)
             )
         }
 
-        Button(
-            onClick = { showBottomSheet = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        ) {
-            Text(text = "Test Notify")
-        }
-
         // Разделяем заметки на две колонки для отображения
 
         val leftColumnNotes = mutableListOf<Note>()

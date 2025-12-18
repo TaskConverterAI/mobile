@@ -21,17 +21,22 @@ class TaskRepository(
     private val userDao = database.userDao()
     private val noteDao = database.noteDao()
 
+    private val logger = Logger.withTag("TaskRepository")
+
     suspend fun getGroupTaskCount(groupId: Long) : Int {
+        logger.d { "Fetching task count for groupId: $groupId" }
         val result = taskApiService?.getAllGroupTask(groupId = groupId)
         val retVal = result?.fold(
-            onSuccess = {response -> response.size},
-            onFailure = {response -> 0}
+            onSuccess = { response ->
+                logger.d { "Successfully fetched task count: ${response.size}" }
+                response.size
+            },
+            onFailure = { error ->
+                logger.e(error) { "Failed to fetch task count" }
+                0
+            }
         )
-        if (retVal != null){
-            return retVal
-        }
-
-        return 0
+        return retVal ?: 0
     }
 
     /**
@@ -64,21 +69,35 @@ class TaskRepository(
      */
     @OptIn(ExperimentalTime::class)
     suspend fun getTaskById(taskId: Long): Task? {
-        val result =  taskApiService?.getTaskDetails(taskId)
-        val retVal = result?.fold(
-            onSuccess = { taskDto ->
-                taskDto.toTask()
+        logger.d { "getTaskById() called with taskId=$taskId" }
+        if (taskApiService == null) {
+            logger.e { "NoteApiService is NULL in getTaskById. Cannot perform network call." }
+            return null
+        }
 
-            },
-            onFailure = { error ->
-                error.printStackTrace()
-                null
-            }
-        )
-//        val taskWithDetails = taskDao.getTaskWithDetails(taskId) ?: return null
-//        val comments = taskDao.getCommentsForTask(taskId).map { it.toComment() }
-//        return taskWithDetails.toTask(comments)
-        return retVal
+        return try {
+            val result = taskApiService.getTaskDetails(taskId)
+            logger.d { "getTaskDetails API result: $result" }
+
+            val retVal = result.fold(
+                onSuccess = { taskDto ->
+                    logger.d { "getTaskDetails success. DTO: $taskDto" }
+                    val task = taskDto.toTask()
+                    logger.d { "Mapped Task: $task" }
+                    task
+                },
+                onFailure = { error ->
+                    logger.e(error) { "getTaskDetails failure for taskId=$taskId" }
+                    logger.e { "Error message: ${error.message}" }
+                    null
+                }
+            )
+            logger.d { "getTaskById() returning: $retVal" }
+            retVal
+        } catch (e: Exception) {
+            logger.e(e) { "getTaskById exception for taskId=$taskId: ${e.message}" }
+            null
+        }
     }
 
     /**
@@ -166,25 +185,40 @@ class TaskRepository(
      */
     @OptIn(ExperimentalTime::class)
     suspend fun insertTask(userId: Long, task: Task) : Task? {
+        if (taskApiService == null) {
+            logger.e { "NoteApiService is NULL. Network calls will not be performed. Ensure DefaultAppContainer.createNoteApiService() returns non-null instance." }
+            return null
+        }
+        logger.d { "========== INSERTING TASK ==========" }
+        logger.d { "UserId: $userId" }
+        logger.d { "Task object: $task" }
 
-        val result = taskApiService?.createTask(task.toCreateRequest())
-        val retVal = result?.fold(
-            onSuccess = {response ->
-                response.toTask()
+        val createRequest = task.toCreateRequest()
+        logger.d { "Create request: $createRequest" }
+
+        val result = taskApiService.createTask(createRequest)
+
+        logger.d { "API call result: $result" }
+
+        val retVal = result.fold(
+            onSuccess = { response ->
+                logger.d { "✅ Task successfully inserted!" }
+                logger.d { "Server response DTO: $response" }
+                val taskResult = response.toTask()
+                logger.d { "Converted to Task: $taskResult" }
+                taskResult
             },
-
-            onFailure = {
-                    error ->
-                error.printStackTrace()
+            onFailure = { error ->
+                logger.e(error) { "❌ Failed to insert task for userId: $userId" }
+                logger.e { "Error message: ${error.message}" }
+                logger.e { "Error stacktrace: ${error.stackTraceToString()}" }
                 null
             }
         )
-//        val taskEntity = task.toEntity()
-//        taskDao.insertTask(taskEntity)
-//
-//        task.comments.forEach { comment ->
-//            taskDao.insertComment(comment.toTaskCommentEntity(taskEntity.id))
-//        }
+
+        logger.d { "Final return value: $retVal" }
+        logger.d { "========== END INSERTING TASK ==========" }
+
         return retVal
     }
 
@@ -192,22 +226,18 @@ class TaskRepository(
      * Обновить задачу
      */
     suspend fun updateTask(taskId: Long, task: Task) : Task? {
+        logger.d { "Updating task with taskId: $taskId, task: $task" }
         val result = taskApiService?.updateTask(taskId, task.toUpdateRequest())
         val retVal = result?.fold(
-            onSuccess = {response ->
+            onSuccess = { response ->
+                logger.d { "Task successfully updated: $response" }
                 response.toTask()
             },
-
-            onFailure = {
-                    error ->
-                error.printStackTrace()
+            onFailure = { error ->
+                logger.e(error) { "Failed to update task" }
                 null
             }
         )
-//        val currentTask = taskDao.getTaskById(taskId)
-//
-//        val taskEntity = task.toEntity()
-//        taskDao.updateTask(taskEntity)
         return retVal
     }
 
@@ -215,8 +245,13 @@ class TaskRepository(
      * Удалить задачу
      */
     suspend fun deleteTask(taskId: Long) {
-        taskApiService?.deleteTask(taskId)
-        //taskDao.deleteTaskById(taskId)
+        logger.d { "Deleting task with taskId: $taskId" }
+        try {
+            taskApiService?.deleteTask(taskId)
+            logger.d { "Task successfully deleted" }
+        } catch (error: Exception) {
+            logger.e(error) { "Failed to delete task" }
+        }
     }
 
     /**
@@ -408,4 +443,3 @@ class TaskRepository(
 //        println("TaskRepository: Sample data inserted - 3 tasks, 1 group, 2 users")
 //    }
 }
-

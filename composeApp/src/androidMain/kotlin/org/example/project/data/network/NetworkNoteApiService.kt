@@ -12,6 +12,7 @@ import org.example.project.data.network.models.TaskDetailsDto
 import org.example.project.data.network.models.TaskDto
 import org.example.project.data.network.models.UpdateNoteRequest
 import org.example.project.data.network.models.UpdateTaskRequest
+import org.example.project.network.RetrofitClient
 import org.example.project.network.RetrofitNoteApiService
 
 /**
@@ -38,27 +39,83 @@ class NetworkNoteApiService(
 
     override suspend fun getTaskDetails(taskId: Long): Result<TaskDetailsDto> {
         return try {
+            println("========== GET TASK DETAILS API CALL ==========")
+            println("Base URL: ${RetrofitClient.taskBaseUrl()}")
+            println("TaskId: $taskId")
+
             val response = retrofitService.getTaskDetails(taskId)
+
+            println("HTTP Response:")
+            println("  - Status code: ${response.code()}")
+            println("  - Is successful: ${response.isSuccessful}")
+            println("  - Message: ${response.message()}")
+            println("  - Body: ${response.body()}")
+            val errorBodyStr = try {
+                response.errorBody()?.string()
+            } catch (e: Exception) { e.message }
+            println("  - Error body: $errorBodyStr")
+
             if (response.isSuccessful && response.body() != null) {
+                println("✅ getTaskDetails success: ${response.body()}")
+                println("========== END GET TASK DETAILS API CALL ==========")
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception(response.message()))
+                val errorMsg = (errorBodyStr?.takeIf { it.isNotBlank() }) ?: response.message()
+                println("❌ getTaskDetails FAILED! Error: $errorMsg")
+                println("========== END GET TASK DETAILS API CALL ==========")
+                Result.failure(Exception("HTTP ${response.code()}: $errorMsg"))
             }
         } catch (e: Exception) {
-
+            println("❌ Exception during getTaskDetails!")
+            println("Exception type: ${e::class.simpleName}")
+            println("Exception message: ${e.message}")
+            println("Stack trace: ${e.stackTraceToString()}")
+            println("========== END GET TASK DETAILS API CALL ==========")
             Result.failure(e)
         }
     }
 
     override suspend fun createTask(createTaskRequest: CreateTaskRequest): Result<TaskDto> {
         return try {
+            println("========== CREATE TASK API CALL ==========")
+            println("Base URL: ${RetrofitClient.taskBaseUrl()}")
+            println("Request body: $createTaskRequest")
+            println("  - Title: ${createTaskRequest.title}")
+            println("  - Description: ${createTaskRequest.description}")
+            println("  - AuthorId: ${createTaskRequest.authorId}")
+            println("  - DoerId: ${createTaskRequest.doerId}")
+            println("  - Priority: ${createTaskRequest.priority}")
+            println("  - GroupId: ${createTaskRequest.groupId}")
+            println("  - Location: ${createTaskRequest.location}")
+            println("  - Deadline: ${createTaskRequest.deadline}")
+
             val response = retrofitService.createTask(createTaskRequest)
+
+            println("HTTP Response:")
+            println("  - Status code: ${response.code()}")
+            println("  - Is successful: ${response.isSuccessful}")
+            println("  - Message: ${response.message()}")
+            println("  - Body: ${response.body()}")
+            println("  - Error body: ${response.errorBody()?.string()}")
+
             if (response.isSuccessful && response.body() != null) {
+                println("✅ Task created successfully!")
+                println("Response DTO: ${response.body()}")
+                println("========== END CREATE TASK API CALL ==========")
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception(response.message()))
+                val errorMsg = response.errorBody()?.string() ?: response.message()
+                println("❌ Task creation FAILED!")
+                println("Error: $errorMsg")
+                println("========== END CREATE TASK API CALL ==========")
+                Result.failure(Exception("HTTP ${response.code()}: $errorMsg"))
             }
         } catch (e: Exception) {
+            println("❌ Exception during task creation!")
+            println("Exception type: ${e::class.simpleName}")
+            println("Exception message: ${e.message}")
+            println("Stack trace: ${e.stackTraceToString()}")
+            println("========== END CREATE TASK API CALL ==========")
             Result.failure(e)
         }
     }

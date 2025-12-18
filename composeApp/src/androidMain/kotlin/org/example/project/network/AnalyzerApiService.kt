@@ -20,19 +20,19 @@ interface AnalyzerApiService {
     @Multipart
     @POST("audio")
     suspend fun transcribe(
-        @Query("userID") userID: String,
+        @Query("userId") userID: String,
         @Part audio: MultipartBody.Part
     ): Response<JobResponse>
 
     @POST("task")
     suspend fun analyze(
-        @Query("userID") userID: String,
+        @Query("userId") userID: String,
         @Body task: TaskRequest
     ): Response<JobResponse>
 
     @GET("jobs")
     suspend fun getAllJobs(
-        @Query("userID") userID: String
+        @Query("userId") userID: String
     ): Response<List<AnalysisJob>>
 
     @GET("jobs/{jobId}")

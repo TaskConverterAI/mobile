@@ -73,10 +73,12 @@ class TasksViewModel(
         viewModelScope.launch {
             try {
                 val userId = authRepository.getUserIdByToken()
-                taskRepository.insertTask(userId, task)
-                // Задачи обновятся автоматически через Flow
+                val result = taskRepository.insertTask(userId, task)
+                if (result == null) {
+                    _error.value = "Не удалось создать задачу"
+                }
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.message ?: "Ошибка при создании задачи"
             }
         }
     }
@@ -89,9 +91,12 @@ class TasksViewModel(
     fun updateTask(taskId: Long, task: Task) {
         viewModelScope.launch {
             try {
-                taskRepository.updateTask(taskId, task)
+                val result = taskRepository.updateTask(taskId, task)
+                if (result == null) {
+                    _error.value = "Не удалось обновить задачу"
+                }
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.message ?: "Ошибка при обновлении задачи"
             }
         }
     }
@@ -105,7 +110,7 @@ class TasksViewModel(
             try {
                 taskRepository.deleteTask(taskId)
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.message ?: "Ошибка при удалении задачи"
             }
         }
     }
@@ -118,9 +123,12 @@ class TasksViewModel(
     fun addCommentToTask(taskId: Long, comment: Comment) {
         viewModelScope.launch {
             try {
-                taskRepository.addCommentToTask(taskId, comment)
+                val res = taskRepository.addCommentToTask(taskId, comment)
+                if (res == null) {
+                    _error.value = "Не удалось добавить комментарий"
+                }
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.message ?: "Ошибка при добавлении комментария"
             }
         }
     }

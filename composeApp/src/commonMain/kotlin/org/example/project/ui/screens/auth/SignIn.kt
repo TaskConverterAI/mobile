@@ -34,25 +34,42 @@ fun EnterScreen(
     onSuccessSignIn: () -> Unit
 ) {
     val signInUiState by authViewModel.signInUiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    // Успех
     if (signInUiState.state == 1) {
         onSuccessSignIn()
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        EnterContent(
-            signInUiState.username,
-            signInUiState.password,
-            { login -> authViewModel.updateLogin(login) },
-            { password -> authViewModel.updatePassword(password) },
-            onMoveToSignUpClicked,
-            {
-                authViewModel.signIn()
-            }
-        )
+    // Ошибка (показываем короткий тост/снэкбар снизу)
+    LaunchedEffect(signInUiState.state) {
+        if (signInUiState.state == 0 && signInUiState.username.isNotEmpty()) {
+            snackbarHostState.showSnackbar(
+                message = "Ошибка входа. Проверьте логин и пароль",
+                withDismissAction = false,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { padding ->
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            EnterContent(
+                signInUiState.username,
+                signInUiState.password,
+                { login -> authViewModel.updateLogin(login) },
+                { password -> authViewModel.updatePassword(password) },
+                onMoveToSignUpClicked,
+                {
+                    authViewModel.signIn()
+                }
+            )
+        }
     }
 }
 

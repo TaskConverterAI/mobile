@@ -3,11 +3,15 @@ package org.example.project.ui.screens.tasksScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -17,24 +21,41 @@ import org.example.project.ui.screens.tasksScreen.conditionScreens.MainScreenWit
 import org.example.project.ui.viewmodels.TasksViewModel
 
 @Composable
-fun TasksScreen(navController: NavController, jobView: org.example.project.ui.screens.tasksScreen.TasksViewModel) {
-    val viewModel: TasksViewModel = viewModel(factory = TasksViewModel.Factory)
-
+fun TasksScreen(
+    navController: NavController,
+    jobView: org.example.project.ui.screens.tasksScreen.TasksViewModel,
+    viewModel: TasksViewModel
+) {
     // Собираем состояния из ViewModel
     val notes by viewModel.tasks.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val jobs by jobView.currentJobs.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     // Загружаем задачи только один раз
     LaunchedEffect(Unit) {
         viewModel.loadTasks()
+    }
+
+    // Показать короткий тост при ошибках
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                withDismissAction = false,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearError()
+        }
     }
 
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        SnackbarHost(hostState = snackbarHostState)
         when {
             // Показываем индикатор загрузки
             isLoading -> {

@@ -881,4 +881,3 @@ private fun pastelColorForKey(key: String): Color {
 }
 
 private fun Double.formatLatLon(): String = this.toString()
-
