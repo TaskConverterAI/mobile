@@ -120,17 +120,7 @@ class NetworkAuthRepository(
                 parseAndSaveJWT(signInResponse.accessToken, login, login)
                 true
             } else {
-                Log.i("MY_APP_TAG","Hello")
                 val errorsResponse = parseErrorResponse(response.errorBody())
-                Log.i("MY_APP_TAG","Hello")
-
-                if (errorsResponse.error != null)
-                    Toast.makeText(appContext, errorsResponse.error, Toast.LENGTH_SHORT).show()
-
-                errorsResponse.errors?.forEach { err ->
-                    Toast.makeText(appContext, err, Toast.LENGTH_SHORT).show()
-                }
-
                 false
             }
         } catch (_: Exception) {

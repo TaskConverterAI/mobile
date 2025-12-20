@@ -203,6 +203,8 @@ class AuthViewModel(
         if (!isLoginCorrect || !isPasswordCorrect || !onlyError) {
             _signInUiState.update { currentState ->
                 currentState.copy(
+                    password = preparedPassword,
+                    username = preparedLogin,
                     isLoginCorrect = isLoginCorrect,
                     isPasswordCorrect = isPasswordCorrect,
                     loginErrMsg = loginErrMsg,
