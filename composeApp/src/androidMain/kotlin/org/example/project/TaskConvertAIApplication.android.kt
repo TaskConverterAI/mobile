@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.yandex.mapkit.MapKitFactory
 import org.example.project.data.analyzer.initAnalyzerRepository
+import org.example.project.data.auth.initAuthRepository
 
 private const val AUTH_PREFERENCES = "auth_preferences"
 private const val MAPKIT_META_NAME = "YANDEX_MAPKIT_API_KEY"
@@ -37,6 +38,7 @@ fun initializeAndroid(context: Context) {
     }
 
     initAnalyzerRepository(applicationContext)
+    initAuthRepository(applicationContext)
     AppDependencies.initialize()
 }
 
