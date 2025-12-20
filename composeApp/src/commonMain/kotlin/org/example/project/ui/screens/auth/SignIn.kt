@@ -202,7 +202,9 @@ private fun LabeledTextField(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedTextColor = MaterialTheme.colorScheme.primary,
-                unfocusedTextColor = MaterialTheme.colorScheme.primary
+                unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                errorSupportingTextColor = MaterialTheme.colorScheme.error
             ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(

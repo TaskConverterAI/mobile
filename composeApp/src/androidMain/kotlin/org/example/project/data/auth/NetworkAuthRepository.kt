@@ -1,20 +1,32 @@
 package org.example.project.data.auth
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.Json
+import okhttp3.ResponseBody
 import org.example.project.AppDependencies
 import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.User
 import org.example.project.model.DecodeAccessTokenRequest
+import org.example.project.model.ErrorsResponse
 import org.example.project.model.InvalidateSessionRequest
 import org.example.project.model.RefreshAccessTokenRequest
 import org.example.project.model.SignInUserRequest
+import org.example.project.model.SignInUserResponse
 import org.example.project.model.SignUpUserRequest
+import org.example.project.model.SignUpUserResponse
 import org.example.project.network.AuthApiService
 import kotlin.RuntimeException
 
+private var appContext: Context? = null
+
+fun initAuthRepository(context: Context) {
+    appContext = context.applicationContext
+}
 class NetworkAuthRepository(
     private val userAuthPreferencesRepository: UserAuthPreferencesRepository,
     private val authApiService: AuthApiService
@@ -62,23 +74,34 @@ class NetworkAuthRepository(
         login: String,
         email: String,
         password: String
-    ): Boolean {
+    ): AuthResult {
         return try {
             val response = authApiService.signUp(SignUpUserRequest(login, email, password))
 
             if (response.isSuccessful) {
                 val signInResponse = response.body()
-                userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken)
-                userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken)
+                userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken!!)
+                userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken!!)
                 // Сохраняем данные пользователя локально
                 parseAndSaveJWT(signInResponse.accessToken, login, email)
-                true
+
+                AuthResult(true, listOf())
             } else {
-                false
+                val errors: MutableList<String> = mutableListOf()
+                val errorsResponse = parseErrorResponse(response.errorBody())
+
+                if (errorsResponse.error != null)
+                    errors.add(errorsResponse.error)
+
+                errorsResponse.errors?.forEach { err ->
+                    errors.add(err)
+                }
+
+                AuthResult(false, errors)
             }
         } catch (e: Exception) {
             //Logger.i { e.message.toString() }
-            false
+            AuthResult(false, listOf())
         }
     }
 
@@ -97,6 +120,17 @@ class NetworkAuthRepository(
                 parseAndSaveJWT(signInResponse.accessToken, login, login)
                 true
             } else {
+                Log.i("MY_APP_TAG","Hello")
+                val errorsResponse = parseErrorResponse(response.errorBody())
+                Log.i("MY_APP_TAG","Hello")
+
+                if (errorsResponse.error != null)
+                    Toast.makeText(appContext, errorsResponse.error, Toast.LENGTH_SHORT).show()
+
+                errorsResponse.errors?.forEach { err ->
+                    Toast.makeText(appContext, err, Toast.LENGTH_SHORT).show()
+                }
+
                 false
             }
         } catch (_: Exception) {
@@ -149,6 +183,21 @@ class NetworkAuthRepository(
             response.isSuccessful
         } catch (_: Exception) {
             false
+        }
+    }
+
+    private fun parseErrorResponse(errorBody: ResponseBody?): ErrorsResponse {
+        return try {
+            val json = Json {ignoreUnknownKeys = true}
+            errorBody?.let {
+                val errorString = it.string()
+                Log.i("MY_APP_TAG", errorString)
+                val result = json.decodeFromString<ErrorsResponse>(errorString)
+                Log.i("MY_APP_TAG", errorString)
+                result
+            } ?: ErrorsResponse(null, null, null)
+        } catch (e: Exception) {
+            ErrorsResponse(null, null, null)
         }
     }
 

@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitClient {
 
-    private const val URL = "http://10.154.120.68:"
+    private const val URL = "http://10.179.137.144:"
     private const val AUTH_PORT = "8081/"
     private const val ANALYZER_PORT = "8082/"
     private const val TASK_PORT = "8083/"

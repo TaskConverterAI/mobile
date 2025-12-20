@@ -68,3 +68,13 @@ data class InvalidateSessionRequest (
     @SerialName(value = "userId")
     val userId: Long
 )
+
+@Serializable
+data class ErrorsResponse (
+    @SerialName(value = "error")
+    val error: String? = null,
+    @SerialName(value = "errors")
+    val errors: List<String>? = null,
+    @SerialName(value = "timestamp")
+    val timestamp: String? = null
+)
