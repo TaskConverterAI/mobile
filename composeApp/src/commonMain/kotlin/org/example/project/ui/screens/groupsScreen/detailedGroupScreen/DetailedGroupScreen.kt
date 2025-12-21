@@ -1,5 +1,6 @@
 package org.example.project.ui.screens.groupsScreen.detailedGroupScreen
 
+import StatusToast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -24,12 +25,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import co.touchlab.kermit.Logger
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersList
@@ -43,6 +52,10 @@ data class DetailGroupScreenArgs(val groupId: Long)
 fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavController)
 {
     val detailsUiState by viewModel.groupDetails.collectAsState()
+
+    var showToast by remember { mutableStateOf(false) }
+    var toastMessage: String by remember { mutableStateOf("") }
+    var toastType by remember { mutableStateOf(StatusType.INFO) }
 
     Scaffold(
         topBar = { DetailsGroupTopBar(navController) }
@@ -60,25 +73,47 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
     if (detailsUiState.showLeaveDialog) {
         if (detailsUiState.isAdmin) {
             LeaveAdminGroupDialog(detailsUiState.name,{
-                // TODO
+                viewModel.setLeave(false)
             },{
-                // TODO
+
             })
         } else {
             LeaveGroupDialog(detailsUiState.name, {
-                // TODO
+                viewModel.setLeave(false)
             }, {
-                // TODO
             })
         }
     }
 
     if (detailsUiState.showAddMemberDialog) {
         AddMemberDialog(
-            onDismiss = { viewModel.dismissAddMemberDialog() },
-            onConfirm = { email -> viewModel.addParticipantByEmail(email) }
+            onDismiss = {
+                viewModel.dismissAddMemberDialog()
+            },
+            onConfirm = { email ->
+                viewModel.addParticipantByEmail(email)
+            }
         )
     }
+
+    LaunchedEffect(detailsUiState.error) {
+        if (detailsUiState.error != null) {
+            toastMessage = detailsUiState.error!!
+            showToast = true
+        }
+        viewModel.clearError(ToastDuration.LONG.millis)
+    }
+
+    if (showToast) {
+        StatusToast(
+            type = toastType,
+            message = toastMessage,
+            duration = ToastDuration.LONG,
+            onDismiss = { showToast = false }
+        )
+
+    }
+
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,5 +180,7 @@ private fun GroupDetailsForm(
         }
 
     }
+
+
 }
 

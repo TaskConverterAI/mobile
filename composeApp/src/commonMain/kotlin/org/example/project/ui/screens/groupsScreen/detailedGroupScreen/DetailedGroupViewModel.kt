@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -106,7 +107,8 @@ open class DetailedGroupViewModel(
                     // Обновляем локальное состояние
                     _groupDetails.update { currentState ->
                         currentState.copy(
-                            users = currentUsers.filterIndexed { index, _ -> index != idx }
+                            users = currentUsers.filterIndexed { index, _ -> index != idx },
+                            error = "Пользователь успешно удален"
                         )
                     }
 
@@ -128,6 +130,12 @@ open class DetailedGroupViewModel(
     fun addParticipantByEmail(email: String) {
         viewModelScope.launch {
             try {
+                _groupDetails.update { currentState ->
+                    currentState.copy(
+                        showAddMemberDialog = false
+                    )
+
+                }
                 val groupId = _groupDetails.value.groupId
 
                 // Вызываем API для добавления участника по email
@@ -139,10 +147,12 @@ open class DetailedGroupViewModel(
                         currentState.copy(
                             users = currentState.users + addedMember,
                             showAddMemberDialog = false,
-                            error = null
+                            error = "Пользователь успешно добавлен в группу"
                         )
+
                     }
                     Logger.d { "User ${addedMember.email} added to group successfully" }
+
                 } else {
                     _groupDetails.update { it.copy(error = "Не удалось добавить участника") }
                 }
@@ -156,6 +166,12 @@ open class DetailedGroupViewModel(
     fun dismissAddMemberDialog() {
         _groupDetails.update { currentState ->
             currentState.copy(showAddMemberDialog = false)
+        }
+    }
+
+    fun dismissLeaveGroupDialog() {
+        _groupDetails.update { currentState ->
+            currentState.copy(showLeaveDialog = true)
         }
     }
 
@@ -180,6 +196,14 @@ open class DetailedGroupViewModel(
                 Logger.e("DetailedGroupViewModel", e) { "Error leaving group: ${e.message}" }
                 _groupDetails.update { it.copy(error = "Ошибка при выходе из группы") }
             }
+        }
+    }
+
+    fun clearError(time: Long) {
+
+        viewModelScope.launch {
+            delay(time) // 5 секунд
+            _groupDetails.update { it.copy(error = null) }
         }
     }
 
