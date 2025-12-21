@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
-import org.example.project.ui.viewComponents.taskScreenComponents.LowPriority
+import org.example.project.data.commonData.User
 
 data class SignUpUiState(
     val username: String = "",
@@ -35,6 +35,10 @@ data class SignUpUiState(
 data class SignInUiState(
     val username: String = "",
     val password: String = "",
+    val isLoginCorrect: Boolean = true,
+    val isPasswordCorrect: Boolean = true,
+    val loginErrMsg: String = "",
+    val passwordErrMsg: String = "",
     val state: Int = 0
 )
 
@@ -48,8 +52,11 @@ class AuthViewModel(
     private val _signInUiState = MutableStateFlow(SignInUiState())
     val signInUiState: StateFlow<SignInUiState> = _signInUiState.asStateFlow()
 
-     private var _userId: MutableStateFlow<Long> = MutableStateFlow(-1L);
-    var userId: StateFlow<Long> = _userId.asStateFlow();
+     private var _userId: MutableStateFlow<Long> = MutableStateFlow(-1L)
+    var userId: StateFlow<Long> = _userId.asStateFlow()
+
+    private var _currentUser: MutableStateFlow<User?> = MutableStateFlow(null)
+    var currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
 
     fun getUserIdByToken() {
@@ -58,7 +65,21 @@ class AuthViewModel(
         }
     }
 
-    fun checkLogin(login: String) {
+    fun loadCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val userId = authRepository.getUserIdByToken()
+                val user = AppDependencies.container.userRepository.getUserById(userId)
+                if (user != null) {
+                    _currentUser.value = user
+                }
+            } catch (e: Exception) {
+                Logger.e("AuthViewModel", e) { "Error loading user data" }
+            }
+        }
+    }
+
+    fun checkLogin(login: String): Boolean {
         var errorMsg = ""
         val isCorrectLength = login.length in 3..32
 
@@ -78,9 +99,10 @@ class AuthViewModel(
         _signUpUiState.update { currentState ->
             currentState.copy(username = login, isUsernameCorrect = isCorrect, usernameErrMsg = errorMsg)
         }
+        return isCorrect
     }
 
-    fun checkEmail(email: String) {
+    fun checkEmail(email: String): Boolean {
         var errorMsg = ""
         val emailRegex = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$")
         val isCorrect = email.isNotEmpty() && emailRegex.matches(email)
@@ -92,9 +114,11 @@ class AuthViewModel(
         _signUpUiState.update { currentState ->
             currentState.copy(email = email, isEmailCorrect = isCorrect, emailErrMsg = errorMsg)
         }
+
+        return isCorrect
     }
 
-    fun checkPassword(password: String) {
+    fun checkPassword(password: String): Boolean {
         var errorMsg = ""
         val correctLength = password.length in 8..<256
 
@@ -133,9 +157,11 @@ class AuthViewModel(
         }
 
         checkConfirmPassword(signUpUiState.value.confirmPassword)
+
+        return isCorrect
     }
 
-    fun checkConfirmPassword(confirmPassword: String) {
+    fun checkConfirmPassword(confirmPassword: String): Boolean {
         var errorMsg = ""
         val isCorrect = confirmPassword.equals(signUpUiState.value.password)
 
@@ -150,21 +176,64 @@ class AuthViewModel(
                 confirmPasswordErrMsg = errorMsg
             )
         }
+
+        return isCorrect
+    }
+
+    fun checkPair(login: String?, password: String?, onlyError: Boolean = false): Boolean
+    {
+        val preparedLogin = login ?: _signInUiState.value.username
+        val preparedPassword = password ?: _signInUiState.value.password
+
+        var isLoginCorrect = true
+        var isPasswordCorrect = true
+        var loginErrMsg = ""
+        var passwordErrMsg = ""
+
+        if (preparedLogin.isEmpty()) {
+            isLoginCorrect = false
+            loginErrMsg = "Это поле не может быть пустым"
+        }
+
+        if (preparedPassword.isEmpty()) {
+            isPasswordCorrect = false
+            passwordErrMsg = "Пароль не может быть пустым"
+        }
+
+        if (!isLoginCorrect || !isPasswordCorrect || !onlyError) {
+            _signInUiState.update { currentState ->
+                currentState.copy(
+                    password = preparedPassword,
+                    username = preparedLogin,
+                    isLoginCorrect = isLoginCorrect,
+                    isPasswordCorrect = isPasswordCorrect,
+                    loginErrMsg = loginErrMsg,
+                    passwordErrMsg = passwordErrMsg
+                )
+            }
+        }
+
+        return isLoginCorrect && isPasswordCorrect
     }
 
     fun updateLogin(login: String) {
-        _signInUiState.update { currentState ->
-            currentState.copy(username = login)
-        }
+        checkPair(login, null)
     }
 
     fun updatePassword(password: String) {
-        _signInUiState.update { currentState ->
-            currentState.copy(password = password)
-        }
+        checkPair(null, password)
     }
 
     fun validateSignUp() {
+
+        val c1 = checkLogin(_signUpUiState.value.username)
+        val c2 = checkEmail(_signUpUiState.value.email)
+        val c3 = checkPassword(_signUpUiState.value.password)
+        val c4 = checkConfirmPassword(_signUpUiState.value.confirmPassword)
+
+        if (!(c1 && c2 && c3 && c4))
+            return
+
         viewModelScope.launch {
             val result = authRepository.signUp(
                 _signUpUiState.value.username,
@@ -172,19 +241,41 @@ class AuthViewModel(
                 _signUpUiState.value.password
             )
 
-            if (result) {
+            if (result.success) {
                 _signUpUiState.update { currentState ->
                     currentState.copy(state = 1)
                 }
             } else {
+                var isLoginCorrect: Boolean = true
+                var isEmailCorrect: Boolean = true
+                var loginErrMsg = ""
+                var emailErrMsg = ""
+
+                result.errors.forEach { err ->
+
+                    if (err.contains("email")) {
+                        isEmailCorrect = false
+                        emailErrMsg = "Данная почта уже зарегистрирована"
+                    }
+
+                    if (err.contains("username")) {
+                        isLoginCorrect = false
+                        loginErrMsg = "Данный логин уже зарегистрирован"
+                    }
+                }
+
                 _signUpUiState.update { currentState ->
-                    currentState.copy(state = 0)
+                    currentState.copy(state = 0, isEmailCorrect = isEmailCorrect, isUsernameCorrect = isLoginCorrect, emailErrMsg = emailErrMsg, usernameErrMsg = loginErrMsg)
                 }
             }
         }
     }
 
     fun validateSignIn() {
+        if (!checkPair(null, null, true))
+            return
+
+
         viewModelScope.launch {
             val result = authRepository.signIn(
                 _signInUiState.value.username,
@@ -198,7 +289,7 @@ class AuthViewModel(
                 }
             } else {
                 _signInUiState.update { currentState ->
-                    currentState.copy(state = 0)
+                    currentState.copy(state = 0, isLoginCorrect = false, isPasswordCorrect = false, loginErrMsg = "", passwordErrMsg = "Неверный логин или пароль")
                 }
             }
         }

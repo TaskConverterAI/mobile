@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import androidx.core.net.toUri
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -12,8 +12,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -21,11 +19,9 @@ import org.example.project.model.AnalysisJob
 import org.example.project.model.MeetingSummary
 import org.example.project.model.PublicSpeakerUtterance
 import org.example.project.model.TaskRequest
-import org.example.project.network.AnalyzerApiService
-import retrofit2.Retrofit
+import org.example.project.network.RetrofitClient
 import java.io.File
 import kotlin.time.ExperimentalTime
-import androidx.core.net.toUri
 
 private var appContext: Context? = null
 
@@ -34,66 +30,49 @@ fun initAnalyzerRepository(context: Context) {
 }
 
 class DefaultAnalyzerRepository() : AnalyzerRepository {
-
-    private val baseAnalyzerUrl = "http://192.168.31.79:8080/"
-
-    @OptIn(ExperimentalTime::class)
-    private val serializerModule = SerializersModule {
-        contextual(Instant::class, InstantSerializer)
-    }
-
-    private val json = Json {
-        this.serializersModule = serializerModule
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-    }
-    val contentType = "application/json".toMediaType()
-    private val analyzerRetrofit: Retrofit = Retrofit.Builder()
-        .addConverterFactory(json.asConverterFactory(contentType))
-        .baseUrl(baseAnalyzerUrl)
-        .build()
-
-    private val analyzerApiService: AnalyzerApiService by lazy {
-        analyzerRetrofit.create(AnalyzerApiService::class.java)
-    }
+    private val analyzerApiService = RetrofitClient.createAnalyzerApiService()
 
 
     override suspend fun transcribeAudio(
         userId: String,
         audioPath: String,
-        onProgress: (Float) ->Unit
+        onProgress: (Float) -> Unit
     ): Boolean {
         return try {
             onProgress(0.00F)
             val fileUri = audioPath.toUri()
-            Log.i("MY_APP_TAG","${audioPath}")
+
             val fileInfo = getFileInfoFromUri(appContext!!, fileUri)
             var fileData = ByteArray(0)
-
             var fileName = fileInfo.first ?: "audio_file"
-            var mimeType = "audio/mp3"
-
+            var mimeType = fileInfo.second ?: "audio/mp3"
 
             if (fileInfo.second == "video/mp4") {
                 fileName = "audio_file.m4a"
                 mimeType = "audio/m4a"
                 val converter = Mp4ToMp3Converter()
-                val result = converter.extractAndEncodeToAac(appContext!!,fileUri, onProgress)
+                val result = converter.extractAndEncodeToAac(appContext!!, fileUri, onProgress)
                 if (result.isSuccess) {
                     fileData = result.getOrThrow()
                 } else {
-                    Toast.makeText(appContext, "ошибка конвертации", Toast.LENGTH_SHORT)
-                    Log.i("MY_APP_TAG","convertation failed")
+                    Toast.makeText(appContext, "ошибка конвертации", Toast.LENGTH_SHORT).show()
+                    Log.e("MY_APP_TAG", "Ошибка конвертации: ${result.exceptionOrNull()?.message}")
                     return false
                 }
-            }
-            else{
+            } else {
                 val inputStream = appContext!!.contentResolver.openInputStream(fileUri)
-                inputStream?.use { stream ->
-
+                if (inputStream == null) {
+                    Log.e("MY_APP_TAG", "Не удалось открыть inputStream для URI: $fileUri")
+                    return false
+                }
+                inputStream.use { stream ->
                     fileData = stream.readBytes()
                 }
+            }
+
+            if (fileData.isEmpty()) {
+                Log.e("MY_APP_TAG", "ОШИБКА: fileData пустой!")
+                return false
             }
 
             val requestBody = fileData.toRequestBody(mimeType.toMediaType())
@@ -102,17 +81,24 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
                 fileName,
                 requestBody
             )
-            analyzerApiService.getAllJobs(userId)
+
             val response = analyzerApiService.transcribe(userId, audioPart)
 
-            if (response.isSuccessful)
-            {
+            if (!response.isSuccessful) {
+                Log.e("MY_APP_TAG", "Response errorBody: ${response.errorBody()?.string()}")
+            } else {
+                Log.i("MY_APP_TAG", "Response body: ${response.body()}")
+            }
+
+            if (response.isSuccessful) {
                 onProgress(1F)
                 return true
             } else {
                 return false
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "Exception message: ${e.message}")
+            Log.e("MY_APP_TAG", "Exception stacktrace:", e)
             false
         }
     }
@@ -121,7 +107,8 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
         return try {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    val nameIndex =
+                        cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                     val mimeType = context.contentResolver.getType(uri)
 
                     val fileName = if (nameIndex >= 0) cursor.getString(nameIndex) else null
@@ -129,15 +116,20 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
                 } else {
                     Pair(null, null)
                 }
-            } ?: Pair(null, null)
-        } catch (_: Exception) {
+            } ?: run {
+                Log.w("MY_APP_TAG", "getFileInfoFromUri - query вернул null")
+                Pair(null, null)
+            }
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "getFileInfoFromUri - Exception: ${e.message}", e)
             Pair(null, null)
         }
     }
 
     private fun createTempAudioFile(context: Context, fileName: String, mimeType: String): File {
         val storageDir = context.externalCacheDir ?: context.cacheDir
-        val extension = getFileExtensionFromMimeType(mimeType) ?: getFileExtension(fileName) ?: "mp3"
+        val extension =
+            getFileExtensionFromMimeType(mimeType) ?: getFileExtension(fileName) ?: "mp3"
         val prefix = "audio_upload_"
 
         return File.createTempFile(prefix, ".$extension", storageDir)
@@ -158,6 +150,7 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
         return fileName?.substringAfterLast('.', missingDelimiterValue = "")
             ?.takeIf { it.isNotEmpty() }
     }
+
     private fun getAudioMimeType(file: File): String {
         return when (file.extension.lowercase()) {
             "wav" -> "audio/wav"
@@ -175,11 +168,14 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
             val response = analyzerApiService.getAllJobs(userId)
 
             if (response.isSuccessful) {
+                Log.i("MY_APP_TAG", "getAllJobs - Jobs count: ${response.body()?.size}")
                 response.body()
             } else {
+                Log.e("MY_APP_TAG", "getAllJobs - errorBody: ${response.errorBody()?.string()}")
                 null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "getAllJobs - Exception: ${e.message}", e)
             null
         }
     }
@@ -189,11 +185,20 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
             val response = analyzerApiService.getAudioJobResult(jobId)
 
             if (response.isSuccessful) {
+                Log.i(
+                    "MY_APP_TAG",
+                    "getTranscribingResult - Utterances count: ${response.body()?.size}"
+                )
                 return response.body()
             } else {
+                Log.e(
+                    "MY_APP_TAG",
+                    "getTranscribingResult - errorBody: ${response.errorBody()?.string()}"
+                )
                 null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "getTranscribingResult - Exception: ${e.message}", e)
             null
         }
     }
@@ -205,12 +210,21 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
         return try {
             val response = analyzerApiService.analyze(userId, task)
 
+            if (!response.isSuccessful) {
+                Log.e("MY_APP_TAG", "analyzeText - errorBody: ${response.errorBody()?.string()}")
+            } else {
+                Log.i("MY_APP_TAG", "analyzeText - Response body: ${response.body()}")
+            }
+
             if (response.isSuccessful) {
+                Log.i("MY_APP_TAG", "analyzeText successful")
                 true
             } else {
+                Log.e("MY_APP_TAG", "analyzeText error")
                 false
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "Exception: ${e.message}", e)
             false
         }
     }
@@ -220,11 +234,17 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
             val response = analyzerApiService.getTaskJobResult(jobId)
 
             if (response.isSuccessful) {
+                Log.i("MY_APP_TAG", "getAnalysisResult - Summary received: ${response.body()}")
                 return response.body()
             } else {
+                Log.e(
+                    "MY_APP_TAG",
+                    "getAnalysisResult - errorBody: ${response.errorBody()?.string()}"
+                )
                 null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "getAnalysisResult - Exception: ${e.message}", e)
             null
         }
     }

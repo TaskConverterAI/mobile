@@ -34,39 +34,56 @@ fun RegistrationScreen(
     onSuccessSignUp: () -> Unit
 ) {
     val signUpUiState by authViewModel.signUpUiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     if (signUpUiState.state == 1) {
         onSuccessSignUp()
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        RegistrationContent(
-            isLoginValid = signUpUiState.isUsernameCorrect,
-            isEmailValid = signUpUiState.isEmailCorrect,
-            isPasswordValid = signUpUiState.isPasswordCorrect,
-            isConfirmPasswordValid = signUpUiState.isConfirmPasswordCorrect,
-            onLoginChange = { login -> authViewModel.checkLogin(login) },
-            onEmailChange = { email -> authViewModel.checkEmail(email) },
-            onPasswordChange = { password -> authViewModel.checkPassword(password) },
-            onConfirmPasswordChange = { confirm -> authViewModel.checkConfirmPassword(confirm) },
-            login = signUpUiState.username,
-            email = signUpUiState.email,
-            password = signUpUiState.password,
-            confirmPassword = signUpUiState.confirmPassword,
-            {
-                authViewModel.signUp()
-            },
-            {
-                onMoveToSignInClicked()
-            },
-            loginErrMsg = signUpUiState.usernameErrMsg,
-            emailErrMsg = signUpUiState.emailErrMsg,
-            passwordErrMsg = signUpUiState.passwordErrMsg,
-            confirmPasswordErrMsg = signUpUiState.confirmPasswordErrMsg
-        )
+    // Ошибка (показываем короткий тост/снэкбар снизу)
+    LaunchedEffect(signUpUiState.state) {
+        // Показываем тост только если была попытка (валидация) и неуспех
+        if (signUpUiState.state == 0 && (signUpUiState.username.isNotEmpty() || signUpUiState.email.isNotEmpty())) {
+            snackbarHostState.showSnackbar(
+                message = "Ошибка регистрации. Проверьте введённые данные",
+                withDismissAction = false,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { padding ->
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            RegistrationContent(
+                isLoginValid = signUpUiState.isUsernameCorrect,
+                isEmailValid = signUpUiState.isEmailCorrect,
+                isPasswordValid = signUpUiState.isPasswordCorrect,
+                isConfirmPasswordValid = signUpUiState.isConfirmPasswordCorrect,
+                onLoginChange = { login -> authViewModel.checkLogin(login) },
+                onEmailChange = { email -> authViewModel.checkEmail(email) },
+                onPasswordChange = { password -> authViewModel.checkPassword(password) },
+                onConfirmPasswordChange = { confirm -> authViewModel.checkConfirmPassword(confirm) },
+                login = signUpUiState.username,
+                email = signUpUiState.email,
+                password = signUpUiState.password,
+                confirmPassword = signUpUiState.confirmPassword,
+                {
+                    authViewModel.signUp()
+                },
+                {
+                    onMoveToSignInClicked()
+                },
+                loginErrMsg = signUpUiState.usernameErrMsg,
+                emailErrMsg = signUpUiState.emailErrMsg,
+                passwordErrMsg = signUpUiState.passwordErrMsg,
+                confirmPasswordErrMsg = signUpUiState.confirmPasswordErrMsg
+            )
+        }
     }
 }
 

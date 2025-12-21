@@ -34,7 +34,10 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
 
-            implementation(libs.yandex.maps)
+            // Google Maps
+            implementation(libs.google.maps.compose)
+            implementation(libs.google.play.services.maps)
+            implementation(libs.play.services.location)
 
             // Retrofit
             implementation(libs.retrofit2.kotlinx.serialization.converter)
@@ -53,6 +56,10 @@ kotlin {
 
             // JWT
             implementation(libs.java.jwt)
+
+            implementation(libs.androidx.work.runtime.ktx)
+            implementation(libs.play.services.location)
+            implementation(libs.androidx.lifecycle.process)
         }
         commonMain.dependencies {
             implementation(libs.kermit)

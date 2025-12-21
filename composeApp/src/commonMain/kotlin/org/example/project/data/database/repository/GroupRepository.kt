@@ -1,6 +1,7 @@
 package org.example.project.data.database.repository
 
 import co.touchlab.kermit.Logger
+import org.example.project.AppDependencies
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.User
@@ -26,16 +27,27 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                 println("GroupRepository: Success, received ${response.size} groups")
                 val groupList: MutableList<Group> = mutableListOf()
 
+                // Получаем noteRepository для подсчета заметок
+                val noteRepository = AppDependencies.container.noteRepository
+
                 for (group in response) {
+                    // Получаем реальное количество заметок для группы
+                    val noteCount = try {
+                        noteRepository.getGroupNoteCount(group.id)
+                    } catch (e: Exception) {
+                        Logger.e { "Error getting note count for group ${group.id}: ${e.message}" }
+                        0
+                    }
+
                     groupList.add(
                         Group(
                             id = group.id,
                             name = group.name,
                             description = group.description,
-                            ownerId = 0,
+                            ownerId = 0L, // Не приходит в GroupSummaryDto
                             memberCount = group.memberCount,
                             createdAt = Instant.parse(group.createdAt).toEpochMilliseconds(),
-                            taskCount = 0
+                            taskCount = noteCount
                         )
                     )
                 }
@@ -60,7 +72,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
 
         val retVal = result?.fold(
             onSuccess = { response ->
-                val memberList: MutableList<User> = mutableListOf();
+                val memberList: MutableList<User> = mutableListOf()
                 for (member in response.members){
                     memberList.add(
                         User(
@@ -72,6 +84,15 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     )
                 }
 
+                // Получаем реальное количество заметок для группы
+                val noteRepository = AppDependencies.container.noteRepository
+                val noteCount = try {
+                    noteRepository.getGroupNoteCount(groupId)
+                } catch (e: Exception) {
+                    Logger.e { "Error getting note count for group $groupId: ${e.message}" }
+                    0
+                }
+
                 val group = Group(
                     id = response.id,
                     name = response.name,
@@ -80,7 +101,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     memberCount = response.members.size,
                     members = memberList,
                     createdAt = Instant.parse(response.createdAt).toEpochMilliseconds(),
-                    taskCount = 0
+                    taskCount = noteCount
                 )
 
                 group
@@ -108,7 +129,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
                     ownerId = response.ownerId,
                     memberCount = response.memberCount,
                     createdAt = Instant.parse(response.createdAt).toEpochMilliseconds(),
-                    taskCount = 0
+                    taskCount = 0 // У новой группы пока нет заметок
                 )
             },
             onFailure = { res ->
@@ -173,6 +194,11 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
         )
 
         return retVal
+    }
+
+    // Перегруженный метод с дефолтной ролью member
+    suspend fun addMemberInGroup(groupId: Long, userNameOrEmail: String) : User? {
+        return addMemberInGroup(groupId, userNameOrEmail, Privileges.member)
     }
 
     suspend fun deleteMemberFromGroup(groupId: Long, userId: Long) {

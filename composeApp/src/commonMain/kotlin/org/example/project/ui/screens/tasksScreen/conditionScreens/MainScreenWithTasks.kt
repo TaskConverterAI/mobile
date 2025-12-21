@@ -14,17 +14,28 @@ import androidx.navigation.NavController
 import org.example.project.ui.viewComponents.commonComponents.BlockType
 import org.example.project.ui.viewComponents.commonComponents.ColorBlock
 import org.example.project.ui.viewComponents.commonComponents.FilterSelector
+import org.example.project.data.commonData.Status
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithTasks(navController: NavController, taskJob: org.example.project.ui.screens.tasksScreen.TasksViewModel, allTasks: org.example.project.ui.viewmodels.TasksViewModel) {
     var selectedFilter by remember { mutableStateOf("Все группы") }
     val filterOptions = listOf("Все группы")
+
     var selectedStatus by remember { mutableStateOf("Все статусы") }
-    val statusOptions = listOf("Все статусы")
+    val statusOptions = listOf("Все статусы", "Активные", "Выполненные")
 
     val jobs by taskJob.currentJobs.collectAsState()
     val tasks by allTasks.tasks.collectAsState()
+
+    // Применяем фильтр по статусам
+    val filteredTasks = remember(tasks, selectedStatus) {
+        when (selectedStatus) {
+            "Активные" -> tasks.filter { it.status == Status.UNDONE }
+            "Выполненные" -> tasks.filter { it.status == Status.DONE }
+            else -> tasks
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -73,8 +84,8 @@ fun MainScreenWithTasks(navController: NavController, taskJob: org.example.proje
             )
         }
 
-        // Tasks list
-        tasks.forEach { task ->
+        // Tasks list (с учётом фильтра)
+        filteredTasks.forEach { task ->
             ColorBlock(
                 BlockType.ADVANCED_TASK,
                 task,

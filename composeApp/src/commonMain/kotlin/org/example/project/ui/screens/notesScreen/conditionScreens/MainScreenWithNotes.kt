@@ -23,13 +23,17 @@ import org.example.project.ui.viewmodels.NotesViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel) {
+    val groups by viewModel.groups.collectAsState()
+    val selectedGroupId by viewModel.selectedGroupId.collectAsState()
+
     var selectedFilter by remember { mutableStateOf("Все группы") }
-    val filterOptions = listOf("Все группы")
+    val filterOptions = remember(groups) {
+        listOf("Все группы") + groups.map { it.name }
+    }
 
     var showBottomSheet by remember { mutableStateOf(false) }
-    // Получаем заметки из viewModel
-
     val notes by viewModel.notes.collectAsState()
+
     Logger.i{notes.toString()}
     Column(
         modifier = Modifier
@@ -55,18 +59,17 @@ fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel)
             FilterSelector(
                 selectedFilter = selectedFilter,
                 filterOptions = filterOptions,
-                onFilterSelected = { selectedFilter = it },
+                onFilterSelected = { filter ->
+                    selectedFilter = filter
+                    if (filter == "Все группы") {
+                        viewModel.selectGroup(null)
+                    } else {
+                        val selectedGroup = groups.find { it.name == filter }
+                        viewModel.selectGroup(selectedGroup?.id)
+                    }
+                },
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-        }
-
-        Button(
-            onClick = { showBottomSheet = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        ) {
-            Text(text = "Test Notify")
         }
 
         // Разделяем заметки на две колонки для отображения
@@ -117,4 +120,3 @@ fun MainScreenWithNotes(navController: NavController, viewModel: NotesViewModel)
         )
     }
 }
-

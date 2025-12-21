@@ -3,6 +3,7 @@ package org.example.project.ui
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,9 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -240,7 +244,8 @@ fun TaskConvertAIApp(
 
                         Destination.TASKS -> TasksScreen(
                             navController,
-                            viewModel(factory = org.example.project.ui.screens.tasksScreen.TasksViewModel.Factory)
+                            viewModel(factory = org.example.project.ui.screens.tasksScreen.TasksViewModel.Factory),
+                            viewModelTasks
                         )
 
                         Destination.GROUPS -> GroupsScreen(
@@ -278,6 +283,14 @@ fun TaskConvertAIApp(
                 val args: CheckAnalysisScreenArgs = currentBackStackEntry.toRoute()
                 val viewModel: CheckAnalysisViewModel =
                     viewModel(factory = CheckAnalysisViewModel.Factory)
+
+                // Устанавливаем callback для обновления списка задач
+                viewModel.onTasksUpdated = {
+                    println("[TaskConvertAIApp] onTasksUpdated callback invoked, calling loadTasks()")
+                    viewModelTasks.loadTasks()
+                }
+                println("[TaskConvertAIApp] CheckAnalysisViewModel callback set")
+
                 viewModel.loadJobResult(args.jobId)
 
                 CheckAnalysisScreen(navController = navController, viewModel = viewModel)
@@ -366,6 +379,7 @@ fun TaskConvertAIApp(
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
                     task = if (taskID != null) {
+                        print("&&&&&&&& 2i13221")
                         viewModelTasks.getTaskById(taskID)
                     } else {
                         null
@@ -386,26 +400,42 @@ fun TaskConvertAIApp(
                     }
                 }
 
-                DetailTaskScreen(
-                    task = task,
-                    navController = navController,
-                    isEditMode = isEditMode,
-                    availableGroups = groups,
-                    availableUsers = users,
-                    onSave = { updatedTask ->
-                        if (updatedTask.id == 0L || taskID == null) {
-                            // Создание новой задачи
-                            viewModelTasks.addTask(updatedTask)
-                        } else {
-                            // Обновление существующей задачи
-                            viewModelTasks.updateTask(updatedTask.id, updatedTask)
-                        }
-                    },
-                    onDelete = { taskToDelete ->
-                        viewModelTasks.deleteTask(taskToDelete.id)
-                    },
-                    userId = userId
-                )
+                val error by viewModelTasks.error.collectAsState()
+                val snackbarHostState = remember { SnackbarHostState() }
+                LaunchedEffect(error) {
+                    error?.let {
+                        snackbarHostState.showSnackbar(
+                            message = it,
+                            withDismissAction = false,
+                            duration = SnackbarDuration.Short
+                        )
+                        viewModelTasks.clearError()
+                    }
+                }
+
+                Box {
+                    SnackbarHost(hostState = snackbarHostState)
+                    DetailTaskScreen(
+                        task = task,
+                        navController = navController,
+                        isEditMode = isEditMode,
+                        availableGroups = groups,
+                        availableUsers = users,
+                        onSave = { updatedTask ->
+                            if (updatedTask.id == 0L || taskID == null) {
+                                // Создание новой задачи
+                                viewModelTasks.addTask(updatedTask)
+                            } else {
+                                // Обновление существующей задачи
+                                viewModelTasks.updateTask(updatedTask.id, updatedTask)
+                            }
+                        },
+                        onDelete = { taskToDelete ->
+                            viewModelTasks.deleteTask(taskToDelete.id)
+                        },
+                        userId = userId
+                    )
+                }
             }
 
             composable("create_group") {
@@ -418,9 +448,9 @@ fun TaskConvertAIApp(
             composable<DetailGroupScreenArgs> { currentBackStackEntry ->
                 val detailGroupScreenArgs: DetailGroupScreenArgs = currentBackStackEntry.toRoute()
 
-                val groupName = detailGroupScreenArgs.groupName
+                val groupId = detailGroupScreenArgs.groupId
                 val groupVM: DetailedGroupViewModel = viewModel(factory = DetailedGroupViewModel.Factory)
-                groupVM.setGroup(groupName)
+                groupVM.loadGroup(groupId)
                 DetailGroupScreen(groupVM, navController)
             }
 

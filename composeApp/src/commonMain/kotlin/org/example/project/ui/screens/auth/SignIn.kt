@@ -34,25 +34,43 @@ fun EnterScreen(
     onSuccessSignIn: () -> Unit
 ) {
     val signInUiState by authViewModel.signInUiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
+    // Успех
     if (signInUiState.state == 1) {
         onSuccessSignIn()
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        EnterContent(
-            signInUiState.username,
-            signInUiState.password,
-            { login -> authViewModel.updateLogin(login) },
-            { password -> authViewModel.updatePassword(password) },
-            onMoveToSignUpClicked,
-            {
-                authViewModel.signIn()
-            }
-        )
+    // Ошибка (показываем короткий тост/снэкбар снизу)
+    LaunchedEffect(signInUiState.state) {
+        if (signInUiState.state == 0 && signInUiState.username.isNotEmpty()) {
+            snackbarHostState.showSnackbar(
+                message = "Ошибка входа. Проверьте логин и пароль",
+                withDismissAction = false,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { padding ->
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            EnterContent(
+                signInUiState.username,
+                signInUiState.password,
+                { login -> authViewModel.updateLogin(login) },
+                { password -> authViewModel.updatePassword(password) },
+                onMoveToSignUpClicked,
+                {
+                    authViewModel.signIn()
+                },
+                signInUiState
+            )
+        }
     }
 }
 
@@ -63,7 +81,8 @@ private fun EnterContent(
     onLoginChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onRegister: () -> Unit,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
+    uiState: SignInUiState
 ) {
     Box(
         modifier = Modifier
@@ -82,7 +101,8 @@ private fun EnterContent(
                 login = login,
                 password = password,
                 onLoginChange = onLoginChange,
-                onPasswordChange = onPasswordChange
+                onPasswordChange = onPasswordChange,
+                uiState = uiState
             )
         }
 
@@ -120,6 +140,7 @@ private fun EnterFormSection(
     password: String,
     onLoginChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    uiState: SignInUiState
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -135,7 +156,9 @@ private fun EnterFormSection(
             value = login,
             hint = "Введите логин",
             onValueChange = onLoginChange,
-            onDone = { focusManager.moveFocus(FocusDirection.Down) }
+            onDone = { focusManager.moveFocus(FocusDirection.Down) },
+            isValid = uiState.isLoginCorrect,
+            errorMsg = uiState.loginErrMsg
         )
 
         LabeledTextField(
@@ -147,7 +170,9 @@ private fun EnterFormSection(
             onDone = {
                 focusManager.clearFocus()
                 keyboardController?.hide()
-            }
+            },
+            isValid = uiState.isPasswordCorrect,
+            errorMsg = uiState.passwordErrMsg
         )
         Spacer(modifier = Modifier.height(200.dp))
     }
@@ -160,15 +185,22 @@ private fun LabeledTextField(
     hint: String,
     onValueChange: (String) -> Unit,
     isPassword: Boolean = false,
+    isValid: Boolean,
+    errorMsg: String,
     onDone: () -> Unit
 ) {
+    val borderColor = if (isValid) {
+        MaterialTheme.colorScheme.outline
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 10.dp)
         )
-
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -185,13 +217,24 @@ private fun LabeledTextField(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedTextColor = MaterialTheme.colorScheme.primary,
-                unfocusedTextColor = MaterialTheme.colorScheme.primary
+                unfocusedTextColor = MaterialTheme.colorScheme.primary,
+                focusedBorderColor = borderColor,
+                unfocusedBorderColor = borderColor,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                errorSupportingTextColor = MaterialTheme.colorScheme.error
             ),
+            isError = !isValid,
+            supportingText = {
+                if (!isValid) {
+                    Text(
+                        text = errorMsg,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
-                onDone = {
-                    onDone()
-                }
+                onDone = {onDone()}
             ),
             singleLine = true
         )

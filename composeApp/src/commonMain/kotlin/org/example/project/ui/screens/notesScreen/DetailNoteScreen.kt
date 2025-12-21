@@ -51,7 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil3.util.Logger
+import co.touchlab.kermit.Logger
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -65,6 +65,7 @@ import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.User
 import org.example.project.data.geo.GeoTagPreset
 import org.example.project.ui.screens.commentElems.CommentList
+import org.example.project.ui.viewComponents.commonComponents.NotifyItem
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.theme.PrimaryBase
 import org.example.project.ui.theme.PrimaryDark
@@ -116,6 +117,11 @@ fun DetailNoteScreen(
     var editableLon by remember { mutableStateOf<Double?>(null) }
     var editableGroup: Group? by remember { mutableStateOf(defaultGroup) }
     var editableColor by remember { mutableStateOf(PrimaryBase) }
+
+    // Состояния для обработки ошибок
+    var showErrorNotification by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
 
     // Инициализируем isNewNote на основе параметра isEditMode, если он true и note == null
     val isNewNote = remember(note, isEditMode) { isEditMode && note == null }
@@ -204,35 +210,77 @@ fun DetailNoteScreen(
                     if (isInEditMode) {
                         Button(
                             onClick = {
-                                @OptIn(ExperimentalTime::class)
-                                val updatedNote = Note(
-                                    id = note?.id ?: 0,
-                                    title = editableTitle,
-                                    content = editableContent,
-                                    geotag = Location(
-                                        editableLat ?: 0.0,
-                                        editableLon ?: 0.0,
-                                        editableGeotag ?: "",
-                                        false
-                                    ),
-                                    groupId = if (editableGroup?.id != -1L) editableGroup?.id else null,
-                                    comments = note?.comments ?: emptyList(),
-                                    color = editableColor,
-                                    creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds(),
-                                    authorId = userId
-                                )
-                                onSave(updatedNote)
-                                if (!isNewNote) {
-                                    isInEditMode = false
-                                } else {
-                                    navController.popBackStack()
+                                if (isSaving) return@Button
+
+                                isSaving = true
+                                try {
+                                    @OptIn(ExperimentalTime::class)
+                                    val updatedNote = Note(
+                                        id = note?.id ?: 0,
+                                        title = editableTitle,
+                                        content = editableContent,
+                                        geotag = Location(
+                                            editableLat ?: 0.0,
+                                            editableLon ?: 0.0,
+                                            editableGeotag ?: "",
+                                            false
+                                        ),
+                                        groupId = if (editableGroup?.id != -1L) editableGroup?.id else null,
+                                        comments = note?.comments ?: emptyList(),
+                                        color = editableColor,
+                                        creationDate = note?.creationDate ?: Clock.System.now().toEpochMilliseconds(),
+                                        authorId = userId
+                                    )
+
+                                    Logger.i("DetailNoteScreen") {
+                                        "Попытка сохранить заметку:\n" +
+                                        "  title='${updatedNote.title}' (length=${updatedNote.title.length})\n" +
+                                        "  content length=${updatedNote.content.length}\n" +
+                                        "  groupId=${updatedNote.groupId}\n" +
+                                        "  isNew=$isNewNote\n" +
+                                        "  lat=${editableLat}, lon=${editableLon}"
+                                    }
+
+                                    onSave(updatedNote)
+
+                                    Logger.i("DetailNoteScreen") { "Заметка успешно сохранена" }
+
+                                    if (!isNewNote) {
+                                        isInEditMode = false
+                                    } else {
+                                        navController.popBackStack()
+                                    }
+                                } catch (e: Exception) {
+                                    Logger.e("DetailNoteScreen", e) {
+                                        "Ошибка при сохранении заметки:\n" +
+                                        "  message=${e.message}\n" +
+                                        "  cause=${e.cause?.message}\n" +
+                                        "  stacktrace=${e.stackTraceToString()}"
+                                    }
+
+                                    // Формируем понятное сообщение об ошибке
+                                    val userMessage = when {
+                                        e.message?.contains("400") == true ->
+                                            "Ошибка валидации данных. Проверьте заполнение всех полей."
+                                        e.message?.contains("Network") == true || e.message?.contains("timeout") == true ->
+                                            "Ошибка сети. Проверьте подключение к интернету."
+                                        editableContent.length > 10000 ->
+                                            "Текст заметки слишком большой (${editableContent.length} символов). Сократите текст."
+                                        else ->
+                                            e.message ?: "Неизвестная ошибка при сохранении"
+                                    }
+
+                                    errorMessage = userMessage
+                                    showErrorNotification = true
+                                } finally {
+                                    isSaving = false
                                 }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null
+                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null && !isSaving
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -504,119 +552,6 @@ fun DetailNoteScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Цвет
-            if (isInEditMode) {
-                var colorExpanded by remember { mutableStateOf(false) }
-                val availableColors = listOf(
-                    PrimaryBase to "Синий",
-                    PrimaryDark to "Тёмно-синий",
-                    PrimaryLight to "Светло-синий",
-                    SecondaryBase to "Жёлтый",
-                    SecondaryDark to "Тёмно-жёлтый",
-                    SecondaryLight to "Светло-жёлтый",
-                    DarkGray to "Тёмно-серый",
-                    LightGray to "Светло-серый",
-                    Color.Red to "Красный",
-                    Color.Green to "Зелёный"
-                )
-
-                Text(
-                    "Цвет:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { colorExpanded = true }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            getColorName(editableColor),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .background(
-                                    color = editableColor,
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = colorExpanded,
-                        onDismissRequest = { colorExpanded = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        availableColors.forEach { (color, name) ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = name,
-                                            modifier = Modifier.weight(1f),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .background(
-                                                    color = color,
-                                                    shape = RoundedCornerShape(4.dp)
-                                                )
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    editableColor = color
-                                    colorExpanded = false
-                                },
-                                colors = MenuDefaults.itemColors(
-                                    textColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
-                    }
-                }
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Цвет: ",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            getColorName(editableColor),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.padding(4.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .background(
-                                    color = editableColor,
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .padding(end = 8.dp)
-                        )
-                    }
-                }
-            }
 
             Spacer(Modifier.height(30.dp))
 
@@ -659,6 +594,18 @@ fun DetailNoteScreen(
                 CommentDialog(note.comments as MutableList<Comment>, onSaveComment, userId, note)
             }
         }
+    }
+
+    // Показываем уведомление об ошибке
+    if (showErrorNotification) {
+        NotifyItem(
+            objectName = "Ошибка сохранения заметки",
+            objectDescription = errorMessage,
+            onDismiss = {
+                showErrorNotification = false
+                errorMessage = ""
+            }
+        )
     }
 }
 

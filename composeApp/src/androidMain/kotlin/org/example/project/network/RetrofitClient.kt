@@ -17,7 +17,11 @@ import java.util.concurrent.TimeUnit
  * Фабрика для создания Retrofit клиента и API сервисов
  */
 object RetrofitClient {
-    private const val BASE_URL = "http://10.199.58.103:8090/"
+
+    private const val URL = "http://10.8.4.131:"
+    private const val AUTH_PORT = "8081/"
+    private const val ANALYZER_PORT = "8082/"
+    private const val TASK_PORT = "8083/"
 
     private val gson = GsonBuilder()
         .setLenient()
@@ -29,45 +33,64 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val retrofit: Retrofit by lazy {
+    private val authClient: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(URL + AUTH_PORT)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 
-    private val groupRetrofit : Retrofit by lazy {
+    private val taskClient: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl("http://192.168.1.153:8090/")
+            .baseUrl(URL + TASK_PORT)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+    private val analyzerClient: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(URL + ANALYZER_PORT)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 
-    val retrofitAuthService: AuthApiService by lazy {
-        retrofit.create(AuthApiService::class.java)
+    private val authApiService: AuthApiService by lazy {
+        authClient.create(AuthApiService::class.java)
     }
 
-    val retrofitNoteApiService: RetrofitNoteApiService by lazy {
-        retrofit.create(RetrofitNoteApiService::class.java)
+    private val taskApiService: RetrofitNoteApiService by lazy {
+        taskClient.create(RetrofitNoteApiService::class.java)
     }
 
-    val retrofitGroupApiService: RetrofitGroupApiService by lazy {
-        groupRetrofit.create(RetrofitGroupApiService::class.java)
+    private val groupApiService: RetrofitGroupApiService by lazy {
+        authClient.create(RetrofitGroupApiService::class.java)
     }
 
-    /**
-     * Создать NoteApiService для использования в репозиториях
-     */
+    private val analyzerApiService: AnalyzerApiService by lazy {
+        analyzerClient.create(AnalyzerApiService::class.java)
+    }
+
     fun createAuthRepository(repo: UserAuthPreferencesRepository): AuthRepository {
-        return NetworkAuthRepository.getInstance(repo, retrofitAuthService)
-    }
-    fun createNoteApiService(): NoteApiService {
-        return NetworkNoteApiService(retrofitNoteApiService)
+        return NetworkAuthRepository.getInstance(repo, authApiService)
     }
 
-    fun createGroupApiService() : GroupApiService {
-        return NetworkGroupApiService(retrofitGroupApiService)
+    fun createNoteApiService(): NoteApiService {
+        println("[RetrofitClient] Creating NoteApiService with baseUrl=${URL + TASK_PORT}")
+        return NetworkNoteApiService(taskApiService)
     }
+
+    fun createGroupApiService(): GroupApiService {
+        return NetworkGroupApiService(groupApiService)
+    }
+
+    fun createAnalyzerApiService(): AnalyzerApiService {
+        return analyzerApiService
+    }
+
+    // Экспонируем базовые URL для логирования в других компонентах
+    fun taskBaseUrl(): String = URL + TASK_PORT
+    fun authBaseUrl(): String = URL + AUTH_PORT
+    fun analyzerBaseUrl(): String = URL + ANALYZER_PORT
 }

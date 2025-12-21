@@ -2,157 +2,274 @@ package org.example.project.ui.screens.notesScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import com.yandex.mapkit.geometry.Point
-import com.yandex.mapkit.map.CameraPosition
-import com.yandex.mapkit.map.InputListener
-import com.yandex.mapkit.mapview.MapView
-import androidx.compose.ui.viewinterop.AndroidView
-import com.yandex.mapkit.map.MapObjectCollection
-import com.yandex.mapkit.map.PlacemarkMapObject
-import com.yandex.mapkit.map.IconStyle
-import com.yandex.runtime.image.ImageProvider
-import org.example.project.AppDependencies
-import org.example.project.data.geo.GeoTagPreset
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import android.util.Log
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @Composable
 actual fun MapPickerScreen(
     onPicked: (lat: Double, lon: Double, name: String?, colorLong: Long?) -> Unit,
     onBack: () -> Unit
 ) {
-    val geoRepo = remember { AppDependencies.container.geoTagRepository }
-    var selectedPoint by remember { mutableStateOf<Point?>(null) }
+    Log.d("GoogleMapPicker", "Google Maps MapPickerScreen started")
+
     var tagName by remember { mutableStateOf("") }
     var tagColor by remember { mutableStateOf(Color.Blue) }
-    var placemark by remember { mutableStateOf<PlacemarkMapObject?>(null) }
-    var mapObjectCollection: MapObjectCollection? by remember { mutableStateOf(null) }
+    var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
+    var isBottomSheetExpanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(12.dp)) {
-        AndroidView(
-            factory = { ctx ->
-                val mapView = MapView(ctx)
-                val map = mapView.map
-                mapObjectCollection = map.mapObjects
-                map.move(CameraPosition(Point(55.751244, 37.618423), 12f, 0f, 0f))
+    // Moscow coordinates as default
+    val defaultLocation = LatLng(55.751244, 37.618423)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
+    }
 
-                map.addInputListener(object : InputListener {
-                    override fun onMapTap(map: com.yandex.mapkit.map.Map, point: Point) {
-                        selectedPoint = point
-                        placemark?.let { mapObjectCollection?.remove(it) }
-                        placemark = mapObjectCollection?.addPlacemark(
-                            point,
-                            ImageProvider.fromResource(ctx, android.R.drawable.star_on),
-                            IconStyle()
-                        )
-                        map.move(CameraPosition(point, 14f, 0f, 0f))
-                    }
+    val colors = listOf(
+        Color.Red to "Красный",
+        Color.Green to "Зелёный",
+        Color.Blue to "Синий",
+        Color.Magenta to "Пурпурный",
+        Color.Cyan to "Голубой",
+        Color.Yellow to "Жёлтый"
+    )
 
-                    override fun onMapLongTap(map: com.yandex.mapkit.map.Map, point: Point) {}
-                })
-                mapView
-            },
-            modifier = Modifier.weight(1f)
-        )
-
-        HorizontalDivider()
-
-        OutlinedTextField(
-            value = tagName,
-            onValueChange = { tagName = it },
-            label = { Text("Имя тега") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Google Maps
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            onMapClick = { latLng ->
+                Log.d("GoogleMapPicker", "Map clicked at: ${latLng.latitude}, ${latLng.longitude}")
+                selectedLocation = latLng
+                isBottomSheetExpanded = true
+            }
         ) {
-            val colors = listOf(
-                Color.Red to "Красный",
-                Color.Green to "Зелёный",
-                Color.Blue to "Синий",
-                Color.Magenta to "Пурпурный",
-                Color.Cyan to "Голубой",
-                Color.Yellow to "Жёлтый"
-            )
-            items(colors) { (c, name) ->
-                val isSelected = tagColor == c
-                AssistChip(
-                    onClick = { tagColor = c },
-                    label = {
-                        Text(
-                            name,
-                            color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (isSelected) c.copy(alpha = 0.45f) else c.copy(alpha = 0.18f),
-                        labelColor = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = if (isSelected) null else BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline
-                    )
+            // Show marker if location is selected
+            selectedLocation?.let { location ->
+                Marker(
+                    state = MarkerState(position = location),
+                    title = "Выбранная геометка",
+                    snippet = "Lat: ${location.latitude}, Lng: ${location.longitude}"
                 )
             }
-            item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+        }
+
+        // Back button
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    CircleShape
+                )
+        ) {
+            Text("←", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Bottom panel for geotag settings
+        if (isBottomSheetExpanded && selectedLocation != null) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
                 ) {
-                    Text("Выбран:", style = MaterialTheme.typography.bodyMedium)
-                    Box(
-                        Modifier
-                            .size(18.dp)
-                            .background(
-                                tagColor,
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Настройка геометки",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        IconButton(
+                            onClick = {
+                                isBottomSheetExpanded = false
+                                selectedLocation = null
+                                tagName = ""
+                            }
+                        ) {
+                            Text("✕", fontSize = 16.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Coordinates display and editing
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "📍 Координаты:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = selectedLocation?.latitude?.toString() ?: "",
+                                    onValueChange = { value ->
+                                        value.toDoubleOrNull()?.let { lat ->
+                                            selectedLocation?.let { currentLocation ->
+                                                selectedLocation = LatLng(lat, currentLocation.longitude)
+                                            }
+                                        }
+                                    },
+                                    label = { Text("Широта", fontSize = 12.sp) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true
+                                )
+                                OutlinedTextField(
+                                    value = selectedLocation?.longitude?.toString() ?: "",
+                                    onValueChange = { value ->
+                                        value.toDoubleOrNull()?.let { lng ->
+                                            selectedLocation?.let { currentLocation ->
+                                                selectedLocation = LatLng(currentLocation.latitude, lng)
+                                            }
+                                        }
+                                    },
+                                    label = { Text("Долгота", fontSize = 12.sp) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Tag name input
+                    OutlinedTextField(
+                        value = tagName,
+                        onValueChange = { tagName = it },
+                        label = { Text("Название геометки") },
+                        placeholder = { Text("Например: Дом, Офис, Магазин") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        "Цвет геометки:",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Color selection
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(colors) { (color, name) ->
+                            val isSelected = tagColor == color
+                            AssistChip(
+                                onClick = { tagColor = color },
+                                label = {
+                                    Text(
+                                        name,
+                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = if (isSelected) color else color.copy(alpha = 0.2f),
+                                    labelColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                ),
+                                border = if (isSelected)
+                                    BorderStroke(2.dp, color.copy(alpha = 0.8f))
+                                else
+                                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                modifier = Modifier.height(40.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Action buttons
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                isBottomSheetExpanded = false
+                                selectedLocation = null
+                                tagName = ""
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Отмена")
+                        }
+
+                        Button(
+                            onClick = {
+                                selectedLocation?.let { location ->
+                                    onPicked(
+                                        location.latitude,
+                                        location.longitude,
+                                        tagName.ifBlank { null },
+                                        tagColor.toArgb().toLong()
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Создать геометку")
+                        }
+                    }
                 }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Button(onClick = onBack) { Text("Назад") }
-            val scope = rememberCoroutineScope()
-            Button(
-                onClick = {
-                    val lat = selectedPoint?.latitude
-                    val lon = selectedPoint?.longitude
-                    if (lat != null && lon != null && tagName.isNotBlank()) {
-                        val preset = GeoTagPreset(
-                            name = tagName,
-                            latitude = lat,
-                            longitude = lon,
-                            colorValueLong = tagColor.value.toLong()
-                        )
-                        scope.launch {
-                            geoRepo.addPreset(preset)
-                            onPicked(lat, lon, tagName, tagColor.value.toLong())
-                        }
-                    }
-                },
-                enabled = selectedPoint != null && tagName.isNotBlank()
-            ) { Text("Создать тег и выбрать") }
+        // Instructions overlay if no location selected
+        if (!isBottomSheetExpanded) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+                )
+            ) {
+                Text(
+                    "👆 Нажмите на карту для выбора места",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

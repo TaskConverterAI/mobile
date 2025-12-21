@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,6 +35,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -48,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import co.touchlab.kermit.Logger
@@ -55,12 +58,14 @@ import kotlinx.serialization.Serializable
 import org.example.project.data.commonData.Deadline
 import kotlin.time.ExperimentalTime
 
+import org.example.project.AppDependencies
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Location
 import org.example.project.data.commonData.Priority
 import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
 import org.example.project.data.commonData.User
+import org.example.project.data.geo.GeoTagPreset
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.viewComponents.commonComponents.formatDate
 import org.example.project.ui.viewComponents.taskScreenComponents.HighPriority
@@ -70,6 +75,7 @@ import org.example.project.ui.viewComponents.taskScreenComponents.ToDoStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.InProgressStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
 import kotlin.time.Instant
+import kotlin.math.absoluteValue
 
 @Serializable
 data class DetailTaskScreenArgs(val taskID: Long?, val isEditMode: Boolean = false)
@@ -116,6 +122,9 @@ fun DetailTaskScreen(
     var editableTitle by remember { mutableStateOf("") }
     var editableDescription by remember { mutableStateOf("") }
     var editableGeotag by remember { mutableStateOf("") }
+    // Новые состояния для координат
+    var editableLat by remember { mutableStateOf<Double?>(null) }
+    var editableLon by remember { mutableStateOf<Double?>(null) }
     var editableGroup by remember { mutableStateOf(defaultGroup) }
     //var editableAssignee by remember { mutableStateOf(defaultUser) }
     @OptIn(ExperimentalTime::class)
@@ -156,9 +165,41 @@ fun DetailTaskScreen(
             editableTitle = task.title
             editableDescription = task.description
             editableGeotag = task.geotag?.name ?: ""
+            // Инициализируем координаты из существующей задачи
+            editableLat = task.geotag?.latitude
+            editableLon = task.geotag?.longitude
             editableDueDate = task.dueDate?.time ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
             editablePriority = task.priority
             editableStatus = task.status
+        }
+    }
+
+    // Отслеживание результатов с карты
+    LaunchedEffect(Unit) {
+        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+            handle.getStateFlow("map_lat", editableLat).collect { editableLat = it }
+        }
+        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+            handle.getStateFlow("map_lon", editableLon).collect { editableLon = it }
+        }
+        navController.currentBackStackEntry?.savedStateHandle?.let { handle ->
+            handle.getStateFlow("map_name", editableGeotag).collect { editableGeotag = it }
+        }
+    }
+
+    // Одноразовое чтение результата при возврате с карты
+    LaunchedEffect(navController.currentBackStackEntry) {
+        val handle = navController.currentBackStackEntry?.savedStateHandle
+        val lat: Double? = handle?.get("map_lat")
+        val lon: Double? = handle?.get("map_lon")
+        val name: String? = handle?.get("map_name")
+        if (lat != null && lon != null) {
+            editableLat = lat
+            editableLon = lon
+            editableGeotag = name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}"
+            handle.remove<Double>("map_lat")
+            handle.remove<Double>("map_lon")
+            handle.remove<String>("map_name")
         }
     }
 
@@ -210,7 +251,12 @@ fun DetailTaskScreen(
                                     groupId = if (editableGroup.id == -1L) null else editableGroup.id,
                                     assignee = editableAssignee.id,
                                     dueDate = Deadline(editableDueDate, false),
-                                    geotag = Location(45.0, 45.0, editableGeotag.toString(), false),
+                                    geotag = Location(
+                                        editableLat ?: 0.0,
+                                        editableLon ?: 0.0,
+                                        editableGeotag,
+                                        false
+                                    ),
                                     priority = editablePriority,
                                     status = editableStatus
                                 )
@@ -225,7 +271,7 @@ fun DetailTaskScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = editableTitle.isNotBlank()
+                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -245,6 +291,8 @@ fun DetailTaskScreen(
                                     editableTitle = task.title
                                     editableDescription = task.description
                                     editableGeotag = task.geotag?.name ?: ""
+                                    editableLat = task.geotag?.latitude
+                                    editableLon = task.geotag?.longitude
                                     editableDueDate = task.dueDate?.time ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
                                     editablePriority = task.priority
                                     editableStatus = task.status
@@ -676,17 +724,92 @@ fun DetailTaskScreen(
 
             // Geotag
             if (isInEditMode) {
-                OutlinedTextField(
-                    value = editableGeotag,
-                    onValueChange = { editableGeotag = it },
-                    label = { Text("Геометка") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                val geoRepo = remember { AppDependencies.container.geoTagRepository }
+                var presets by remember { mutableStateOf<List<GeoTagPreset>>(emptyList()) }
+                var presetsExpanded by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    geoRepo.presetsFlow().collect { presets = it }
+                }
+
+                Box {
+                    OutlinedTextField(
+                        value = editableGeotag,
+                        onValueChange = { /* read-only via history or map */ },
+                        label = { Text("Геометка (тег)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        readOnly = true
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { presetsExpanded = true }
+                    )
+
+                    DropdownMenu(
+                        expanded = presetsExpanded,
+                        onDismissRequest = { presetsExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        presets.forEach { preset ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier.size(16.dp).background(
+                                                pastelColorForKey(preset.name),
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = preset.name,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    editableLat = preset.latitude
+                                    editableLon = preset.longitude
+                                    editableGeotag = preset.name
+                                    presetsExpanded = false
+                                },
+                                colors = MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Создать новый на карте") },
+                            onClick = {
+                                presetsExpanded = false
+                                navController.navigate("map_picker")
+                            },
+                            colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (editableLat != null && editableLon != null) {
+                    Text(
+                        text = "${editableLat?.formatLatLon()}, ${editableLon?.formatLatLon()}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Text(
+                        "Координаты не выбраны",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Геометка (увед): ",
+                        "Геометка: ",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
@@ -695,6 +818,21 @@ fun DetailTaskScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
+                }
+                if (editableLat != null && editableLon != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Координаты: ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "${editableLat?.formatLatLon()}, ${editableLon?.formatLatLon()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -726,3 +864,20 @@ fun DetailTaskScreen(
         }
     }
 }
+
+private fun pastelColorForKey(key: String): Color {
+    val palette = listOf(
+        Color(0xFFE3F2FD), // пастельно-голубой
+        Color(0xFFFFF9C4), // пастельно-жёлтый
+        Color(0xFFFCE4EC), // пастельно-розовый
+        Color(0xFFE8F5E9), // пастельно-зелёный
+        Color(0xFFFFF3E0), // пастельно-персиковый
+        Color(0xFFEDE7F6), // пастельно-фиолетовый
+        Color(0xFFE0F2F1), // пастельно-бирюзовый
+        Color(0xFFF3E5F5)  // пастельно-сиреневый
+    )
+    val idx = (key.hashCode().absoluteValue) % palette.size
+    return palette[idx]
+}
+
+private fun Double.formatLatLon(): String = this.toString()

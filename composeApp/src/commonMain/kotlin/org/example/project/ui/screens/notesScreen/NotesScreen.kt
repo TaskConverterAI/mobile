@@ -20,9 +20,17 @@ import org.example.project.ui.viewmodels.NotesViewModel
 
 @Composable
 fun NotesScreen(navController: NavController) {
+    val logger = Logger.withTag("NotesScreen")
     // Получаем экземпляр ViewModel
     val viewModel: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
 
+    // Инициируем загрузку заметок при первом показе экрана
+    LaunchedEffect(viewModel) {
+        logger.i { "NotesScreen: LaunchedEffect loadNotes" }
+        viewModel.loadNotes()
+    }
+
+    // Собираем состояния из ViewModel
     val notes by viewModel.notes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -39,21 +47,25 @@ fun NotesScreen(navController: NavController) {
         when {
             // Показываем индикатор загрузки
             isLoading -> {
+                logger.i { "NotesScreen: show Loading" }
                 CircularProgressIndicator()
             }
 
             // Показываем ошибку, если есть
             error != null -> {
+                logger.e { "NotesScreen: show Error ${error}" }
                 Text(text = "Ошибка: $error")
             }
 
             // Показываем пустой экран, если нет заметок
             notes.isEmpty() -> {
+                logger.i { "NotesScreen: show Empty, count=${notes.size}" }
                 EmptyMainScreen()
             }
 
             // Показываем экран с заметками
             else -> {
+                logger.i { "NotesScreen: show Main, count=${notes.size}" }
                 MainScreenWithNotes(navController, viewModel)
             }
         }

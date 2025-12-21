@@ -1,34 +1,61 @@
 package org.example.project.data.auth
 
+import android.content.Context
 import android.util.Log
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
+import android.widget.Toast
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.Json
+import okhttp3.ResponseBody
+import org.example.project.AppDependencies
+import org.example.project.data.commonData.Privileges
+import org.example.project.data.commonData.User
 import org.example.project.model.DecodeAccessTokenRequest
+import org.example.project.model.ErrorsResponse
 import org.example.project.model.InvalidateSessionRequest
 import org.example.project.model.RefreshAccessTokenRequest
 import org.example.project.model.SignInUserRequest
+import org.example.project.model.SignInUserResponse
 import org.example.project.model.SignUpUserRequest
+import org.example.project.model.SignUpUserResponse
 import org.example.project.network.AuthApiService
-
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import kotlin.RuntimeException
 
+private var appContext: Context? = null
+
+fun initAuthRepository(context: Context) {
+    appContext = context.applicationContext
+}
 class NetworkAuthRepository(
     private val userAuthPreferencesRepository: UserAuthPreferencesRepository,
     private val authApiService: AuthApiService
 ): AuthRepository {
-    private suspend fun parseAndSaveJWT(token: String) {
+    private suspend fun parseAndSaveJWT(token: String, username: String, email: String) {
         try {
             val decodedJWT: DecodedJWT = JWT.decode(token)
-            val userId = decodedJWT.getClaim("id").asInt()?.toString()
-            Log.i("MY_APP_TAG","userId is ${userId}")
-            userAuthPreferencesRepository.saveUserId(userId ?: "")
+            val userId = decodedJWT.getClaim("id").asLong()
+
+            Log.i("MY_APP_TAG","userId is ${userId}, username: $username, email: $email")
+
+            if (userId != null) {
+                // Сохраняем userId в preferences
+                userAuthPreferencesRepository.saveUserId(userId.toString())
+
+                // Создаем объект User с данными, которые ввел пользователь
+                val user = User(
+                    id = userId,
+                    email = email,
+                    username = username,
+                    privileges = Privileges.member // По умолчанию member
+                )
+
+                // Сохраняем в локальную базу данных через UserRepository
+                AppDependencies.container.userRepository.insertUser(user)
+                Log.i("MY_APP_TAG", "User saved to local database: $user")
+            }
         } catch (e: Exception) {
-            println("Ошибка при парсинге токена: ${e.message}")
+            Log.e("MY_APP_TAG", "Ошибка при парсинге токена: ${e.message}", e)
         }
     }
 
@@ -47,22 +74,34 @@ class NetworkAuthRepository(
         login: String,
         email: String,
         password: String
-    ): Boolean {
+    ): AuthResult {
         return try {
             val response = authApiService.signUp(SignUpUserRequest(login, email, password))
 
             if (response.isSuccessful) {
                 val signInResponse = response.body()
-                userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken)
-                userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken)
-                parseAndSaveJWT(signInResponse.accessToken)
-                true
+                userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken!!)
+                userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken!!)
+                // Сохраняем данные пользователя локально
+                parseAndSaveJWT(signInResponse.accessToken, login, email)
+
+                AuthResult(true, listOf())
             } else {
-                false
+                val errors: MutableList<String> = mutableListOf()
+                val errorsResponse = parseErrorResponse(response.errorBody())
+
+                if (errorsResponse.error != null)
+                    errors.add(errorsResponse.error)
+
+                errorsResponse.errors?.forEach { err ->
+                    errors.add(err)
+                }
+
+                AuthResult(false, errors)
             }
         } catch (e: Exception) {
             //Logger.i { e.message.toString() }
-            false
+            AuthResult(false, listOf())
         }
     }
 
@@ -77,9 +116,11 @@ class NetworkAuthRepository(
                 val signInResponse = response.body()
                 userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken)
                 userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken)
-                parseAndSaveJWT(signInResponse.accessToken)
+                // При входе сохраняем login как username и email (так как login может быть и username, и email)
+                parseAndSaveJWT(signInResponse.accessToken, login, login)
                 true
             } else {
+                val errorsResponse = parseErrorResponse(response.errorBody())
                 false
             }
         } catch (_: Exception) {
@@ -132,6 +173,21 @@ class NetworkAuthRepository(
             response.isSuccessful
         } catch (_: Exception) {
             false
+        }
+    }
+
+    private fun parseErrorResponse(errorBody: ResponseBody?): ErrorsResponse {
+        return try {
+            val json = Json {ignoreUnknownKeys = true}
+            errorBody?.let {
+                val errorString = it.string()
+                Log.i("MY_APP_TAG", errorString)
+                val result = json.decodeFromString<ErrorsResponse>(errorString)
+                Log.i("MY_APP_TAG", errorString)
+                result
+            } ?: ErrorsResponse(null, null, null)
+        } catch (e: Exception) {
+            ErrorsResponse(null, null, null)
         }
     }
 
