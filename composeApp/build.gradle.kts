@@ -34,7 +34,10 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
 
-            implementation(libs.yandex.maps)
+            // Google Maps
+            implementation(libs.google.maps.compose)
+            implementation(libs.google.play.services.maps)
+            implementation(libs.play.services.location)
 
             // Retrofit
             implementation(libs.retrofit2.kotlinx.serialization.converter)
