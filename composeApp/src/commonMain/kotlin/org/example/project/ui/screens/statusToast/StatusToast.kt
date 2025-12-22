@@ -1,3 +1,6 @@
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -9,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import kotlinx.coroutines.delay
+
 enum class StatusType {
     SUCCESS,  // Успешная операция
     ERROR,    // Ошибка
@@ -18,31 +23,31 @@ enum class StatusType {
 
 @Composable
 fun StatusToast(
-    type: StatusType,
+    type: StatusType = StatusType.INFO,
     message: String,
     duration: ToastDuration = ToastDuration.SHORT,
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit = {}
 ) {
-    var showToast by remember { mutableStateOf(true) }
+    var visible by remember { mutableStateOf(true) }
 
-    LaunchedEffect(showToast) {
-        if (showToast) {
-            kotlinx.coroutines.delay(duration.millis)
-            showToast = false
+    // Автоматически скрываем по таймеру и вызываем onDismiss
+    LaunchedEffect(visible) {
+        if (visible) {
+            delay(duration.millis)
+            visible = false
             onDismiss()
         }
     }
 
-    if (showToast) {
-        Popup(
-            alignment = Alignment.BottomCenter,
-            onDismissRequest = { showToast = false }
-        ) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(initialOffsetY = { it }),
+        exit = slideOutVertically(targetOffsetY = { it })
+    ) {
+        Popup(alignment = Alignment.BottomCenter) {
             Surface(
-                modifier = modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(0.9f),
+                modifier = modifier.padding(16.dp),
                 shape = RoundedCornerShape(8.dp),
                 color = when (type) {
                     StatusType.SUCCESS -> Color(0xFF2E7D32)
@@ -55,7 +60,7 @@ fun StatusToast(
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .fillMaxWidth(),
+                        .fillMaxWidth(0.9f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -64,7 +69,6 @@ fun StatusToast(
                         contentDescription = null,
                         tint = Color.White
                     )
-
                     Text(
                         text = message,
                         color = Color.White,

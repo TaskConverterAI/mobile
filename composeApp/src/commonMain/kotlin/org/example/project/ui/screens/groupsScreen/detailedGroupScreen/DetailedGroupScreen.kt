@@ -53,9 +53,39 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
 {
     val detailsUiState by viewModel.groupDetails.collectAsState()
 
-    var showToast by remember { mutableStateOf(false) }
-    var toastMessage: String by remember { mutableStateOf("") }
-    var toastType by remember { mutableStateOf(StatusType.INFO) }
+    // Состояние тоста
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var toastType by remember { mutableStateOf(StatusType.ERROR) } // по умолчанию ошибка
+
+    // Ключ для перезапуска таймера — меняется при каждом новом сообщении
+    var toastKey by remember { mutableStateOf(0) }
+
+    LaunchedEffect(detailsUiState.error) {
+        if (detailsUiState.error != null) {
+            toastMessage = detailsUiState.error
+            toastType = StatusType.INFO
+            toastKey++  // Это перезапустит LaunchedEffect ниже
+            viewModel.clearError() // очищаем ошибку сразу или через delay
+        }
+    }
+
+    // Этот эффект реагирует на новое сообщение и запускает таймер
+    LaunchedEffect(toastKey) {
+        if (toastMessage != null) {
+            delay(ToastDuration.LONG.millis)
+            toastMessage = null // скрываем тост после задержки
+        }
+    }
+
+    // Показ тоста
+    toastMessage?.let { message ->
+        StatusToast(
+            type = toastType,
+            message = message,
+            duration = ToastDuration.LONG,
+            onDismiss = { toastMessage = null }
+        )
+    }
 
     Scaffold(
         topBar = { DetailsGroupTopBar(navController) }
@@ -92,27 +122,28 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
             },
             onConfirm = { email ->
                 viewModel.addParticipantByEmail(email)
+                Logger.i { "------------------"  + detailsUiState.error.toString() }
             }
         )
     }
 
-    LaunchedEffect(detailsUiState.error) {
-        if (detailsUiState.error != null) {
-            toastMessage = detailsUiState.error!!
-            showToast = true
-        }
-        viewModel.clearError(ToastDuration.LONG.millis)
-    }
-
-    if (showToast) {
-        StatusToast(
-            type = toastType,
-            message = toastMessage,
-            duration = ToastDuration.LONG,
-            onDismiss = { showToast = false }
-        )
-
-    }
+//    LaunchedEffect(detailsUiState.error) {
+//        if (detailsUiState.error != null) {
+//            toastMessage = detailsUiState.error!!
+//            showToast = true
+//        }
+//        viewModel.clearError(ToastDuration.LONG.millis)
+//    }
+//
+//    if (showToast) {
+//        StatusToast(
+//            type = toastType,
+//            message = toastMessage,
+//            duration = ToastDuration.LONG,
+//            onDismiss = { showToast = false }
+//        )
+//
+//    }
 
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -154,7 +185,8 @@ private fun GroupDetailsForm(
         if (detailsUiState.isAdmin) {
             AdminMembersList(
                 detailsUiState.users.map { user -> user.email },
-                { id -> viewModel.removeParticipant(id) },
+                { id -> viewModel.removeParticipant(id)
+                },
                 { viewModel.addParticipant() })
         } else {
             MembersList(detailsUiState.users.map { user -> user.email })

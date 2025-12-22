@@ -199,12 +199,8 @@ open class DetailedGroupViewModel(
         }
     }
 
-    fun clearError(time: Long) {
-
-        viewModelScope.launch {
-            delay(time) // 5 секунд
-            _groupDetails.update { it.copy(error = null) }
-        }
+    fun clearError() {
+        _groupDetails.update { it.copy(error = null) }
     }
 
     companion object {
