@@ -1,6 +1,5 @@
 package org.example.project.ui.screens.groupsScreen.detailedGroupScreen
 
-import StatusToast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -34,15 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersList
 import org.example.project.ui.viewComponents.GroupScreenComponents.MembersList
+import org.example.project.ui.screens.statusToast.*
 
 @Serializable
 data class DetailGroupScreenArgs(val groupId: Long)

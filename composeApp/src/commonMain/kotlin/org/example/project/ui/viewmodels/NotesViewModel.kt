@@ -16,6 +16,12 @@ import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Note
 import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.database.repository.NoteRepository
+import org.example.project.ui.screens.statusToast.StatusType
+
+data class ToastMessage(
+    val message: String,
+    val type: StatusType
+)
 
 class NotesViewModel(
     private val noteRepository: NoteRepository,
@@ -42,6 +48,9 @@ class NotesViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _toastMessage = MutableStateFlow<ToastMessage?>(null)
+    val toastMessage: StateFlow<ToastMessage?> = _toastMessage.asStateFlow()
+
     /**
      * Загрузить все заметки
      */
@@ -49,6 +58,7 @@ class NotesViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+
             try {
                 Logger.d("NotesViewModel") { "Начало загрузки заметок" }
                 val userId = authRepository.getUserIdByToken()
@@ -62,6 +72,12 @@ class NotesViewModel(
                 if (response != null) {
                     allLoadedNotes.addAll(response.filter { note -> note.groupId == null })
                     Logger.d("NotesViewModel") { "добавлено ${allLoadedNotes.size} заметок без группы" }
+                } else {
+                    _error.value = "Не удалось загрузить заметки"
+                    _toastMessage.value = ToastMessage(
+                        message = "Не удалось загрузить заметки",
+                        type = StatusType.ERROR
+                    )
                 }
 
                 val groups = groupRepository.getAllGroups(userId = userId)
@@ -76,6 +92,12 @@ class NotesViewModel(
                     if (groupNotes != null) {
                         allLoadedNotes.addAll(groupNotes)
                         Logger.d("NotesViewModel") { "добавлено ${groupNotes.size} заметок из группы ${group.name}" }
+                    } else {
+                        _error.value = "Не удалось загрузить заметки группы ${group.name}"
+                        _toastMessage.value = ToastMessage(
+                            message = "Не удалось загрузить заметки группы ${group.name}",
+                            type = StatusType.ERROR
+                        )
                     }
                 }
 
@@ -83,9 +105,18 @@ class NotesViewModel(
                 applyFilter()
 
                 Logger.d("NotesViewModel") { "Итого загружено ${_allNotes.value.size} заметок" }
+
+//                _toastMessage.value = ToastMessage(
+//                    message = "Заметки загружены",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 Logger.e("NotesViewModel", e) { "Ошибка загрузки - ${e.message}" }
                 _error.value = e.message
+                _toastMessage.value = ToastMessage(
+                    message = "Ошибка загрузки заметок: ${e.message}",
+                    type = StatusType.ERROR
+                )
             } finally {
                 _isLoading.value = false
                 Logger.d("NotesViewModel") { "Загрузка завершена, isLoading = false" }
@@ -121,10 +152,26 @@ class NotesViewModel(
         viewModelScope.launch {
             try {
                 val userId = authRepository.getUserIdByToken()
-                noteRepository.insertNote(userId, note)
-                // Заметки обновятся автоматически через Flow
+                val res: Note? = noteRepository.insertNote(userId, note)
+
+                if (res == null) {
+                    _error.value = "Не удалось добавить заметку"
+                    _toastMessage.value = ToastMessage(
+                        message = "Не удалось добавить заметку",
+                        type = StatusType.ERROR
+                    )
+                }
+
+//                _toastMessage.value = ToastMessage(
+//                    message = "Заметка добавлена",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message
+                _toastMessage.value = ToastMessage(
+                    message = "Ошибка добавления заметки: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -137,9 +184,26 @@ class NotesViewModel(
     fun updateNote(note: Note) {
         viewModelScope.launch {
             try {
-                noteRepository.updateNote(note)
+                val res = noteRepository.updateNote(note)
+
+                if (res == null) {
+                    _error.value = "Не удалось обновить заметку"
+                    _toastMessage.value = ToastMessage(
+                        message = "Не удалось обновить заметку",
+                        type = StatusType.ERROR
+                    )
+                }
+
+//                _toastMessage.value = ToastMessage(
+//                    message = "Заметка обновлена",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message
+                _toastMessage.value = ToastMessage(
+                    message = "Ошибка обновления заметки: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -152,8 +216,17 @@ class NotesViewModel(
         viewModelScope.launch {
             try {
                 noteRepository.deleteNote(noteId)
+
+//                _toastMessage.value = ToastMessage(
+//                    message = "Заметка удалена",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message
+                _toastMessage.value = ToastMessage(
+                    message = "Ошибка удаления заметки: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -166,9 +239,26 @@ class NotesViewModel(
     fun addCommentToNote(noteId: Long, comment: Comment) {
         viewModelScope.launch {
             try {
-                noteRepository.addCommentToNote(noteId, comment)
+                val res = noteRepository.addCommentToNote(noteId, comment)
+
+                if (res == null) {
+                    _error.value = "Не удалось добавить комментарий"
+                    _toastMessage.value = ToastMessage(
+                        message = "Не удалось добавить комментарий",
+                        type = StatusType.ERROR
+                    )
+                }
+
+//                _toastMessage.value = ToastMessage(
+//                    message = "Комментарий добавлен",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message
+                _toastMessage.value = ToastMessage(
+                    message = "Ошибка добавления комментария: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -177,8 +267,17 @@ class NotesViewModel(
         viewModelScope.launch {
             try {
                 noteRepository.deleteCommentFromNote(commentId)
+
+//                _toastMessage.value = ToastMessage(
+//                    message = "Комментарий удалён",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message
+                _toastMessage.value = ToastMessage(
+                    message = "Ошибка удаления комментария: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -211,15 +310,38 @@ class NotesViewModel(
      */
     suspend fun getNoteById(noteId: Long): Note? {
         return try {
-            noteRepository.getNoteById(noteId)
+            val res: Note? = noteRepository.getNoteById(noteId)
+
+            if (res == null) {
+                _error.value = "Не удалось загрузить заметку"
+                _toastMessage.value = ToastMessage(
+                    message = "Не удалось загрузить заметку",
+                    type = StatusType.ERROR
+                )
+            }
+
+//            _toastMessage.value = ToastMessage(
+//                message = "Заметка загружена",
+//                type = StatusType.SUCCESS
+//            )
+
+            res
         } catch (e: Exception) {
             _error.value = e.message
+            _toastMessage.value = ToastMessage(
+                message = "Ошибка получения заметки: ${e.message}",
+                type = StatusType.ERROR
+            )
             null
         }
     }
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun clearToast() {
+        _toastMessage.value = null
     }
 
     companion object {

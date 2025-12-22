@@ -17,6 +17,8 @@ import co.touchlab.kermit.Logger
 import org.example.project.ui.screens.notesScreen.conditionScreens.EmptyMainScreen
 import org.example.project.ui.screens.notesScreen.conditionScreens.MainScreenWithNotes
 import org.example.project.ui.viewmodels.NotesViewModel
+import org.example.project.ui.screens.statusToast.StatusToast
+import org.example.project.ui.screens.statusToast.ToastDuration
 
 @Composable
 fun NotesScreen(navController: NavController) {
@@ -34,6 +36,7 @@ fun NotesScreen(navController: NavController) {
     val notes by viewModel.notes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val toastMessage by viewModel.toastMessage.collectAsState()
 
     // Загружаем заметки только один раз
     LaunchedEffect(Unit) {
@@ -68,6 +71,16 @@ fun NotesScreen(navController: NavController) {
                 logger.i { "NotesScreen: show Main, count=${notes.size}" }
                 MainScreenWithNotes(navController, viewModel)
             }
+        }
+
+        // Показываем toast, если есть сообщение
+        toastMessage?.let { toast ->
+            StatusToast(
+                type = toast.type,
+                message = toast.message,
+                duration = ToastDuration.SHORT,
+                onDismiss = { viewModel.clearToast() }
+            )
         }
     }
 }
