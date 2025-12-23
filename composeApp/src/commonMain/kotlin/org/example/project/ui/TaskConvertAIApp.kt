@@ -58,6 +58,8 @@ import org.example.project.ui.screens.notesScreen.DetailNoteScreenArgs
 import org.example.project.ui.screens.notesScreen.MapPickerScreen
 import org.example.project.ui.screens.notesScreen.NoteCreateDialog
 import org.example.project.ui.screens.notesScreen.NotesScreen
+import org.example.project.ui.screens.statusToast.StatusToast
+import org.example.project.ui.screens.statusToast.ToastDuration
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreen
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisScreenArgs
 import org.example.project.ui.screens.notesScreen.creatingNoteScreens.CheckAnalysisViewModel
@@ -311,46 +313,61 @@ fun TaskConvertAIApp(
                     if (noteID != null) {
                         note = viewModelNotes.getNoteById(noteID.toLong())
                     }
-                    if (note != null) {
-                        val groupId = note?.groupId;
-                        if (groupId != null) {
-                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
-                        }
-                    }
+//                    if (note != null) {
+//                        val groupId = note?.groupId;
+//                        if (groupId != null) {
+//                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
+//                        }
+//                    }
                 }
 
-                viewModelGroups.loadGroups()
-                groups = viewModelGroups.listUi.value.groups
+//                viewModelGroups.loadGroups()
+//                groups = viewModelGroups.listUi.value.groups
+//
+//                viewModelAuth.getUserIdByToken()
 
-                viewModelAuth.getUserIdByToken()
-                DetailNoteScreen(
-                    note = note,
-                    navController = navController,
-                    isEditMode = isEditMode,
-                    userId = userId,
-                    group = noteGroupDetails,
-                    availableGroups = groups,
-                    onSave = { updatedNote ->
-                        if (updatedNote.id == 0L || noteID == null) {
-                            // Создание новой заметки
-                            viewModelNotes.addNote(updatedNote)
-                        } else {
-                            // Обновление существующей заметки
-                            viewModelNotes.updateNote(updatedNote)
+                val toastMessage by viewModelNotes.toastMessage.collectAsState()
+
+                Box {
+                    DetailNoteScreen(
+                        note = note,
+                        navController = navController,
+                        isEditMode = isEditMode,
+                        userId = userId,
+                        group = noteGroupDetails,
+                        availableGroups = groups,
+                        onSave = { updatedNote ->
+                            if (updatedNote.id == 0L || noteID == null) {
+                                // Создание новой заметки
+                                viewModelNotes.addNote(updatedNote)
+                            } else {
+                                // Обновление существующей заметки
+                                viewModelNotes.updateNote(updatedNote)
+                            }
+                        },
+                        onDelete = { noteToDelete ->
+                            viewModelNotes.deleteNote(noteToDelete.id)
+                        },
+                        onSaveComment = {comment ->
+                            viewModelNotes.addCommentToNote(comment.taskId, comment)
+                            refreshTrigger++
+                        },
+                        onDeleteComment = { commentId ->
+                            viewModelNotes.deleteCommentFromNote(commentId)
+                            refreshTrigger++
                         }
-                    },
-                    onDelete = { noteToDelete ->
-                        viewModelNotes.deleteNote(noteToDelete.id)
-                    },
-                    onSaveComment = {comment ->
-                        viewModelNotes.addCommentToNote(comment.taskId, comment)
-                        refreshTrigger++
-                    },
-                    onDeleteComment = { commentId ->
-                        viewModelNotes.deleteCommentFromNote(commentId)
-                        refreshTrigger++
+                    )
+
+                    // Показываем toast, если есть сообщение
+                    toastMessage?.let { toast ->
+                        StatusToast(
+                            type = toast.type,
+                            message = toast.message,
+                            duration = ToastDuration.SHORT,
+                            onDismiss = { viewModelNotes.clearToast() }
+                        )
                     }
-                )
+                }
             }
 
             composable("map_picker") {
@@ -379,42 +396,29 @@ fun TaskConvertAIApp(
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
                     task = if (taskID != null) {
-                        print("&&&&&&&& 2i13221")
                         viewModelTasks.getTaskById(taskID)
                     } else {
                         null
                     }
                 }
 
-                viewModelGroups.loadGroups()
-                groups = viewModelGroups.listUi.value.groups
+                //viewModelGroups.loadGroups()
+//                groups = viewModelGroups.listUi.value.groups
+//
+//                viewModelAuth.getUserIdByToken()
+//                LaunchedEffect(groups) {
+//                    for (group in groups) {
+//                        val groupDetails = viewModelGroups.getGroupById(group.id)
+//                        if (groupDetails != null) {
+//                            users[group.id] = groupDetails.members
+//                        }
+//
+//                    }
+//                }
 
-                viewModelAuth.getUserIdByToken()
-                LaunchedEffect(groups) {
-                    for (group in groups) {
-                        val groupDetails = viewModelGroups.getGroupById(group.id)
-                        if (groupDetails != null) {
-                            users[group.id] = groupDetails.members
-                        }
-
-                    }
-                }
-
-                val error by viewModelTasks.error.collectAsState()
-                val snackbarHostState = remember { SnackbarHostState() }
-                LaunchedEffect(error) {
-                    error?.let {
-                        snackbarHostState.showSnackbar(
-                            message = it,
-                            withDismissAction = false,
-                            duration = SnackbarDuration.Short
-                        )
-                        viewModelTasks.clearError()
-                    }
-                }
+                val toastMessage by viewModelTasks.toastMessage.collectAsState()
 
                 Box {
-                    SnackbarHost(hostState = snackbarHostState)
                     DetailTaskScreen(
                         task = task,
                         navController = navController,
@@ -435,6 +439,16 @@ fun TaskConvertAIApp(
                         },
                         userId = userId
                     )
+
+                    // Показываем toast, если есть сообщение
+                    toastMessage?.let { toast ->
+                        StatusToast(
+                            type = toast.type,
+                            message = toast.message,
+                            duration = ToastDuration.SHORT,
+                            onDismiss = { viewModelTasks.clearToast() }
+                        )
+                    }
                 }
             }
 

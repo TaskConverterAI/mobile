@@ -23,7 +23,8 @@ data class CreateGroupUiState(
     val participants: List<String> = emptyList(),
     val addDialogVisible: Boolean = false,
     val newEmail: String = "",
-    val emailError: String? = null
+    val emailError: String? = null,
+    val error: String? = null
 )
 
 class CreateGroupViewModel(
@@ -112,13 +113,30 @@ class CreateGroupViewModel(
                             emailOrName,
                             Privileges.member)
                     }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            error = "Не удалось создать группу"
+                        )
+                    }
                 }
 
                 onComplete()
             } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        error = "Возникла ошибка при создании группы"
+                    )
+                }
                 Logger.e(e) { "Failed to create group" }
             }
         }
+    }
+
+    fun clearError() {
+        _uiState.update{it.copy(
+            error = null
+        )}
     }
 
     companion object {

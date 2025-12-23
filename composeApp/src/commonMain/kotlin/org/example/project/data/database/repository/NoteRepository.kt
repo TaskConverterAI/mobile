@@ -152,7 +152,7 @@ class NoteRepository(
      * Обновить заметку
      */
     @OptIn(ExperimentalTime::class)
-    suspend fun updateNote(note: Note) {
+    suspend fun updateNote(note: Note): Note? {
 
         val result = noteApiService?.updateNote(note.id,
             note.toUpdateNoteRequest())
@@ -171,7 +171,7 @@ class NoteRepository(
 //        val noteEntity = note.toEntity()
 //        noteDao.updateNote(noteEntity)
 
-
+        return retVal
     }
 
     /**

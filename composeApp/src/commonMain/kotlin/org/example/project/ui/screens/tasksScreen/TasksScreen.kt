@@ -14,11 +14,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import org.example.project.ui.screens.tasksScreen.conditionScreens.EmptyMainScreen
 import org.example.project.ui.screens.tasksScreen.conditionScreens.MainScreenWithTasks
 import org.example.project.ui.viewmodels.TasksViewModel
+import org.example.project.ui.screens.statusToast.StatusToast
+import org.example.project.ui.screens.statusToast.ToastDuration
 
 @Composable
 fun TasksScreen(
@@ -31,6 +32,7 @@ fun TasksScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val jobs by jobView.currentJobs.collectAsState()
+    val toastMessage by viewModel.toastMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -79,6 +81,16 @@ fun TasksScreen(
             else -> {
                 MainScreenWithTasks(navController, jobView, viewModel)
             }
+        }
+
+        // Показываем toast, если есть сообщение
+        toastMessage?.let { toast ->
+            StatusToast(
+                type = toast.type,
+                message = toast.message,
+                duration = ToastDuration.SHORT,
+                onDismiss = { viewModel.clearToast() }
+            )
         }
     }
 }

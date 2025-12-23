@@ -24,16 +24,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import co.touchlab.kermit.Logger
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersList
 import org.example.project.ui.viewComponents.GroupScreenComponents.MembersList
+import org.example.project.ui.screens.statusToast.*
 
 @Serializable
 data class DetailGroupScreenArgs(val groupId: Long)
@@ -43,6 +50,35 @@ data class DetailGroupScreenArgs(val groupId: Long)
 fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavController)
 {
     val detailsUiState by viewModel.groupDetails.collectAsState()
+
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var toastType by remember { mutableStateOf(StatusType.ERROR) }
+    var toastKey by remember { mutableStateOf(0) }
+
+    LaunchedEffect(detailsUiState.error) {
+        if (detailsUiState.error != null) {
+            toastMessage = detailsUiState.error
+            toastType = StatusType.ERROR
+            toastKey++
+            viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(toastKey) {
+        if (toastMessage != null) {
+            delay(ToastDuration.LONG.millis)
+            toastMessage = null
+        }
+    }
+
+    toastMessage?.let { message ->
+        StatusToast(
+            type = toastType,
+            message = message,
+            duration = ToastDuration.LONG,
+            onDismiss = { toastMessage = null }
+        )
+    }
 
     Scaffold(
         topBar = { DetailsGroupTopBar(navController) }
@@ -60,23 +96,26 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
     if (detailsUiState.showLeaveDialog) {
         if (detailsUiState.isAdmin) {
             LeaveAdminGroupDialog(detailsUiState.name,{
-                // TODO
+                viewModel.setLeave(false)
             },{
-                // TODO
+
             })
         } else {
             LeaveGroupDialog(detailsUiState.name, {
-                // TODO
+                viewModel.setLeave(false)
             }, {
-                // TODO
             })
         }
     }
 
     if (detailsUiState.showAddMemberDialog) {
         AddMemberDialog(
-            onDismiss = { viewModel.dismissAddMemberDialog() },
-            onConfirm = { email -> viewModel.addParticipantByEmail(email) }
+            onDismiss = {
+                viewModel.dismissAddMemberDialog()
+            },
+            onConfirm = { email ->
+                viewModel.addParticipantByEmail(email)
+            }
         )
     }
 }
@@ -119,7 +158,8 @@ private fun GroupDetailsForm(
         if (detailsUiState.isAdmin) {
             AdminMembersList(
                 detailsUiState.users.map { user -> user.email },
-                { id -> viewModel.removeParticipant(id) },
+                { id -> viewModel.removeParticipant(id)
+                },
                 { viewModel.addParticipant() })
         } else {
             MembersList(detailsUiState.users.map { user -> user.email })
@@ -145,5 +185,7 @@ private fun GroupDetailsForm(
         }
 
     }
+
+
 }
 

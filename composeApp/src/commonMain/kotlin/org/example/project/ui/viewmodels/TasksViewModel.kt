@@ -5,22 +5,23 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import coil3.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.commonData.Comment
-import org.example.project.data.commonData.Priority
-import org.example.project.data.commonData.Status
 import org.example.project.data.commonData.Task
-import org.example.project.data.database.DatabaseProvider
 import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.database.repository.TaskRepository
+import org.example.project.ui.screens.statusToast.StatusType
 import kotlin.collections.plus
+
+data class TaskToastMessage(
+    val message: String,
+    val type: StatusType
+)
 
 class TasksViewModel(
     private val taskRepository: TaskRepository,
@@ -37,6 +38,9 @@ class TasksViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _toastMessage = MutableStateFlow<TaskToastMessage?>(null)
+    val toastMessage: StateFlow<TaskToastMessage?> = _toastMessage.asStateFlow()
+
     /**
      * Загрузить все задачи с полными деталями (группа, исполнитель, заметка)
      */
@@ -48,6 +52,12 @@ class TasksViewModel(
                 val response = taskRepository.getAllTasks(userId)
                 if (response != null) {
                     _tasks.value = response.filter { note -> note.groupId ==  null  }
+                } else {
+                    _error.value = "Не удалось загрузить задачи"
+                    _toastMessage.value = TaskToastMessage(
+                        message = "Не удалось загрузить задачи",
+                        type = StatusType.ERROR
+                    )
                 }
 
                 val groups = groupRepository.getAllGroups(userId = userId)
@@ -55,10 +65,25 @@ class TasksViewModel(
                     val groupNotes = taskRepository.getTasksByGroup(group.id)
                     if (groupNotes != null) {
                         _tasks.value = _tasks.value.plus(groupNotes)
+                    } else {
+                        _error.value = "Не удалось загрузить задачи группы ${group.name}"
+                        _toastMessage.value = TaskToastMessage(
+                            message = "Не удалось загрузить задачи группы ${group.name}",
+                            type = StatusType.ERROR
+                        )
                     }
                 }
+
+//                _toastMessage.value = TaskToastMessage(
+//                    message = "Задачи загружены",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message
+                _toastMessage.value = TaskToastMessage(
+                    message = "Ошибка загрузки задач: ${e.message}",
+                    type = StatusType.ERROR
+                )
             } finally {
                 _isLoading.value = false
             }
@@ -76,9 +101,22 @@ class TasksViewModel(
                 val result = taskRepository.insertTask(userId, task)
                 if (result == null) {
                     _error.value = "Не удалось создать задачу"
+                    _toastMessage.value = TaskToastMessage(
+                        message = "Не удалось создать задачу",
+                        type = StatusType.ERROR
+                    )
                 }
+
+//                _toastMessage.value = TaskToastMessage(
+//                    message = "Задача успешно добавлена",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка при создании задачи"
+                _toastMessage.value = TaskToastMessage(
+                    message = "Ошибка при создании задачи: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -94,9 +132,22 @@ class TasksViewModel(
                 val result = taskRepository.updateTask(taskId, task)
                 if (result == null) {
                     _error.value = "Не удалось обновить задачу"
+                    _toastMessage.value = TaskToastMessage(
+                        message = "Не удалось обновить задачу",
+                        type = StatusType.ERROR
+                    )
                 }
+
+//                _toastMessage.value = TaskToastMessage(
+//                    message = "Задача успешно обновлена",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка при обновлении задачи"
+                _toastMessage.value = TaskToastMessage(
+                    message = "Ошибка при обновлении задачи: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -109,8 +160,17 @@ class TasksViewModel(
         viewModelScope.launch {
             try {
                 taskRepository.deleteTask(taskId)
+
+//                _toastMessage.value = TaskToastMessage(
+//                    message = "Задача успешно удалена",
+//                    type = StatusType.SUCCESS
+//                )
             } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка при удалении задачи"
+                _toastMessage.value = TaskToastMessage(
+                    message = "Ошибка при удалении задачи: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -126,9 +186,23 @@ class TasksViewModel(
                 val res = taskRepository.addCommentToTask(taskId, comment)
                 if (res == null) {
                     _error.value = "Не удалось добавить комментарий"
+                    _toastMessage.value = TaskToastMessage(
+                        message = "Не удалось добавить комментарий",
+                        type = StatusType.ERROR
+                    )
                 }
+//                else {
+//                    _toastMessage.value = TaskToastMessage(
+//                        message = "Комментарий добавлен",
+//                        type = StatusType.SUCCESS
+//                    )
+//                }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка при добавлении комментария"
+                _toastMessage.value = TaskToastMessage(
+                    message = "Ошибка при добавлении комментария: ${e.message}",
+                    type = StatusType.ERROR
+                )
             }
         }
     }
@@ -140,9 +214,28 @@ class TasksViewModel(
      */
     suspend fun getTaskById(taskId: Long): Task? {
         return try {
-            taskRepository.getTaskById(taskId)
+            val res: Task? = taskRepository.getTaskById(taskId)
+
+            if (res == null) {
+                _error.value = "Не удалось загрузить задачу"
+                _toastMessage.value = TaskToastMessage(
+                    message = "Не удалось загрузить задачу",
+                    type = StatusType.ERROR
+                )
+            }
+
+//            _toastMessage.value = TaskToastMessage(
+//                message = "Задача загружена",
+//                type = StatusType.SUCCESS
+//            )
+
+            res
         } catch (e: Exception) {
             _error.value = e.message
+            _toastMessage.value = TaskToastMessage(
+                message = "Ошибка получения задачи: ${e.message}",
+                type = StatusType.ERROR
+            )
             null
         }
     }
@@ -247,6 +340,13 @@ class TasksViewModel(
      */
     fun clearError() {
         _error.value = null
+    }
+
+    /**
+     * Очистить toast сообщение
+     */
+    fun clearToast() {
+        _toastMessage.value = null
     }
 
     /**
