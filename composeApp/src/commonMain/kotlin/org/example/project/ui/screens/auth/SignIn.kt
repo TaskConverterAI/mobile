@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,12 +44,24 @@ fun EnterScreen(
 
     // Ошибка (показываем короткий тост/снэкбар снизу)
     LaunchedEffect(signInUiState.state) {
-        if (signInUiState.state == 0 && signInUiState.username.isNotEmpty()) {
-            snackbarHostState.showSnackbar(
-                message = "Ошибка входа. Проверьте логин и пароль",
-                withDismissAction = false,
-                duration = SnackbarDuration.Short
-            )
+        when (signInUiState.state) {
+            0 -> {
+                if (signInUiState.username.isNotEmpty()) {
+                    snackbarHostState.showSnackbar(
+                        message = "Ошибка входа. Проверьте логин и пароль",
+                        withDismissAction = false,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+            2 -> {
+                // Серверная ошибка - данные пользователя сохраняются
+                snackbarHostState.showSnackbar(
+                    message = "Произошла внутренняя ошибка, попробуйте позже",
+                    withDismissAction = false,
+                    duration = SnackbarDuration.Long
+                )
+            }
         }
     }
 
@@ -113,7 +126,8 @@ private fun EnterContent(
         ) {
             EnterButtonsSection(
                 onRegister = onRegister,
-                onLogin = onLogin
+                onLogin = onLogin,
+                isLoading = uiState.isLoading
             )
         }
     }
@@ -244,7 +258,8 @@ private fun LabeledTextField(
 @Composable
 private fun EnterButtonsSection(
     onRegister: () -> Unit,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
+    isLoading: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -252,15 +267,25 @@ private fun EnterButtonsSection(
             .padding(top = 16.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        LoginButton(onLogin)
-        RegisterButton(onRegister)
+        LoginButton(
+            onClick = onLogin,
+            isLoading = isLoading
+        )
+        RegisterButton(
+            onClick = onRegister,
+            enabled = !isLoading
+        )
     }
 }
 
 @Composable
-private fun LoginButton(onClick: () -> Unit) {
+private fun LoginButton(
+    onClick: () -> Unit,
+    isLoading: Boolean = false
+) {
     Button(
         onClick = onClick,
+        enabled = !isLoading,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -269,27 +294,49 @@ private fun LoginButton(onClick: () -> Unit) {
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Войти",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.align(Alignment.Center)
-            )
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = "next",
-                modifier = Modifier
-                    .size(20.dp)
-                    .align(Alignment.CenterEnd)
-            )
+            if (isLoading) {
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = "Вход...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            } else {
+                Text(
+                    text = "Войти",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "next",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .align(Alignment.CenterEnd)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun RegisterButton(onClick: () -> Unit) {
+private fun RegisterButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = MaterialTheme.colorScheme.surface,

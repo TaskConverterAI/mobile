@@ -22,12 +22,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import org.example.project.AppDependencies
 import org.example.project.ui.TaskConvertAIAppScreens
 import org.example.project.ui.screens.auth.AuthViewModel
 
@@ -40,6 +43,14 @@ fun SettingsScreen(
 
     val userId by authViewModel.userId.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    // Получаем NotificationService
+    val notificationService = try {
+        AppDependencies.container.notificationService
+    } catch (_: Exception) {
+        null
+    }
 
     // Загружаем данные пользователя при первом отображении экрана
     LaunchedEffect(Unit) {
@@ -103,6 +114,53 @@ fun SettingsScreen(
             enabled = false
         ) {
             Text("Выбрать нейросеть (Скоро...)")
+        }
+
+
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Кнопка реалистичного демо
+        Button(
+            onClick = {
+                scope.launch {
+                    try {
+                        runRealisticNotificationDemo()
+                    } catch (e: Exception) {
+                        println("Ошибка при запуске реалистичного демо: ${e.message}")
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiary
+            )
+        ) {
+            Text("Реалистичное движение")
+        }
+
+        // Кнопка остановки демо
+        Button(
+            onClick = {
+                scope.launch {
+                    try {
+                        stopNotificationDemo()
+                    } catch (e: Exception) {
+                        println("Ошибка при остановке демо: ${e.message}")
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            )
+        ) {
+            Text("Остановить демо")
         }
 
         // Кнопка выхода

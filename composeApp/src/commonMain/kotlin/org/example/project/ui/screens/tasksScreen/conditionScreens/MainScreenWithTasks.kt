@@ -19,8 +19,13 @@ import org.example.project.data.commonData.Status
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithTasks(navController: NavController, taskJob: org.example.project.ui.screens.tasksScreen.TasksViewModel, allTasks: org.example.project.ui.viewmodels.TasksViewModel) {
+    val groups by allTasks.groups.collectAsState()
+    val selectedGroupId by allTasks.selectedGroupId.collectAsState()
+
     var selectedFilter by remember { mutableStateOf("Все группы") }
-    val filterOptions = listOf("Все группы")
+    val filterOptions = remember(groups) {
+        listOf("Все группы") + groups.map { it.name }
+    }
 
     var selectedStatus by remember { mutableStateOf("Все статусы") }
     val statusOptions = listOf("Все статусы", "Активные", "Выполненные")
@@ -72,7 +77,15 @@ fun MainScreenWithTasks(navController: NavController, taskJob: org.example.proje
             FilterSelector(
                 selectedFilter = selectedFilter,
                 filterOptions = filterOptions,
-                onFilterSelected = { selectedFilter = it },
+                onFilterSelected = { filter ->
+                    selectedFilter = filter
+                    if (filter == "Все группы") {
+                        allTasks.selectGroup(null)
+                    } else {
+                        val selectedGroup = groups.find { it.name == filter }
+                        allTasks.selectGroup(selectedGroup?.id)
+                    }
+                },
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 

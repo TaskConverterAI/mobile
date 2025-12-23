@@ -164,6 +164,17 @@ fun DetailNoteScreen(
             editableLat = lat
             editableLon = lon
             editableGeotag = name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}"
+
+            // Сохраняем новый геотег как пресет
+            val geoRepo = AppDependencies.container.geoTagRepository
+            val preset = GeoTagPreset(
+                name = editableGeotag ?: name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}",
+                latitude = lat,
+                longitude = lon,
+                colorValueLong = colorLong
+            )
+            geoRepo.addPreset(preset)
+
             handle.remove<Double>("map_lat")
             handle.remove<Double>("map_lon")
             handle.remove<String>("map_name")
@@ -219,12 +230,14 @@ fun DetailNoteScreen(
                                         id = note?.id ?: 0,
                                         title = editableTitle,
                                         content = editableContent,
-                                        geotag = Location(
-                                            editableLat ?: 0.0,
-                                            editableLon ?: 0.0,
-                                            editableGeotag ?: "",
-                                            false
-                                        ),
+                                        geotag = if (editableLat != null && editableLon != null) {
+                                            Location(
+                                                editableLat!!,
+                                                editableLon!!,
+                                                editableGeotag ?: "",
+                                                false
+                                            )
+                                        } else null,
                                         groupId = if (editableGroup?.id != -1L) editableGroup?.id else null,
                                         comments = note?.comments ?: emptyList(),
                                         color = editableColor,
@@ -280,7 +293,7 @@ fun DetailNoteScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null && !isSaving
+                            enabled = editableTitle.isNotBlank() && !isSaving
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -300,6 +313,8 @@ fun DetailNoteScreen(
                                     editableTitle = note.title
                                     editableContent = note.content
                                     editableGeotag = note.geotag?.name
+                                    editableLat = note.geotag?.latitude
+                                    editableLon = note.geotag?.longitude
                                     editableGroup = group
                                     editableColor = note.color
                                     isInEditMode = false

@@ -119,7 +119,7 @@ fun DetailTaskScreen(
             privileges = org.example.project.data.commonData.Privileges.admin
         )
     }
-    val _availableGroups = listOf<Group>(defaultGroup).plus(availableGroups)
+    val _availableGroups = remember(availableGroups) { listOf<Group>(defaultGroup).plus(availableGroups) }
     availableUsers.put(defaultGroup.id, listOf(defaultUser))
 
     // Editable state variables
@@ -130,18 +130,47 @@ fun DetailTaskScreen(
     var editableLat by remember { mutableStateOf<Double?>(null) }
     var editableLon by remember { mutableStateOf<Double?>(null) }
     var editableGroup by remember { mutableStateOf(defaultGroup) }
+    // Состояния для напоминаний
+    var remindByTime by remember { mutableStateOf(false) }
+    var remindByLocation by remember { mutableStateOf(false) }
     //var editableAssignee by remember { mutableStateOf(defaultUser) }
     @OptIn(ExperimentalTime::class)
     var editableDueDate by remember { mutableStateOf(kotlin.time.Clock.System.now().toEpochMilliseconds()) }
     var editablePriority by remember { mutableStateOf(Priority.MIDDLE) }
     var editableStatus by remember { mutableStateOf(Status.UNDONE) }
 
-    val currentUsers = remember(editableGroup.id) {
-        mutableStateOf(availableUsers[editableGroup.id] ?: emptyList())
-    }.value
+    // Состояние для списка пользователей текущей группы
+    var currentUsers by remember { mutableStateOf<List<User>>(emptyList()) }
 
-    var editableAssignee = remember (editableGroup.id) {
-            availableUsers[editableGroup.id]?.get(0) ?: defaultUser
+    var editableAssignee by remember { mutableStateOf(defaultUser) }
+
+    // Обновляем список пользователей при изменении availableUsers
+    LaunchedEffect(availableUsers) {
+        currentUsers = availableUsers[editableGroup.id] ?: emptyList()
+
+        // Если загружается существующая задача, восстанавливаем исполнителя
+        if (task != null && task.assignee != null) {
+            val users = availableUsers[editableGroup.id]
+            users?.forEach { usr ->
+                if (usr.id == task.assignee) {
+                    editableAssignee = usr
+                }
+            }
+        } else if (task == null && currentUsers.isNotEmpty() && editableAssignee == defaultUser) {
+            // Для новой задачи устанавливаем первого пользователя только если еще не выбран исполнитель
+            editableAssignee = currentUsers[0]
+        }
+    }
+
+    // Обновляем исполнителя только при смене группы (не при обновлении availableUsers)
+    LaunchedEffect(editableGroup.id) {
+        currentUsers = availableUsers[editableGroup.id] ?: emptyList()
+        // Сбрасываем исполнителя только при смене группы
+        if (currentUsers.isNotEmpty()) {
+            editableAssignee = currentUsers[0]
+        } else {
+            editableAssignee = defaultUser
+        }
     }
 
     val isNewTask = remember(task, isEditMode) { isEditMode && task == null }
@@ -172,6 +201,9 @@ fun DetailTaskScreen(
             // Инициализируем координаты из существующей задачи
             editableLat = task.geotag?.latitude
             editableLon = task.geotag?.longitude
+            // Инициализируем настройки напоминаний
+            remindByTime = task.dueDate?.remindByTime ?: false
+            remindByLocation = task.geotag?.remindByLocation ?: false
             editableDueDate = task.dueDate?.time ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
             editablePriority = task.priority
             editableStatus = task.status
@@ -201,6 +233,16 @@ fun DetailTaskScreen(
             editableLat = lat
             editableLon = lon
             editableGeotag = name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}"
+
+            // Сохраняем новый геотег как пресет
+            val geoRepo = AppDependencies.container.geoTagRepository
+            val preset = GeoTagPreset(
+                name = editableGeotag,
+                latitude = lat,
+                longitude = lon
+            )
+            geoRepo.addPreset(preset)
+
             handle.remove<Double>("map_lat")
             handle.remove<Double>("map_lon")
             handle.remove<String>("map_name")
@@ -254,16 +296,20 @@ fun DetailTaskScreen(
                                     authorId = userId,
                                     groupId = if (editableGroup.id == -1L) null else editableGroup.id,
                                     assignee = editableAssignee.id,
-                                    dueDate = Deadline(editableDueDate, false),
-                                    geotag = Location(
-                                        editableLat ?: 0.0,
-                                        editableLon ?: 0.0,
-                                        editableGeotag,
-                                        false
-                                    ),
+                                    dueDate = Deadline(editableDueDate, remindByTime),
+                                    geotag = if (editableLat != null && editableLon != null) {
+                                        Location(
+                                            editableLat!!,
+                                            editableLon!!,
+                                            editableGeotag,
+                                            remindByLocation
+                                        )
+                                    } else null,
                                     priority = editablePriority,
                                     status = editableStatus
                                 )
+                                print("&&&&&&& ")
+                                print(updatedTask.groupId)
                                 onSave(updatedTask)
                                 if (!isNewTask) {
                                     isInEditMode = false
@@ -275,7 +321,7 @@ fun DetailTaskScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null
+                            enabled = editableTitle.isNotBlank()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -300,6 +346,31 @@ fun DetailTaskScreen(
                                     editableDueDate = task.dueDate?.time ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
                                     editablePriority = task.priority
                                     editableStatus = task.status
+
+                                    // Сброс группы
+                                    if (task.groupId == null) {
+                                        editableGroup = defaultGroup
+                                    } else {
+                                        for (gr in availableGroups) {
+                                            if (gr.id == task.groupId) {
+                                                editableGroup = gr
+                                                break
+                                            }
+                                        }
+                                    }
+
+                                    // Сброс исполнителя
+                                    val users = availableUsers[editableGroup.id]
+                                    users?.forEach { usr ->
+                                        if (usr.id == task.assignee) {
+                                            editableAssignee = usr
+                                        }
+                                    }
+
+                                    // Сброс настроек напоминаний
+                                    remindByTime = task.dueDate?.remindByTime ?: false
+                                    remindByLocation = task.geotag?.remindByLocation ?: false
+
                                     isInEditMode = false
                                 }
                             },
@@ -342,6 +413,73 @@ fun DetailTaskScreen(
                             Text("Удалить")
                         }
                     }
+                }
+
+                // Кнопки тестирования геолокации (только для задач с геонапоминаниями)
+                if (!isInEditMode && task?.geotag?.remindByLocation == true) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Простые кнопки тестирования (работают через интерфейс)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                try {
+                                    val notificationService = AppDependencies.container.notificationService
+                                    kotlinx.coroutines.runBlocking {
+                                        // Показать тестовое уведомление
+                                        notificationService.showInAppNotification(
+                                            "🧪 Тест геолокации",
+                                            "Эмуляция движения к месту задачи запущена!"
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    // Игнорируем ошибки
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.secondary
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Text("🧪 Тест геолокации")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                try {
+                                    val notificationService = AppDependencies.container.notificationService
+                                    kotlinx.coroutines.runBlocking {
+                                        // Показать уведомление об остановке
+                                        notificationService.showInAppNotification(
+                                            "⏹ Тест остановлен",
+                                            "Используйте настройки для полных демо"
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    // Игнорируем ошибки
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.outline
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Text("⏹ Остановить")
+                        }
+                    }
+
+                    // Описание тестов
+                    Text(
+                        "Полное тестирование геолокации доступно в разделе 'Настройки'",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
         }
@@ -647,7 +785,14 @@ fun DetailTaskScreen(
                 val datePickerState = rememberDatePickerState(
                     initialSelectedDateMillis = editableDueDate
                 )
-                val timePickerState = rememberTimePickerState()
+
+                // Инициализируем время из текущего дедлайна
+                val currentDateTime = kotlin.time.Instant.fromEpochMilliseconds(editableDueDate)
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                val timePickerState = rememberTimePickerState(
+                    initialHour = currentDateTime.hour,
+                    initialMinute = currentDateTime.minute
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -727,7 +872,7 @@ fun DetailTaskScreen(
 
                                         // Преобразуем выбранную дату в локальную дату
                                         val selectedDate = kotlin.time.Instant.fromEpochMilliseconds(millis)
-                                        val localDate = selectedDate.toLocalDateTime(TimeZone.UTC).date
+                                        val localDate = selectedDate.toLocalDateTime(TimeZone.currentSystemDefault()).date
 
                                         // Создаем новую дату со временем
                                         val dateTime = kotlinx.datetime.LocalDateTime(
@@ -738,8 +883,8 @@ fun DetailTaskScreen(
                                             minute
                                         )
 
-                                        // Преобразуем в миллисекунды через Instant
-                                        val instant = dateTime.toInstant(TimeZone.UTC)
+                                        // Преобразуем в миллисекунды через Instant, используя системную временную зону
+                                        val instant = dateTime.toInstant(TimeZone.currentSystemDefault())
                                         editableDueDate = instant.toEpochMilliseconds()
                                     }
                                     showTimePicker = false
@@ -757,6 +902,30 @@ fun DetailTaskScreen(
                         TimePicker(state = timePickerState)
                     }
                 }
+
+                // Чекбокс для напоминания по времени
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.Checkbox(
+                        checked = remindByTime,
+                        onCheckedChange = { remindByTime = it }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Напоминание по времени",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                if (remindByTime) {
+                    Text(
+                        "Уведомления будут отправлены за 3 дня, 1 день и 1 час до дедлайна",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 40.dp, top = 4.dp)
+                    )
+                }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -764,11 +933,19 @@ fun DetailTaskScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        formatDate(editableDueDate),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            formatDate(editableDueDate),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (task?.dueDate?.remindByTime == true) {
+                            Text(
+                                "🔔 Напоминание включено",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
 
@@ -851,6 +1028,32 @@ fun DetailTaskScreen(
                         text = "${editableLat?.formatLatLon()}, ${editableLon?.formatLatLon()}",
                         style = MaterialTheme.typography.bodyMedium
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Чекбокс для напоминания по геопозиции
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.Checkbox(
+                            checked = remindByLocation,
+                            onCheckedChange = { remindByLocation = it }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Напоминание по геопозиции",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    if (remindByLocation) {
+                        Text(
+                            "Уведомление при приближении к месту на 100 метров",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 40.dp, top = 4.dp)
+                        )
+                    }
                 } else {
                     Text(
                         "Координаты не выбраны",
@@ -865,11 +1068,19 @@ fun DetailTaskScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        editableGeotag,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            editableGeotag,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (task?.geotag?.remindByLocation == true) {
+                            Text(
+                                "🌍 Геонапоминание включено",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
                 if (editableLat != null && editableLon != null) {
                     Spacer(modifier = Modifier.height(8.dp))

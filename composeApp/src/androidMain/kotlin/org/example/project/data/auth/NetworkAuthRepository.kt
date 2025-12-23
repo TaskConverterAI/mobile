@@ -2,7 +2,6 @@ package org.example.project.data.auth
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import com.auth0.jwt.JWT
 import com.auth0.jwt.interfaces.DecodedJWT
 import kotlinx.coroutines.flow.first
@@ -16,9 +15,7 @@ import org.example.project.model.ErrorsResponse
 import org.example.project.model.InvalidateSessionRequest
 import org.example.project.model.RefreshAccessTokenRequest
 import org.example.project.model.SignInUserRequest
-import org.example.project.model.SignInUserResponse
 import org.example.project.model.SignUpUserRequest
-import org.example.project.model.SignUpUserResponse
 import org.example.project.network.AuthApiService
 import kotlin.RuntimeException
 
@@ -80,13 +77,16 @@ class NetworkAuthRepository(
 
             if (response.isSuccessful) {
                 val signInResponse = response.body()
-                userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken!!)
-                userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken!!)
+                userAuthPreferencesRepository.saveAccessToken(signInResponse!!.accessToken)
+                userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken)
                 // Сохраняем данные пользователя локально
                 parseAndSaveJWT(signInResponse.accessToken, login, email)
 
                 AuthResult(true, listOf())
             } else {
+                // Проверяем, серверная ли это ошибка (5xx)
+                val isServerError = response.code() >= 500
+
                 val errors: MutableList<String> = mutableListOf()
                 val errorsResponse = parseErrorResponse(response.errorBody())
 
@@ -97,18 +97,19 @@ class NetworkAuthRepository(
                     errors.add(err)
                 }
 
-                AuthResult(false, errors)
+                AuthResult(false, errors, isServerError)
             }
         } catch (e: Exception) {
-            //Logger.i { e.message.toString() }
-            AuthResult(false, listOf())
+            // Сетевые ошибки и другие исключения считаем серверными ошибками
+            Log.e("MY_APP_TAG", "SignUp network error: ${e.message}", e)
+            AuthResult(false, listOf(), isServerError = true)
         }
     }
 
     override suspend fun signIn(
         login: String,
         password: String
-    ): Boolean {
+    ): AuthResult {
         return try {
             val response = authApiService.signIn(SignInUserRequest(login, password))
 
@@ -118,13 +119,16 @@ class NetworkAuthRepository(
                 userAuthPreferencesRepository.saveRefreshToken(signInResponse.refreshToken)
                 // При входе сохраняем login как username и email (так как login может быть и username, и email)
                 parseAndSaveJWT(signInResponse.accessToken, login, login)
-                true
+                AuthResult(true, listOf())
             } else {
-                val errorsResponse = parseErrorResponse(response.errorBody())
-                false
+                // Проверяем, серверная ли это ошибка (5xx)
+                val isServerError = response.code() >= 500
+                AuthResult(false, listOf(), isServerError)
             }
-        } catch (_: Exception) {
-            false
+        } catch (e: Exception) {
+            // Сетевые ошибки и другие исключения считаем серверными ошибками
+            Log.e("MY_APP_TAG", "SignIn network error: ${e.message}", e)
+            AuthResult(false, listOf(), isServerError = true)
         }
     }
 

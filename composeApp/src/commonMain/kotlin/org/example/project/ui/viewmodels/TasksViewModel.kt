@@ -15,8 +15,8 @@ import org.example.project.data.commonData.Comment
 import org.example.project.data.commonData.Task
 import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.database.repository.TaskRepository
+import org.example.project.data.notifications.NotificationService
 import org.example.project.ui.screens.statusToast.StatusType
-import kotlin.collections.plus
 
 data class TaskToastMessage(
     val message: String,
@@ -26,11 +26,20 @@ data class TaskToastMessage(
 class TasksViewModel(
     private val taskRepository: TaskRepository,
     private val authRepository: AuthRepository,
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val notificationService: NotificationService
 ) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
+
+    private val _allTasks = MutableStateFlow<List<Task>>(emptyList())
+
+    private val _groups = MutableStateFlow<List<org.example.project.data.commonData.Group>>(emptyList())
+    val groups: StateFlow<List<org.example.project.data.commonData.Group>> = _groups.asStateFlow()
+
+    private val _selectedGroupId = MutableStateFlow<Long?>(null)
+    val selectedGroupId: StateFlow<Long?> = _selectedGroupId.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -47,11 +56,21 @@ class TasksViewModel(
     fun loadTasks() {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
+
             try {
+                println("TasksViewModel: Начало загрузки задач")
                 val userId = authRepository.getUserIdByToken()
+                println("TasksViewModel: userId = $userId")
+
                 val response = taskRepository.getAllTasks(userId)
+                println("TasksViewModel: получено ${response?.size ?: 0} задач")
+
+                val allLoadedTasks = mutableListOf<Task>()
+
                 if (response != null) {
-                    _tasks.value = response.filter { note -> note.groupId ==  null  }
+                    allLoadedTasks.addAll(response.filter { task -> task.groupId == null })
+                    println("TasksViewModel: добавлено ${allLoadedTasks.size} задач без группы")
                 } else {
                     _error.value = "Не удалось загрузить задачи"
                     _toastMessage.value = TaskToastMessage(
@@ -61,10 +80,18 @@ class TasksViewModel(
                 }
 
                 val groups = groupRepository.getAllGroups(userId = userId)
+                println("TasksViewModel: получено ${groups?.size ?: 0} групп")
+
+                if (groups != null) {
+                    _groups.value = groups
+                    println("TasksViewModel: группы установлены в StateFlow")
+                }
+
                 groups?.forEach { group ->
-                    val groupNotes = taskRepository.getTasksByGroup(group.id)
-                    if (groupNotes != null) {
-                        _tasks.value = _tasks.value.plus(groupNotes)
+                    val groupTasks = taskRepository.getTasksByGroup(group.id)
+                    if (groupTasks != null) {
+                        allLoadedTasks.addAll(groupTasks)
+                        println("TasksViewModel: добавлено ${groupTasks.size} задач из группы ${group.name}")
                     } else {
                         _error.value = "Не удалось загрузить задачи группы ${group.name}"
                         _toastMessage.value = TaskToastMessage(
@@ -73,6 +100,11 @@ class TasksViewModel(
                         )
                     }
                 }
+
+                _allTasks.value = allLoadedTasks
+                applyFilter()
+
+                println("TasksViewModel: Итого загружено ${_allTasks.value.size} задач")
 
 //                _toastMessage.value = TaskToastMessage(
 //                    message = "Задачи загружены",
@@ -91,6 +123,27 @@ class TasksViewModel(
     }
 
     /**
+     * Применить фильтр по группе
+     */
+    private fun applyFilter() {
+        _tasks.value = if (_selectedGroupId.value == null) {
+            _allTasks.value
+        } else {
+            _allTasks.value.filter { it.groupId == _selectedGroupId.value }
+        }
+        println("TasksViewModel: Фильтр применен: ${_tasks.value.size} задач (selectedGroupId = ${_selectedGroupId.value})")
+    }
+
+    /**
+     * Выбрать фильтр по группе
+     */
+    fun selectGroup(groupId: Long?) {
+        println("TasksViewModel: selectGroup вызвана с groupId = $groupId")
+        _selectedGroupId.value = groupId
+        applyFilter()
+    }
+
+    /**
      * Добавить новую задачу
      * @param task - задача с объектами Group, User, Note (автоматически преобразуются в ID)
      */
@@ -105,6 +158,15 @@ class TasksViewModel(
                         message = "Не удалось создать задачу",
                         type = StatusType.ERROR
                     )
+                } else {
+                    // Планируем уведомления для новой задачи
+                    try {
+                        notificationService.scheduleTaskNotifications(result)
+                        println("TasksViewModel: Уведомления запланированы для задачи ${result.id}")
+                    } catch (e: Exception) {
+                        println("TasksViewModel: Ошибка при планировании уведомлений: ${e.message}")
+                        // Не показываем ошибку пользователю, так как задача создана успешно
+                    }
                 }
 
 //                _toastMessage.value = TaskToastMessage(
@@ -136,6 +198,15 @@ class TasksViewModel(
                         message = "Не удалось обновить задачу",
                         type = StatusType.ERROR
                     )
+                } else {
+                    // Отменяем старые уведомления и планируем новые
+                    try {
+                        notificationService.cancelTaskNotifications(taskId)
+                        notificationService.scheduleTaskNotifications(result)
+                        println("TasksViewModel: Уведомления обновлены для задачи ${result.id}")
+                    } catch (e: Exception) {
+                        println("TasksViewModel: Ошибка при обновлении уведомлений: ${e.message}")
+                    }
                 }
 
 //                _toastMessage.value = TaskToastMessage(
@@ -160,6 +231,14 @@ class TasksViewModel(
         viewModelScope.launch {
             try {
                 taskRepository.deleteTask(taskId)
+
+                // Отменяем все уведомления для удаленной задачи
+                try {
+                    notificationService.cancelTaskNotifications(taskId)
+                    println("TasksViewModel: Уведомления отменены для удаленной задачи $taskId")
+                } catch (e: Exception) {
+                    println("TasksViewModel: Ошибка при отмене уведомлений: ${e.message}")
+                }
 
 //                _toastMessage.value = TaskToastMessage(
 //                    message = "Задача успешно удалена",
@@ -370,7 +449,8 @@ class TasksViewModel(
                 TasksViewModel(
                     AppDependencies.container.taskRepository,
                     AppDependencies.container.authRepository,
-                    AppDependencies.container.groupRepository
+                    AppDependencies.container.groupRepository,
+                    AppDependencies.container.notificationService
                 )
             }
         }
