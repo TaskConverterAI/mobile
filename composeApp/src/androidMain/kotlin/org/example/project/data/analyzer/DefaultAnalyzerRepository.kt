@@ -2,6 +2,7 @@ package org.example.project.data.analyzer
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Toast
 import androidx.core.net.toUri
@@ -41,33 +42,37 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
         return try {
             onProgress(0.00F)
             val fileUri = audioPath.toUri()
+            val fileSize = getFileSizeFromUri(appContext!!, fileUri)
+
+            if (fileSize == null) {
+                Toast.makeText(appContext, "Недостаточно прав доступа к файлу", Toast.LENGTH_SHORT).show()
+                Log.e("MY_APP_TAG", "Не удалось открыть inputStream для URI: $fileUri")
+                return false
+            } else if (fileSize > 524288000) {
+                Toast.makeText(appContext, "Превышен допустимый размера файла (500 Мб)", Toast.LENGTH_SHORT).show()
+                Log.e("MY_APP_TAG", "Превышен допустимый размера файла (500 Мб)")
+                return false
+            }
 
             val fileInfo = getFileInfoFromUri(appContext!!, fileUri)
             var fileData = ByteArray(0)
             var fileName = fileInfo.first ?: "audio_file"
             var mimeType = fileInfo.second ?: "audio/mp3"
 
-            if (fileInfo.second == "video/mp4") {
-                fileName = "audio_file.m4a"
-                mimeType = "audio/m4a"
-                val converter = Mp4ToMp3Converter()
-                val result = converter.extractAndEncodeToAac(appContext!!, fileUri, onProgress)
-                if (result.isSuccess) {
-                    fileData = result.getOrThrow()
-                } else {
-                    Toast.makeText(appContext, "ошибка конвертации", Toast.LENGTH_SHORT).show()
-                    Log.e("MY_APP_TAG", "Ошибка конвертации: ${result.exceptionOrNull()?.message}")
-                    return false
-                }
-            } else {
+            if (fileInfo.second == "audio/mp3" || fileInfo.second == "audio/mpeg") {
                 val inputStream = appContext!!.contentResolver.openInputStream(fileUri)
                 if (inputStream == null) {
+                    Toast.makeText(appContext, "Недостаточно прав доступа к файлу", Toast.LENGTH_SHORT).show()
                     Log.e("MY_APP_TAG", "Не удалось открыть inputStream для URI: $fileUri")
                     return false
                 }
                 inputStream.use { stream ->
                     fileData = stream.readBytes()
                 }
+            } else {
+                Toast.makeText(appContext, "Неподдерживаемый формат файла ${fileInfo.second}", Toast.LENGTH_SHORT).show()
+                Log.e("MY_APP_TAG", "Неподдерживаемый формат файла ${fileInfo.second}")
+                return false
             }
 
             if (fileData.isEmpty()) {
@@ -261,6 +266,31 @@ class DefaultAnalyzerRepository() : AnalyzerRepository {
 
         override fun deserialize(decoder: Decoder): Instant {
             return Instant.parse(decoder.decodeString())
+        }
+    }
+
+    private fun getFileSizeFromUri(context: Context, uri: Uri): Long? {
+        return try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeIndex >= 0) {
+                        cursor.getLong(sizeIndex)
+                    } else {
+                        Log.w("MY_APP_TAG", "Не удалось получить индекс колонки SIZE")
+                        null
+                    }
+                } else {
+                    Log.w("MY_APP_TAG", "Курсор пустой")
+                    null
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e("MY_APP_TAG", "Недостаточно прав для доступа к файлу: ${e.message}")
+            null
+        } catch (e: Exception) {
+            Log.e("MY_APP_TAG", "Ошибка при получении размера файла: ${e.message}", e)
+            null
         }
     }
 }
