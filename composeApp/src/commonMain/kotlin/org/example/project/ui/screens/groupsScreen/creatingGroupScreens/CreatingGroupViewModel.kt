@@ -112,7 +112,7 @@ class CreateGroupViewModel(
                         val add_result = groupRepository.addMemberInGroup(
                             group.id,
                             emailOrName,
-                            Privileges.USER_ROLE)
+                            Privileges.owner)
 
                         if (add_result == null) {
                             groupRepository.deleteGroup(group.id, userId)

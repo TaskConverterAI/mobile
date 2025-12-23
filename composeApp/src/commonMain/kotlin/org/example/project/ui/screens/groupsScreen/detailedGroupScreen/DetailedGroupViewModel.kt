@@ -186,6 +186,7 @@ open class DetailedGroupViewModel(
         viewModelScope.launch {
             try {
                 val groupId = _groupDetails.value.groupId
+                val userId = authRepository.getUserIdByToken()
                 var accessorId: Long? = null
 
                 groupDetails.value.users.forEach { member ->
@@ -198,7 +199,7 @@ open class DetailedGroupViewModel(
                 }
                 setLeave(false)
                 // Вызываем API для выхода из группы
-                if (groupRepository.leaveGroup(groupId, accessorId)) {
+                if (groupRepository.leaveGroup(groupId, userId, accessorId)) {
                     Logger.d { "User left the group successfully" }
                     _groupDetails.update { it.copy(successLeave = true) }
                 } else {
@@ -225,7 +226,7 @@ open class DetailedGroupViewModel(
                     return@launch
                 }
                 // Вызываем API для выхода из группы
-                if (groupRepository.leaveGroup(groupId, userId)) {
+                if (groupRepository.leaveGroup(groupId, userId, userId)) {
                     Logger.d("DetailedGroupViewModel") { "User left the group successfully" }
                     _groupDetails.update { it.copy(successLeave = true) }
                 } else {

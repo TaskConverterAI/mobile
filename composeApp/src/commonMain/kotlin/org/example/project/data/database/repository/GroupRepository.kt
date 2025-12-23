@@ -198,7 +198,7 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
 
     // Перегруженный метод с дефолтной ролью member
     suspend fun addMemberInGroup(groupId: Long, userNameOrEmail: String) : User? {
-        return addMemberInGroup(groupId, userNameOrEmail, Privileges.USER_ROLE)
+        return addMemberInGroup(groupId, userNameOrEmail, Privileges.member)
     }
 
     suspend fun deleteMemberFromGroup(groupId: Long, userId: Long) {
@@ -206,8 +206,8 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
 
     }
 
-    suspend fun leaveGroup(groupId: Long, userId: Long): Boolean {
-        val result = groupApiService?.leaveGroup(groupId = groupId, LeaveGroupRequest(userId))
+    suspend fun leaveGroup(groupId: Long, myId: Long, userId: Long): Boolean {
+        val result = groupApiService?.leaveGroup(groupId = groupId, LeaveGroupRequest(myId, userId))
         if (result?.isSuccess ?: false) {
             Logger.d("DetailedGroupViewModel"){ "result is ${result.getOrNull()?.message}"}
         }
