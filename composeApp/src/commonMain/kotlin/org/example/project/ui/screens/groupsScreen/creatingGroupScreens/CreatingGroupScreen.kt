@@ -42,12 +42,12 @@ fun CreateGroupScreen(
     var toastType by remember { mutableStateOf(StatusType.ERROR) }
     var toastKey by remember { mutableStateOf(0) }
 
-    LaunchedEffect(state.error) {
-        if (state.error != null) {
-            toastMessage = state.error
+    LaunchedEffect(state.emailError) {
+        if (state.emailError != null) {
+            toastMessage = state.emailError
             toastType = StatusType.ERROR
             toastKey++
-            viewModel.clearError()
+            viewModel.clearParticipantsError()
         }
     }
 

@@ -151,16 +151,8 @@ class AndroidNotificationService(
 
         if (scheduledTypes.isNotEmpty()) {
             logger.d { "Уведомления для задачи ${task.id} успешно настроены: ${scheduledTypes.joinToString(", ")}" }
-            showInAppNotification(
-                "Уведомления настроены",
-                "Активированы: ${scheduledTypes.joinToString(", ")} для задачи '${task.title}'"
-            )
         } else {
             logger.w { "Не удалось настроить ни одного типа уведомлений для задачи ${task.id}" }
-            showInAppNotification(
-                "Уведомления не активны",
-                "Проверьте разрешения для задачи '${task.title}'"
-            )
         }
     }
 
