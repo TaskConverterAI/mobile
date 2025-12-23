@@ -67,28 +67,100 @@ class AndroidNotificationService(
     }
 
     init {
+        logger.d { "Инициализация AndroidNotificationService" }
+
+        // Создаем канал уведомлений
+        notificationHelper.ensureChannel()
+
         // Устанавливаем callback для получения обновлений местоположения
         LocationTrackingService.onLocationUpdate = { latitude, longitude ->
             kotlinx.coroutines.runBlocking {
                 checkLocationProximity(latitude, longitude)
             }
         }
+
+        // Логируем текущий статус разрешений для отладки
+        logCurrentStatus()
     }
 
     override suspend fun scheduleTaskNotifications(task: Task) {
         logger.d { "Настройка уведомлений для задачи ${task.id}" }
 
+        // Получаем статус всех разрешений
+        val permissions = checkAllPermissions()
+
+        if (!permissions.hasBasicPermissions) {
+            logger.w { "Отсутствуют базовые разрешения на уведомления" }
+            showInAppNotification(
+                "Нет разрешений",
+                "Предоставьте разрешение на уведомления в настройках Android"
+            )
+            return
+        }
+
+        // Проверяем конкретные типы уведомлений
+        val needsTimeNotifications = task.dueDate?.remindByTime == true
+        val needsLocationNotifications = task.geotag?.remindByLocation == true
+
+        if (needsTimeNotifications && !permissions.canUseTimeNotifications) {
+            logger.w { "Нельзя использовать временные уведомления без разрешения на точные алармы" }
+            showInAppNotification(
+                "Требуются точные алармы",
+                "Для временных напоминаний нужно разрешение на точные алармы"
+            )
+            requestExactAlarmPermissions()
+            // Не возвращаемся - пробуем настроить хотя бы геоуведомления
+        }
+
+        if (needsLocationNotifications && !permissions.canUseLocationNotifications) {
+            logger.w { "Нельзя использовать геоуведомления без разрешения на местоположение" }
+            showInAppNotification(
+                "Требуется доступ к местоположению",
+                "Для геонапоминаний нужно разрешение на местоположение"
+            )
+            // Продолжаем - можем настроить временные уведомления
+        }
+
         // Отменяем старые уведомления
         cancelTaskNotifications(task.id)
 
-        // Настраиваем уведомления по времени
-        if (task.dueDate?.remindByTime == true) {
+        // Настраиваем уведомления по времени если возможно
+        if (needsTimeNotifications && permissions.canUseTimeNotifications) {
+            logger.d { "Настраиваем временные уведомления для задачи ${task.id}" }
             scheduleTimeNotifications(task)
+        } else if (needsTimeNotifications) {
+            logger.w { "Пропускаем временные уведомления - нет разрешений" }
         }
 
-        // Настраиваем уведомления по геопозиции
-        if (task.geotag?.remindByLocation == true) {
+        // Настраиваем уведомления по геопозиции если возможно
+        if (needsLocationNotifications && permissions.canUseLocationNotifications) {
+            logger.d { "Настраиваем геоуведомления для задачи ${task.id}" }
             scheduleLocationNotifications(task)
+        } else if (needsLocationNotifications) {
+            logger.w { "Пропускаем геоуведомления - нет разрешений" }
+        }
+
+        // Информируем о результате
+        val scheduledTypes = mutableListOf<String>()
+        if (needsTimeNotifications && permissions.canUseTimeNotifications) {
+            scheduledTypes.add("временные")
+        }
+        if (needsLocationNotifications && permissions.canUseLocationNotifications) {
+            scheduledTypes.add("геонапоминания")
+        }
+
+        if (scheduledTypes.isNotEmpty()) {
+            logger.d { "Уведомления для задачи ${task.id} успешно настроены: ${scheduledTypes.joinToString(", ")}" }
+            showInAppNotification(
+                "Уведомления настроены",
+                "Активированы: ${scheduledTypes.joinToString(", ")} для задачи '${task.title}'"
+            )
+        } else {
+            logger.w { "Не удалось настроить ни одного типа уведомлений для задачи ${task.id}" }
+            showInAppNotification(
+                "Уведомления не активны",
+                "Проверьте разрешения для задачи '${task.title}'"
+            )
         }
     }
 
@@ -147,8 +219,58 @@ class AndroidNotificationService(
             activeTimeReminders[reminder.taskId] = reminder
         }
 
-        // TODO: Здесь можно добавить фоновые таймеры или AlarmManager для срабатывания в нужное время
-        // Пока что временные напоминания будут обрабатываться при следующем открытии приложения
+        // Планируем фоновые напоминания через AlarmManager
+        scheduleAlarmManagerReminders(task, remindersToSchedule)
+    }
+
+    /**
+     * Планирует временные напоминания через AlarmManager для фонового срабатывания
+     */
+    private fun scheduleAlarmManagerReminders(task: Task, reminders: List<TimeReminder>) {
+        logger.d { "Планируем ${reminders.size} напоминаний через AlarmManager для задачи '${task.title}'" }
+
+        // Проверяем разрешения на планирование алармов
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (!hasExactAlarmPermissions()) {
+                logger.w { "Нет разрешения на точные алармы, используем fallback планирование" }
+                // Показываем уведомление пользователю
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                    showInAppNotification(
+                        "Ограниченная функциональность",
+                        "Временные напоминания могут работать неточно без разрешения на точные алармы"
+                    )
+                }
+            }
+        }
+
+        reminders.forEach { reminder ->
+            val reminderType = when {
+                reminder.triggerTime <= System.currentTimeMillis() + 60 * 60 * 1000L -> "за 1 час"
+                reminder.triggerTime <= System.currentTimeMillis() + 24 * 60 * 60 * 1000L -> "за 1 день"
+                else -> "за 3 дня"
+            }
+
+            try {
+                TimeReminderReceiver.scheduleReminder(
+                    context = context,
+                    taskId = reminder.taskId,
+                    taskTitle = reminder.taskTitle,
+                    triggerTime = reminder.triggerTime,
+                    reminderType = reminderType
+                )
+                logger.d { "Успешно запланирован алarm для задачи ${reminder.taskId} ($reminderType)" }
+            } catch (e: Exception) {
+                logger.e(e) { "Ошибка при планировании аларма для задачи ${reminder.taskId}: ${e.message}" }
+
+                // Показываем уведомление об ошибке
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                    showInAppNotification(
+                        "Ошибка планирования",
+                        "Не удалось запланировать напоминание $reminderType для задачи '${task.title}'"
+                    )
+                }
+            }
+        }
     }
 
     override suspend fun scheduleLocationNotifications(task: Task) {
@@ -173,6 +295,9 @@ class AndroidNotificationService(
 
     override suspend fun cancelTaskNotifications(taskId: Long) {
         logger.d { "Отмена уведомлений для задачи $taskId" }
+
+        // Отменяем запланированные AlarmManager напоминания
+        TimeReminderReceiver.cancelReminder(context, taskId)
 
         // Удаляем геонапоминания
         activeLocationReminders.remove(taskId)
@@ -220,13 +345,37 @@ class AndroidNotificationService(
     }
 
     override suspend fun hasNotificationPermissions(): Boolean {
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
+        logger.d { "Проверка разрешений на уведомления" }
+
+        try {
+            // Сначала проверяем системные уведомления
+            val notificationManager = androidx.core.app.NotificationManagerCompat.from(context)
+            val areNotificationsEnabled = notificationManager.areNotificationsEnabled()
+            logger.d { "Системные уведомления включены: $areNotificationsEnabled" }
+
+            if (!areNotificationsEnabled) {
+                logger.w { "Уведомления отключены на системном уровне" }
+                return false
+            }
+
+            // Для Android 13+ дополнительно проверяем разрешение POST_NOTIFICATIONS
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val hasPostNotificationsPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+
+                logger.d { "POST_NOTIFICATIONS разрешение: $hasPostNotificationsPermission" }
+                return hasPostNotificationsPermission
+            }
+
+            // Для Android < 13 достаточно системных настроек
+            logger.d { "Android < 13, разрешения на уведомления: $areNotificationsEnabled" }
+            return areNotificationsEnabled
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при проверке разрешений на уведомления: ${e.message}" }
+            return false
         }
     }
 
@@ -242,6 +391,212 @@ class AndroidNotificationService(
     override suspend fun requestLocationPermissions(): Boolean {
         // Этот метод должен вызываться из Activity для запроса разрешений
         return hasLocationPermissions()
+    }
+
+    /**
+     * Проверяет разрешения на планирование точных алармов
+     */
+    fun hasExactAlarmPermissions(): Boolean {
+        return AlarmPermissionHelper.canScheduleExactAlarms(context)
+    }
+
+    /**
+     * Запрашивает разрешения на точные алармы (требует Activity)
+     */
+    fun requestExactAlarmPermissions() {
+        logger.d { "Проверка разрешений на точные алармы" }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val canSchedule = hasExactAlarmPermissions()
+            logger.d { "Разрешение на точные алармы: $canSchedule" }
+
+            if (!canSchedule) {
+                logger.w { "Нет разрешения на точные алармы, открываем настройки" }
+                try {
+                    AlarmPermissionHelper.requestExactAlarmPermission(context)
+                } catch (e: Exception) {
+                    logger.e(e) { "Ошибка при запросе разрешения на алармы: ${e.message}" }
+                }
+            } else {
+                logger.d { "Разрешение на точные алармы уже предоставлено" }
+            }
+        } else {
+            logger.d { "Android версии ниже 12, разрешение на алармы не требуется" }
+        }
+    }
+
+    /**
+     * Получает информацию о разрешениях на алармы
+     */
+    fun getExactAlarmPermissionInfo(): String {
+        return AlarmPermissionHelper.getExactAlarmPermissionInfo()
+    }
+
+    /**
+     * Проверяет все необходимые разрешения для уведомлений
+     */
+    suspend fun checkAllPermissions(): PermissionStatus {
+        val hasNotifications = hasNotificationPermissions()
+        val hasLocation = hasLocationPermissions()
+        val hasAlarms = hasExactAlarmPermissions()
+
+        logger.d { "Статус разрешений: Уведомления=$hasNotifications, Местоположение=$hasLocation, Алармы=$hasAlarms" }
+
+        return PermissionStatus(
+            notifications = hasNotifications,
+            location = hasLocation,
+            exactAlarms = hasAlarms
+        )
+    }
+
+    /**
+     * Статус разрешений для уведомлений
+     */
+    data class PermissionStatus(
+        val notifications: Boolean,
+        val location: Boolean,
+        val exactAlarms: Boolean
+    ) {
+        val allGranted: Boolean get() = notifications && location && exactAlarms
+        val hasBasicPermissions: Boolean get() = notifications
+        val canUseLocationNotifications: Boolean get() = notifications && location
+        val canUseTimeNotifications: Boolean get() = notifications && (exactAlarms || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S)
+
+        fun getMissingPermissions(): List<String> {
+            val missing = mutableListOf<String>()
+            if (!notifications) missing.add("Уведомления")
+            if (!location) missing.add("Местоположение")
+            if (!exactAlarms && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) missing.add("Точные алармы")
+            return missing
+        }
+    }
+
+    /**
+     * Логирует текущий статус разрешений для отладки
+     */
+    fun logCurrentStatus() {
+        NotificationDiagnostics.logPermissionStatus(context)
+        logger.d { "Активных геонапоминаний: ${activeLocationReminders.size}" }
+        logger.d { "Активных временных напоминаний: ${activeTimeReminders.size}" }
+    }
+
+    /**
+     * ТЕСТОВАЯ ФУНКЦИЯ: Принудительно отправить push уведомление для проверки
+     */
+    fun sendTestNotification(title: String = "Тест уведомления", message: String = "Проверка работы уведомлений") {
+        logger.d { "Отправка тестового уведомления: '$title' - '$message'" }
+
+        try {
+            // Проверяем канал
+            notificationHelper.ensureChannel()
+
+            // Отправляем уведомление с тестовым ID
+            notificationHelper.showTaskNotification(
+                taskId = 9999L,
+                title = title,
+                body = message
+            )
+
+            logger.d { "Тестовое уведомление отправлено успешно" }
+
+            // Также показываем in-app уведомление через корутину
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                showInAppNotification("Тест отправлен", "Push уведомление '$title' должно появиться")
+            }
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при отправке тестового уведомления: ${e.message}" }
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                showInAppNotification("Ошибка теста", "Не удалось отправить тестовое уведомление: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * ТЕСТОВАЯ ФУНКЦИЯ: Запланировать тестовое напоминание через 30 секунд
+     */
+    fun scheduleTestTimeReminder() {
+        logger.d { "Планирование тестового напоминания через 30 секунд" }
+
+        try {
+            val triggerTime = System.currentTimeMillis() + 30 * 1000L // +30 секунд
+
+            TimeReminderReceiver.scheduleReminder(
+                context = context,
+                taskId = 9998L,
+                taskTitle = "ТЕСТ: Временное напоминание",
+                triggerTime = triggerTime,
+                reminderType = "тестовое через 30 сек"
+            )
+
+            logger.d { "Тестовое временное напоминание запланировано на $triggerTime" }
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                showInAppNotification("Тест запланирован", "Уведомление должно прийти через 30 секунд")
+            }
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при планировании тестового напоминания: ${e.message}" }
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                showInAppNotification("Ошибка планирования", "Не удалось запланировать тест: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * ТЕСТОВАЯ ФУНКЦИЯ: Проверить все разрешения и показать подробный отчет
+     */
+    suspend fun runPermissionDiagnostics(): String {
+        logger.d { "Запуск полной диагностики разрешений" }
+
+        val report = StringBuilder()
+        report.appendLine("=== ДИАГНОСТИКА РАЗРЕШЕНИЙ ===")
+
+        try {
+            // Проверяем уведомления
+            val hasNotifications = hasNotificationPermissions()
+            report.appendLine("✓ Разрешение на уведомления: $hasNotifications")
+
+            // Проверяем местоположение
+            val hasLocation = hasLocationPermissions()
+            report.appendLine("✓ Разрешение на местоположение: $hasLocation")
+
+            // Проверяем точные алармы
+            val hasAlarms = hasExactAlarmPermissions()
+            report.appendLine("✓ Разрешение на точные алармы: $hasAlarms")
+
+            // Проверяем канал уведомлений
+            try {
+                notificationHelper.ensureChannel()
+                report.appendLine("✓ Канал уведомлений создан успешно")
+            } catch (e: Exception) {
+                report.appendLine("✗ Ошибка создания канала: ${e.message}")
+            }
+
+            // Пробуем отправить тестовое уведомление
+            try {
+                sendTestNotification("Диагностика", "Тестовое уведомление в рамках диагностики")
+                report.appendLine("✓ Тестовое уведомление отправлено")
+            } catch (e: Exception) {
+                report.appendLine("✗ Ошибка отправки тестового уведомления: ${e.message}")
+            }
+
+            report.appendLine()
+            report.appendLine("Общий статус:")
+            val permissions = checkAllPermissions()
+            if (permissions.allGranted) {
+                report.appendLine("✅ Все разрешения предоставлены")
+            } else {
+                report.appendLine("❌ Отсутствуют разрешения: ${permissions.getMissingPermissions()}")
+            }
+
+        } catch (e: Exception) {
+            report.appendLine("❌ КРИТИЧЕСКАЯ ОШИБКА: ${e.message}")
+            logger.e(e) { "Ошибка при диагностике разрешений" }
+        }
+
+        val result = report.toString()
+        logger.d { "Результат диагностики:\n$result" }
+        return result
     }
 
     /**

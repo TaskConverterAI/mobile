@@ -33,48 +33,81 @@ class NotificationHelper(private val context: Context) {
      * Показать системное уведомление с переходом к задаче
      */
     fun showTaskNotification(taskId: Long, title: String, body: String) {
-        // Проверяем разрешения перед отправкой
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            if (androidx.core.content.ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                return // Нет разрешения на уведомления
-            }
+        co.touchlab.kermit.Logger.withTag("NotificationHelper").d {
+            "Попытка отправки уведомления: taskId=$taskId, title='$title', body='$body'"
         }
-
-        // Создаем Intent для открытия конкретной задачи
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(EXTRA_TASK_ID, taskId)
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            taskId.toInt(), // Уникальный ID для каждой задачи
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body)) // Для длинных текстов
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent) // При клике откроется задача
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         try {
-            NotificationManagerCompat.from(context).notify(taskId.toInt(), builder.build())
-        } catch (e: SecurityException) {
-            // Обрабатываем случай когда нет разрешений
-            co.touchlab.kermit.Logger.withTag("NotificationHelper")
-                .w(e) { "Нет разрешений для отправки уведомления" }
+            // Проверяем системные уведомления
+            val notificationManager = androidx.core.app.NotificationManagerCompat.from(context)
+            if (!notificationManager.areNotificationsEnabled()) {
+                co.touchlab.kermit.Logger.withTag("NotificationHelper").w {
+                    "Уведомления отключены на системном уровне"
+                }
+                return
+            }
+
+            // Проверяем разрешения для Android 13+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    co.touchlab.kermit.Logger.withTag("NotificationHelper").w {
+                        "Нет разрешения POST_NOTIFICATIONS"
+                    }
+                    return
+                }
+            }
+
+            // Убеждаемся что канал создан
+            ensureChannel()
+
+            // Создаем Intent для открытия конкретной задачи
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(EXTRA_TASK_ID, taskId)
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                taskId.toInt(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Создаем уведомление с высокой важностью
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body)) // Для длинного текста
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .build()
+
+            // Отправляем уведомление
+            try {
+                notificationManager.notify(taskId.toInt(), notification)
+                co.touchlab.kermit.Logger.withTag("NotificationHelper").d {
+                    "Уведомление отправлено успешно: ID=${taskId.toInt()}"
+                }
+            } catch (e: SecurityException) {
+                co.touchlab.kermit.Logger.withTag("NotificationHelper").e(e) {
+                    "SecurityException при отправке уведомления: ${e.message}"
+                }
+            }
+
+        } catch (e: Exception) {
+            co.touchlab.kermit.Logger.withTag("NotificationHelper").e(e) {
+                "Ошибка при отправке уведомления: ${e.message}"
+            }
         }
     }
+
 
     /**
      * Обратная совместимость (deprecated, используйте showTaskNotification)

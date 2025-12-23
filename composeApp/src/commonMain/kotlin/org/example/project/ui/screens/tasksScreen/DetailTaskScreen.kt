@@ -297,12 +297,14 @@ fun DetailTaskScreen(
                                     groupId = if (editableGroup.id == -1L) null else editableGroup.id,
                                     assignee = editableAssignee.id,
                                     dueDate = Deadline(editableDueDate, remindByTime),
-                                    geotag = Location(
-                                        editableLat ?: 0.0,
-                                        editableLon ?: 0.0,
-                                        editableGeotag,
-                                        remindByLocation
-                                    ),
+                                    geotag = if (editableLat != null && editableLon != null) {
+                                        Location(
+                                            editableLat!!,
+                                            editableLon!!,
+                                            editableGeotag,
+                                            remindByLocation
+                                        )
+                                    } else null,
                                     priority = editablePriority,
                                     status = editableStatus
                                 )
@@ -319,7 +321,7 @@ fun DetailTaskScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = editableTitle.isNotBlank() && editableLat != null && editableLon != null
+                            enabled = editableTitle.isNotBlank()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,

@@ -251,4 +251,170 @@ object NotificationDemo {
             "Ошибка: ${e.message}"
         }
     }
+
+    /**
+     * НОВАЯ ФУНКЦИЯ: Тестирование push уведомлений
+     */
+    suspend fun testPushNotifications(): String {
+        return try {
+            val notificationService = AppDependencies.container.notificationService
+
+            if (notificationService !is AndroidNotificationService) {
+                logger.w { "NotificationService не является AndroidNotificationService" }
+                return "❌ NotificationService недоступен"
+            }
+
+            logger.d { "Запуск теста push уведомлений" }
+
+            // Отправляем тестовое уведомление немедленно
+            notificationService.sendTestNotification(
+                title = "🔔 ТЕСТ УВЕДОМЛЕНИЯ",
+                message = "Если вы видите это уведомление, то push уведомления работают!"
+            )
+
+            // Планируем тестовое напоминание через 30 секунд
+            notificationService.scheduleTestTimeReminder()
+
+            logger.d { "Тесты уведомлений запущены" }
+            "✅ Тесты запущены: немедленное уведомление + уведомление через 30 сек"
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при тестировании уведомлений: ${e.message}" }
+            "❌ Ошибка: ${e.message}"
+        }
+    }
+
+    /**
+     * НОВАЯ ФУНКЦИЯ: Полная диагностика разрешений
+     */
+    suspend fun runFullDiagnostics(): String {
+        return try {
+            val notificationService = AppDependencies.container.notificationService
+
+            if (notificationService !is AndroidNotificationService) {
+                return "❌ NotificationService не является AndroidNotificationService"
+            }
+
+            logger.d { "Запуск полной диагностики системы уведомлений" }
+
+            val diagnostics = notificationService.runPermissionDiagnostics()
+            logger.d { "Диагностика завершена" }
+
+            diagnostics
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при диагностике: ${e.message}" }
+            "❌ Ошибка диагностики: ${e.message}"
+        }
+    }
+
+    /**
+     * НОВАЯ ФУНКЦИЯ: Создать задачу с немедленным временным напоминанием для теста
+     */
+    @OptIn(ExperimentalTime::class)
+    suspend fun createTestTaskWithTimeReminder(): Task {
+        val currentTime = kotlin.time.Clock.System.now().toEpochMilliseconds()
+
+        val testTask = Task(
+            id = 9997L,
+            title = "🕒 Тест временного напоминания",
+            description = "Эта задача создана для тестирования временных напоминаний. Напоминания должны прийти за 3 дня, 1 день и 1 час до дедлайна.",
+            comments = emptyList(),
+            authorId = 1L,
+            groupId = null,
+            assignee = 1L,
+            dueDate = Deadline(
+                time = currentTime + 2 * 60 * 1000, // Дедлайн через 2 минуты
+                remindByTime = true
+            ),
+            geotag = null, // Без геонапоминаний для этого теста
+            priority = Priority.HIGH,
+            status = Status.UNDONE,
+            createAt = currentTime
+        )
+
+        logger.d { "Создана тестовая задача с временным напоминанием: дедлайн через 2 минуты" }
+        return testTask
+    }
+
+    /**
+     * НОВАЯ ФУНКЦИЯ: Тест временных напоминаний
+     */
+    suspend fun testTimeReminders(): String {
+        return try {
+            val notificationService = AppDependencies.container.notificationService
+
+            if (notificationService !is AndroidNotificationService) {
+                return "❌ NotificationService недоступен"
+            }
+
+            logger.d { "Запуск теста временных напоминаний" }
+
+            // Создаем задачу с дедлайном через 2 минуты
+            val testTask = createTestTaskWithTimeReminder()
+
+            // Планируем уведомления
+            notificationService.scheduleTaskNotifications(testTask)
+
+            logger.d { "Временные напоминания запланированы для задачи ${testTask.id}" }
+
+            "✅ Тест временных напоминаний запущен:\n" +
+            "- Задача: '${testTask.title}'\n" +
+            "- Дедлайн: через 2 минуты\n" +
+            "- Ожидайте уведомления за 1 час до дедлайна (должно прийти немедленно)"
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при тестировании временных напоминаний: ${e.message}" }
+            "❌ Ошибка: ${e.message}"
+        }
+    }
+
+    /**
+     * НОВАЯ ФУНКЦИЯ: Комплексный тест всех типов уведомлений
+     */
+    suspend fun runCompleteTest(): String {
+        return try {
+            logger.d { "Запуск комплексного теста уведомлений" }
+
+            val results = StringBuilder()
+            results.appendLine("🧪 КОМПЛЕКСНЫЙ ТЕСТ УВЕДОМЛЕНИЙ")
+            results.appendLine()
+
+            // 1. Диагностика
+            results.appendLine("1️⃣ ДИАГНОСТИКА РАЗРЕШЕНИЙ:")
+            val diagnostics = runFullDiagnostics()
+            results.appendLine(diagnostics)
+            results.appendLine()
+
+            // 2. Тест push уведомлений
+            results.appendLine("2️⃣ ТЕСТ PUSH УВЕДОМЛЕНИЙ:")
+            val pushTest = testPushNotifications()
+            results.appendLine(pushTest)
+            results.appendLine()
+
+            // 3. Тест временных напоминаний
+            results.appendLine("3️⃣ ТЕСТ ВРЕМЕННЫХ НАПОМИНАНИЙ:")
+            val timeTest = testTimeReminders()
+            results.appendLine(timeTest)
+            results.appendLine()
+
+            // 4. Тест геонапоминаний
+            results.appendLine("4️⃣ ТЕСТ ГЕОНАПОМИНАНИЙ:")
+            runNotificationDemo(DemoType.QUICK, TestLocation.RED_SQUARE)
+            results.appendLine("✅ Геодемонстрация запущена (Красная площадь)")
+            results.appendLine()
+
+            results.appendLine("🎯 Комплексный тест завершен!")
+            results.appendLine("Следите за уведомлениями в течение следующих 2-3 минут")
+
+            val result = results.toString()
+            logger.d { "Комплексный тест завершен:\n$result" }
+
+            result
+
+        } catch (e: Exception) {
+            logger.e(e) { "Ошибка при комплексном тестировании: ${e.message}" }
+            "❌ Ошибка комплексного теста: ${e.message}"
+        }
+    }
 }
