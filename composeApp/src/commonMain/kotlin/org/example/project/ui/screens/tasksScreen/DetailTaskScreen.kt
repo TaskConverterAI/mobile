@@ -116,7 +116,7 @@ fun DetailTaskScreen(
             id = userId,
             email = "Я",
             username = "Не назначен",
-            privileges = org.example.project.data.commonData.Privileges.member
+            privileges = org.example.project.data.commonData.Privileges.USER_ROLE
         )
     }
     val _availableGroups = listOf<Group>(defaultGroup).plus(availableGroups)

@@ -71,6 +71,10 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
         }
     }
 
+    if (detailsUiState.successLeave) {
+        navController.navigate("groups")
+    }
+
     toastMessage?.let { message ->
         StatusToast(
             type = toastType,
@@ -94,16 +98,17 @@ fun DetailGroupScreen(viewModel: DetailedGroupViewModel, navController: NavContr
     }
 
     if (detailsUiState.showLeaveDialog) {
-        if (detailsUiState.isAdmin) {
+        if (detailsUiState.isAdmin && detailsUiState.users.size > 1) {
             LeaveAdminGroupDialog(detailsUiState.name,{
                 viewModel.setLeave(false)
-            },{
-
+            },{ accessor_email ->
+                viewModel.leaveMyOwnGroup(accessor_email)
             })
         } else {
             LeaveGroupDialog(detailsUiState.name, {
                 viewModel.setLeave(false)
             }, {
+                viewModel.leaveGroup()
             })
         }
     }

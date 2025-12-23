@@ -96,6 +96,7 @@ class CreateGroupViewModel(
                 }
 
                 val userData = authRepository.decode() ?: throw RuntimeException("Decode error")
+                val userId = authRepository.getUserId().toLong()
                 val userMembers:  MutableList<User> = mutableListOf()
 
                 val group = groupRepository.createGroup(
@@ -108,10 +109,15 @@ class CreateGroupViewModel(
 
                 if (group != null) {
                     for (emailOrName in uiState.value.participants) {
-                        groupRepository.addMemberInGroup(
+                        val add_result = groupRepository.addMemberInGroup(
                             group.id,
                             emailOrName,
-                            Privileges.member)
+                            Privileges.USER_ROLE)
+
+                        if (add_result == null) {
+                            groupRepository.deleteGroup(group.id, userId)
+                            throw Exception("не удалось найти пользователя с почтой ${emailOrName}")
+                        }
                     }
                 } else {
                     _uiState.update {
@@ -125,7 +131,7 @@ class CreateGroupViewModel(
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = "Возникла ошибка при создании группы"
+                        error = "Возникла ошибка при создании группы: ${ e.message }"
                     )
                 }
                 Logger.e(e) { "Failed to create group" }

@@ -47,7 +47,7 @@ class NetworkAuthRepository(
                     id = userId,
                     email = email,
                     username = username,
-                    privileges = Privileges.member // По умолчанию member
+                    privileges = Privileges.USER_ROLE // По умолчанию member
                 )
 
                 // Сохраняем в локальную базу данных через UserRepository

@@ -1,9 +1,7 @@
 package org.example.project.data.commonData
 
 enum class Privileges {
-    member,
-    owner,
-    admin
+    USER_ROLE
 }
 
 data class User(
