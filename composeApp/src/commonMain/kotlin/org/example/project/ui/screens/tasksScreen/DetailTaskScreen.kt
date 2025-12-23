@@ -857,10 +857,6 @@ fun DetailTaskScreen(
             } else {
                 Text(editableDescription, style = MaterialTheme.typography.bodyMedium)
             }
-
-            Spacer(Modifier.height(30.dp))
-
-            Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
         }
     }
 }

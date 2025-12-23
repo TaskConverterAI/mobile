@@ -146,8 +146,7 @@ open class DetailedGroupViewModel(
                     _groupDetails.update { currentState ->
                         currentState.copy(
                             users = currentState.users + addedMember,
-                            showAddMemberDialog = false,
-                            error = "Пользователь успешно добавлен в группу"
+                            showAddMemberDialog = false
                         )
 
                     }
@@ -158,7 +157,7 @@ open class DetailedGroupViewModel(
                 }
             } catch (e: Exception) {
                 Logger.e("DetailedGroupViewModel", e) { "Error adding participant: ${e.message}" }
-                _groupDetails.update { it.copy(error = "Ошибка при добавлении участника: ${e.message}") }
+                _groupDetails.update { it.copy(error = "Произошла внутренняя ошибка, попробуйте позже") }
             }
         }
     }

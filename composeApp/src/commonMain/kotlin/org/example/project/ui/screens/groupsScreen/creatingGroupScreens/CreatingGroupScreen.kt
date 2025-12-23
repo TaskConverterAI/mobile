@@ -11,12 +11,20 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.coroutines.delay
+import org.example.project.ui.screens.statusToast.StatusToast
+import org.example.project.ui.screens.statusToast.StatusType
+import org.example.project.ui.screens.statusToast.ToastDuration
 import org.example.project.ui.theme.LightGray
 import org.example.project.ui.viewComponents.GroupScreenComponents.AdminMembersList
 
@@ -27,6 +35,35 @@ fun CreateGroupScreen(
     viewModel: CreateGroupViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var toastType by remember { mutableStateOf(StatusType.ERROR) }
+    var toastKey by remember { mutableStateOf(0) }
+
+    LaunchedEffect(state.error) {
+        if (state.error != null) {
+            toastMessage = state.error
+            toastType = StatusType.ERROR
+            toastKey++
+            viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(toastKey) {
+        if (toastMessage != null) {
+            delay(ToastDuration.LONG.millis)
+            toastMessage = null
+        }
+    }
+
+    toastMessage?.let { message ->
+        StatusToast(
+            type = toastType,
+            message = message,
+            duration = ToastDuration.LONG,
+            onDismiss = { toastMessage = null }
+        )
+    }
 
     Scaffold(
         topBar = { CreateGroupTopBar(navController) }
@@ -163,10 +200,10 @@ private fun AddParticipantDialog(state: CreateGroupUiState, viewModel: CreateGro
                     placeholder = { Text("user@example.com") },
                     label = { Text("Email") },
                     singleLine = true,
-                    isError = state.emailError != null
+                    isError = state.error != null
                 )
 
-                state.emailError?.let {
+                state.error?.let {
                     Text(
                         it,
                         color = MaterialTheme.colorScheme.error,

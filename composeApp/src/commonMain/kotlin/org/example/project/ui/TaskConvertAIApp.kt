@@ -313,18 +313,18 @@ fun TaskConvertAIApp(
                     if (noteID != null) {
                         note = viewModelNotes.getNoteById(noteID.toLong())
                     }
-                    if (note != null) {
-                        val groupId = note?.groupId;
-                        if (groupId != null) {
-                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
-                        }
-                    }
+//                    if (note != null) {
+//                        val groupId = note?.groupId;
+//                        if (groupId != null) {
+//                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
+//                        }
+//                    }
                 }
 
-                viewModelGroups.loadGroups()
-                groups = viewModelGroups.listUi.value.groups
-
-                viewModelAuth.getUserIdByToken()
+//                viewModelGroups.loadGroups()
+//                groups = viewModelGroups.listUi.value.groups
+//
+//                viewModelAuth.getUserIdByToken()
 
                 val toastMessage by viewModelNotes.toastMessage.collectAsState()
 
@@ -396,26 +396,25 @@ fun TaskConvertAIApp(
                 // Загружаем данные в корутине, если taskID не null
                 LaunchedEffect(taskID) {
                     task = if (taskID != null) {
-                        print("&&&&&&&& 2i13221")
                         viewModelTasks.getTaskById(taskID)
                     } else {
                         null
                     }
                 }
 
-                viewModelGroups.loadGroups()
-                groups = viewModelGroups.listUi.value.groups
-
-                viewModelAuth.getUserIdByToken()
-                LaunchedEffect(groups) {
-                    for (group in groups) {
-                        val groupDetails = viewModelGroups.getGroupById(group.id)
-                        if (groupDetails != null) {
-                            users[group.id] = groupDetails.members
-                        }
-
-                    }
-                }
+                //viewModelGroups.loadGroups()
+//                groups = viewModelGroups.listUi.value.groups
+//
+//                viewModelAuth.getUserIdByToken()
+//                LaunchedEffect(groups) {
+//                    for (group in groups) {
+//                        val groupDetails = viewModelGroups.getGroupById(group.id)
+//                        if (groupDetails != null) {
+//                            users[group.id] = groupDetails.members
+//                        }
+//
+//                    }
+//                }
 
                 val toastMessage by viewModelTasks.toastMessage.collectAsState()
 

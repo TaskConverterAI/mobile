@@ -497,28 +497,29 @@ fun DetailNoteScreen(
             if (isInEditMode) {
                 var groupExpanded by remember { mutableStateOf(false) }
 
-                Box {
+                ExposedDropdownMenuBox(
+                    expanded = groupExpanded,
+                    onExpandedChange = { groupExpanded = !groupExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
-                        value = editableGroup?.name ?: "None",
-                        onValueChange = { },
-                        label = { Text("Группа") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true
-                    )
-
-                    // Transparent clickable overlay
-                    Box(
+                        value = editableGroup?.name ?: "Без группы",
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
                         modifier = Modifier
-                            .matchParentSize()
-                            .clickable { groupExpanded = true }
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        label = { Text("Группа") }
                     )
 
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = groupExpanded,
                         onDismissRequest = { groupExpanded = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
-                        availableGroups.forEach { group ->
+                        _availableGroups.forEach {  group ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -530,7 +531,7 @@ fun DetailNoteScreen(
                                     editableGroup = group
                                     groupExpanded = false
                                 },
-                                colors = MenuDefaults.itemColors(
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
                                     textColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
@@ -573,25 +574,6 @@ fun DetailNoteScreen(
                 )
             } else {
                 Text(editableContent, style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Spacer(Modifier.height(30.dp))
-
-            if (!isNewNote && note != null && group != null) {
-                Text("Комментарии", style = MaterialTheme.typography.headlineLarge)
-                Spacer(Modifier.height(15.dp))
-
-                // Комментарии с ограниченной высотой
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(400.dp)
-                ) {
-                    CommentList(note.comments, userId, group, onDeleteComment)
-                }
-
-                Spacer(Modifier.height(16.dp))
-                CommentDialog(note.comments as MutableList<Comment>, onSaveComment, userId, note)
             }
         }
     }
