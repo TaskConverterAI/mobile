@@ -14,6 +14,7 @@ import org.example.project.data.database.repository.TaskRepository
 import org.example.project.data.database.repository.GroupRepository
 import org.example.project.data.database.repository.UserRepository
 import org.example.project.data.geo.GeoTagRepository
+import org.example.project.data.notifications.NotificationService
 
 interface AppContainer {
     val userAuthPreferencesRepository: UserAuthPreferencesRepository
@@ -24,6 +25,7 @@ interface AppContainer {
     val groupRepository: GroupRepository
     val userRepository: UserRepository
     val geoTagRepository: GeoTagRepository
+    val notificationService: NotificationService
 }
 
 // Expect function to create platform-specific AuthRepository
@@ -36,6 +38,8 @@ expect fun createAnalyzerRepository(): AnalyzerRepository
 expect fun createNoteApiService(): org.example.project.data.network.NoteApiService?
 
 expect fun createGroupApiService(): org.example.project.data.network.GroupApiService?
+
+expect fun createNotificationService(): NotificationService
 
 class DefaultAppContainer(
     dataStore: DataStore<Preferences>,
@@ -82,4 +86,6 @@ class DefaultAppContainer(
     override val groupRepository: GroupRepository = GroupRepository(createGroupApiService())
 
     override val geoTagRepository: GeoTagRepository = GeoTagRepository(dataStore)
+
+    override val notificationService: NotificationService = createNotificationService()
 }

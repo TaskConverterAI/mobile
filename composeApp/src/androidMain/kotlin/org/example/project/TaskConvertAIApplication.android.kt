@@ -30,3 +30,8 @@ fun initializeAndroid(context: Context) {
 actual fun createDataStore(): DataStore<Preferences> {
     return applicationContext.dataStore
 }
+
+fun getApplicationContext(): Context {
+    return applicationContext
+}
+

@@ -10,6 +10,9 @@ import org.example.project.data.auth.UserAuthPreferencesRepository
 import org.example.project.data.network.NoteApiService
 import org.example.project.network.RetrofitClient
 import org.example.project.data.network.GroupApiService
+import org.example.project.data.notifications.NotificationService
+import org.example.project.android.notifications.AndroidNotificationService
+import org.example.project.android.notifications.NotificationHelper
 
 actual fun createAuthPreferencesRepository(dataStore: DataStore<Preferences>): UserAuthPreferencesRepository {
     return UserAuthPreferencesRepository.Companion.getInstance(dataStore)
@@ -29,3 +32,12 @@ actual fun createNoteApiService(): NoteApiService? {
 actual fun createGroupApiService(): GroupApiService? {
     return RetrofitClient.createGroupApiService()
 }
+
+actual fun createNotificationService(): NotificationService {
+    // Получаем контекст из инициализированного applicationContext
+    val context = org.example.project.getApplicationContext()
+    val notificationHelper = NotificationHelper(context)
+    notificationHelper.ensureChannel()
+    return AndroidNotificationService(context, notificationHelper)
+}
+

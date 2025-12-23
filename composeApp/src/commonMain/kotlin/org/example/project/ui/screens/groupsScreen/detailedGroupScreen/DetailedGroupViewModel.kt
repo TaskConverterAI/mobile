@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,27 +14,33 @@ import kotlinx.coroutines.launch
 import org.example.project.AppDependencies
 import org.example.project.data.auth.AuthRepository
 import org.example.project.data.commonData.Privileges
+import org.example.project.data.commonData.Task
 import org.example.project.data.commonData.User
 import org.example.project.data.database.repository.GroupRepository
+import org.example.project.data.database.repository.TaskRepository
 
-data class GroupUiDetails(
+data class GroupUiDetails (
     val groupId: Long = 0L,
     val name: String = "",
     val description: String = "",
     val showLeaveDialog: Boolean = false,
     val showAddMemberDialog: Boolean = false,
+    val showDeleteDialog: Boolean = false,
     val isAdmin: Boolean = false,
     val isOwner: Boolean = false,
     val ownerId: Long = 0L,
     val users: List<User> = listOf(),
+    val tasks: List<Task> = listOf(), // Добавляем список задач
     val isLoading: Boolean = false,
+    val isDeletingGroup: Boolean = false,
     val error: String? = null,
     val successLeave: Boolean = false
 )
 
 open class DetailedGroupViewModel(
     private val groupRepository: GroupRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     private val _groupDetails = MutableStateFlow(GroupUiDetails())
@@ -58,12 +63,21 @@ open class DetailedGroupViewModel(
                     val isAdmin = userId == group.ownerId
                     val isOwner = group.ownerId == userId
 
+                    // Загружаем задачи группы
+                    val groupTasks = try {
+                        taskRepository.getTasksByGroup(groupId) ?: emptyList()
+                    } catch (e: Exception) {
+                        Logger.e("DetailedGroupViewModel", e) { "Error loading group tasks: ${e.message}" }
+                        emptyList<Task>()
+                    }
+
                     _groupDetails.update {
                         GroupUiDetails(
                             groupId = group.id,
                             name = group.name,
                             description = group.description,
                             users = group.members,
+                            tasks = groupTasks, // Добавляем загруженные задачи
                             isAdmin = isAdmin || isOwner, // Владелец также имеет права админа
                             isOwner = isOwner,
                             ownerId = group.ownerId,
@@ -72,7 +86,7 @@ open class DetailedGroupViewModel(
                         )
                     }
 
-                    Logger.d { "Group loaded: ${group.name}, members: ${group.members.size}, isAdmin: ${isAdmin || isOwner}" }
+                    Logger.d { "Group loaded: ${group.name}, members: ${group.members.size}, tasks: ${groupTasks.size}, isAdmin: ${isAdmin || isOwner}" }
                 } else {
                     _groupDetails.update {
                         it.copy(
@@ -239,6 +253,59 @@ open class DetailedGroupViewModel(
         }
     }
 
+    // Методы для работы с диалогом удаления группы
+    fun showDeleteDialog() {
+        _groupDetails.update { currentState ->
+            currentState.copy(showDeleteDialog = true)
+        }
+    }
+
+    fun dismissDeleteDialog() {
+        _groupDetails.update { currentState ->
+            currentState.copy(showDeleteDialog = false)
+        }
+    }
+
+    fun deleteGroup(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                _groupDetails.update { it.copy(isDeletingGroup = true) }
+
+                val groupId = _groupDetails.value.groupId
+                val userId = authRepository.getUserIdByToken()
+
+                // Проверяем, что текущий пользователь - владелец
+                if (!_groupDetails.value.isOwner) {
+                    throw IllegalStateException("Только владелец может удалить группу")
+                }
+
+                // Удаляем группу через API
+                groupRepository.deleteGroup(groupId, userId)
+
+                Logger.d { "Group deleted successfully" }
+
+                _groupDetails.update {
+                    it.copy(
+                        isDeletingGroup = false,
+                        showDeleteDialog = false
+                    )
+                }
+
+                // Вызываем callback для навигации
+                onSuccess()
+
+            } catch (e: Exception) {
+                Logger.e("DetailedGroupViewModel", e) { "Error deleting group: ${e.message}" }
+                _groupDetails.update {
+                    it.copy(
+                        isDeletingGroup = false,
+                        error = "Ошибка при удалении группы: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
     fun clearError() {
         _groupDetails.update { it.copy(error = null) }
     }
@@ -248,9 +315,11 @@ open class DetailedGroupViewModel(
             initializer {
                 val groupRepository = AppDependencies.container.groupRepository
                 val authRepository = AppDependencies.container.authRepository
+                val taskRepository = AppDependencies.container.taskRepository
                 DetailedGroupViewModel(
                     groupRepository = groupRepository,
-                    authRepository = authRepository
+                    authRepository = authRepository,
+                    taskRepository = taskRepository
                 )
             }
         }

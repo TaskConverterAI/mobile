@@ -111,9 +111,22 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
             val lat: Double? = handle?.get("map_lat")
             val lon: Double? = handle?.get("map_lon")
             val name: String? = handle?.get("map_name")
+            val colorLong: Long? = handle?.get("map_color")
             if (lat != null && lon != null) {
+                val locationName = name ?: "Выбранная точка"
                 viewModel.updateCoords(lat, lon)
-                viewModel.updateLocation(name ?: "Выбранная точка")
+                viewModel.updateLocation(locationName)
+
+                // Сохраняем новый геотег как пресет
+                val geoRepo = AppDependencies.container.geoTagRepository
+                val preset = GeoTagPreset(
+                    name = locationName,
+                    latitude = lat,
+                    longitude = lon,
+                    colorValueLong = colorLong
+                )
+                geoRepo.addPreset(preset)
+
                 handle.remove<Double>("map_lat")
                 handle.remove<Double>("map_lon")
                 handle.remove<String>("map_name")
@@ -382,7 +395,7 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                             onClick = {
                                 datePickerState.selectedDateMillis?.let { millis ->
                                     val selectedDate = kotlin.time.Instant.fromEpochMilliseconds(millis)
-                                    val localDate = selectedDate.toLocalDateTime(TimeZone.UTC).date
+                                    val localDate = selectedDate.toLocalDateTime(TimeZone.currentSystemDefault()).date
                                     val hour = timePickerState.hour
                                     val minute = timePickerState.minute
                                     val dateTime = "${

@@ -164,6 +164,17 @@ fun DetailNoteScreen(
             editableLat = lat
             editableLon = lon
             editableGeotag = name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}"
+
+            // Сохраняем новый геотег как пресет
+            val geoRepo = AppDependencies.container.geoTagRepository
+            val preset = GeoTagPreset(
+                name = editableGeotag ?: name ?: "${lat.formatLatLon()}, ${lon.formatLatLon()}",
+                latitude = lat,
+                longitude = lon,
+                colorValueLong = colorLong
+            )
+            geoRepo.addPreset(preset)
+
             handle.remove<Double>("map_lat")
             handle.remove<Double>("map_lon")
             handle.remove<String>("map_name")

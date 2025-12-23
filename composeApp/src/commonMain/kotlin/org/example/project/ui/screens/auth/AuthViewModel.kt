@@ -29,7 +29,9 @@ data class SignUpUiState(
     val emailErrMsg: String = "",
     val passwordErrMsg: String = "",
     val confirmPasswordErrMsg: String = "",
-    val state: Int = 0
+    val state: Int = 0, // 0 = error, 1 = success, 2 = server error
+    val hasServerError: Boolean = false,
+    val isLoading: Boolean = false // Флаг для отображения прогресс-бара
 )
 
 data class SignInUiState(
@@ -39,7 +41,9 @@ data class SignInUiState(
     val isPasswordCorrect: Boolean = true,
     val loginErrMsg: String = "",
     val passwordErrMsg: String = "",
-    val state: Int = 0
+    val state: Int = 0, // 0 = error, 1 = success, 2 = server error
+    val hasServerError: Boolean = false,
+    val isLoading: Boolean = false // Флаг для отображения прогресс-бара
 )
 
 class AuthViewModel(
@@ -235,17 +239,29 @@ class AuthViewModel(
             return
 
         viewModelScope.launch {
+            // Включаем индикатор загрузки
+            _signUpUiState.update { currentState ->
+                currentState.copy(isLoading = true, state = -1) // -1 = loading
+            }
+
             val result = authRepository.signUp(
                 _signUpUiState.value.username,
                 _signUpUiState.value.email,
                 _signUpUiState.value.password
             )
 
+            // Выключаем индикатор загрузки и обрабатываем результат
             if (result.success) {
                 _signUpUiState.update { currentState ->
-                    currentState.copy(state = 1)
+                    currentState.copy(state = 1, hasServerError = false, isLoading = false)
+                }
+            } else if (result.isServerError) {
+                // Серверная ошибка - сохраняем данные пользователя
+                _signUpUiState.update { currentState ->
+                    currentState.copy(state = 2, hasServerError = true, isLoading = false)
                 }
             } else {
+                // Ошибки валидации на сервере
                 var isLoginCorrect: Boolean = true
                 var isEmailCorrect: Boolean = true
                 var loginErrMsg = ""
@@ -265,7 +281,15 @@ class AuthViewModel(
                 }
 
                 _signUpUiState.update { currentState ->
-                    currentState.copy(state = 0, isEmailCorrect = isEmailCorrect, isUsernameCorrect = isLoginCorrect, emailErrMsg = emailErrMsg, usernameErrMsg = loginErrMsg)
+                    currentState.copy(
+                        state = 0,
+                        isEmailCorrect = isEmailCorrect,
+                        isUsernameCorrect = isLoginCorrect,
+                        emailErrMsg = emailErrMsg,
+                        usernameErrMsg = loginErrMsg,
+                        hasServerError = false,
+                        isLoading = false
+                    )
                 }
             }
         }
@@ -275,21 +299,39 @@ class AuthViewModel(
         if (!checkPair(null, null, true))
             return
 
-
         viewModelScope.launch {
+            // Включаем индикатор загрузки
+            _signInUiState.update { currentState ->
+                currentState.copy(isLoading = true, state = -1) // -1 = loading
+            }
+
             val result = authRepository.signIn(
                 _signInUiState.value.username,
                 _signInUiState.value.password
             )
 
-            if (result) {
+            // Выключаем индикатор загрузки и обрабатываем результат
+            if (result.success) {
                 _signInUiState.update { currentState ->
-                    currentState.copy(state = 1)
-
+                    currentState.copy(state = 1, hasServerError = false, isLoading = false)
+                }
+            } else if (result.isServerError) {
+                // Серверная ошибка - сохраняем данные пользователя
+                _signInUiState.update { currentState ->
+                    currentState.copy(state = 2, hasServerError = true, isLoading = false)
                 }
             } else {
+                // Ошибка аутентификации (неверный логин/пароль)
                 _signInUiState.update { currentState ->
-                    currentState.copy(state = 0, isLoginCorrect = false, isPasswordCorrect = false, loginErrMsg = "", passwordErrMsg = "Неверный логин или пароль")
+                    currentState.copy(
+                        state = 0,
+                        isLoginCorrect = false,
+                        isPasswordCorrect = false,
+                        loginErrMsg = "",
+                        passwordErrMsg = "Неверный логин или пароль",
+                        hasServerError = false,
+                        isLoading = false
+                    )
                 }
             }
         }

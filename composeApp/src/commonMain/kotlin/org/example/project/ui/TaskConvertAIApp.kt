@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -14,9 +15,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,12 +34,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import kotlinx.coroutines.flow.MutableStateFlow
 
+import org.example.project.AppDependencies
 import org.example.project.data.commonData.Destination
 import org.example.project.data.commonData.Group
 import org.example.project.data.commonData.Note
 import org.example.project.data.commonData.Task
 import org.example.project.data.commonData.User
+import org.example.project.ui.components.InAppNotificationBanner
+import org.example.project.ui.permissions.PlatformPermissionHandler
 import org.example.project.ui.screens.auth.AuthViewModel
 import org.example.project.ui.screens.auth.EnterScreen
 import org.example.project.ui.screens.auth.OverviewScreen
@@ -72,7 +74,6 @@ import org.example.project.ui.screens.notesScreen.creatingNoteScreens.StartAnaly
 import org.example.project.ui.screens.settingsScreen.SettingsScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreen
 import org.example.project.ui.screens.tasksScreen.DetailTaskScreenArgs
-import org.example.project.ui.screens.tasksScreen.TaskCreateDialog
 import org.example.project.ui.screens.tasksScreen.TasksScreen
 import org.example.project.ui.viewComponents.commonComponents.BottomNavigationBar
 import org.example.project.ui.viewmodels.NotesViewModel
@@ -183,21 +184,55 @@ fun TaskConvertAIApp(
             }
         },
         floatingActionButtonPosition = FabPosition.Center
-    ) {
-        NavHost(
-            navController = navController,
-            enterTransition = { fadeIn(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(300)) },
-            popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-            popExitTransition = { fadeOut(animationSpec = tween(300)) },
-            startDestination = if (viewModel.showOverview) {
-                TaskConvertAIAppScreens.Overview.name
-            } else if (viewModel.mustLogIn) {
-                TaskConvertAIAppScreens.SignIn.name
-            } else {
-                Destination.NOTES.route
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Получаем NotificationService для отображения уведомлений
+            val notificationService = remember {
+                try {
+                    AppDependencies.container.notificationService
+                } catch (_: Exception) {
+                    null
+                }
             }
-        ) {
+
+            // Подключаемся к in-app уведомлениям из NotificationService
+            val inAppNotification by (notificationService?.inAppNotificationsFlow
+                ?: MutableStateFlow<String?>(null)).collectAsState()
+
+            // Подключаемся к AndroidNotificationService если доступен
+            LaunchedEffect(notificationService) {
+                println("NotificationService подключен: ${notificationService != null}")
+                if (notificationService != null) {
+                    println("NotificationService готов к работе")
+                    println("inAppNotificationsFlow подключен: ${notificationService.inAppNotificationsFlow}")
+                }
+            }
+
+            // Отладка состояния inAppNotification
+            LaunchedEffect(inAppNotification) {
+                println("InApp уведомление изменилось: '$inAppNotification'")
+            }
+
+            // Основной контент
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                // Платформоспецифичная обработка разрешений
+                PlatformPermissionHandler()
+
+            NavHost(
+                navController = navController,
+                enterTransition = { fadeIn(animationSpec = tween(300)) },
+                exitTransition = { fadeOut(animationSpec = tween(300)) },
+                popEnterTransition = { fadeIn(animationSpec = tween(300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(300)) },
+                startDestination = if (viewModel.showOverview) {
+                    TaskConvertAIAppScreens.Overview.name
+                } else if (viewModel.mustLogIn) {
+                    TaskConvertAIAppScreens.SignIn.name
+                } else {
+                    Destination.NOTES.route
+                },
+                modifier = Modifier.fillMaxSize()
+            ) {
             composable(route = TaskConvertAIAppScreens.Overview.name) {
 //                BackHandler(true) { }
                 OverviewScreen(
@@ -313,18 +348,21 @@ fun TaskConvertAIApp(
                     if (noteID != null) {
                         note = viewModelNotes.getNoteById(noteID.toLong())
                     }
-//                    if (note != null) {
-//                        val groupId = note?.groupId;
-//                        if (groupId != null) {
-//                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
-//                        }
-//                    }
+                    if (note != null) {
+                        val groupId = note?.groupId
+                        if (groupId != null) {
+                            noteGroupDetails = viewModelGroups.getGroupById(groupId)
+                        }
+                    }
                 }
 
-//                viewModelGroups.loadGroups()
-//                groups = viewModelGroups.listUi.value.groups
-//
-//                viewModelAuth.getUserIdByToken()
+                // Загружаем группы только один раз при загрузке экрана
+                LaunchedEffect(Unit) {
+                    viewModelGroups.loadGroups()
+                }
+
+                val groupsState by viewModelGroups.listUi.collectAsState()
+                groups = groupsState.groups
 
                 val toastMessage by viewModelNotes.toastMessage.collectAsState()
 
@@ -390,7 +428,6 @@ fun TaskConvertAIApp(
                 val isEditMode = detailTaskScreenArgs.isEditMode
 
                 var task by remember { mutableStateOf<Task?>(null) }
-                var groups by remember { mutableStateOf<List<Group>>(emptyList())}
                 var users by remember { mutableStateOf<HashMap<Long, List<User>>>(hashMapOf())}
 
                 // Загружаем данные в корутине, если taskID не null
@@ -402,19 +439,23 @@ fun TaskConvertAIApp(
                     }
                 }
 
-                //viewModelGroups.loadGroups()
-//                groups = viewModelGroups.listUi.value.groups
-//
-//                viewModelAuth.getUserIdByToken()
-//                LaunchedEffect(groups) {
-//                    for (group in groups) {
-//                        val groupDetails = viewModelGroups.getGroupById(group.id)
-//                        if (groupDetails != null) {
-//                            users[group.id] = groupDetails.members
-//                        }
-//
-//                    }
-//                }
+                // Загружаем группы только один раз при загрузке экрана
+                LaunchedEffect(Unit) {
+                    viewModelGroups.loadGroups()
+                }
+
+                val groupsState by viewModelGroups.listUi.collectAsState()
+                val groups = groupsState.groups
+                LaunchedEffect(groups) {
+                    val newUsers = hashMapOf<Long, List<User>>()
+                    for (group in groups) {
+                        val groupDetails = viewModelGroups.getGroupById(group.id)
+                        if (groupDetails != null) {
+                            newUsers[group.id] = groupDetails.members
+                        }
+                    }
+                    users = newUsers
+                }
 
                 val toastMessage by viewModelTasks.toastMessage.collectAsState()
 
@@ -468,8 +509,28 @@ fun TaskConvertAIApp(
                 DetailGroupScreen(groupVM, navController)
             }
 
-        }
-    }
+            } // Конец NavHost
+            } // Конец внутреннего Box с контентом
+
+            // Отображаем InAppNotificationBanner поверх всего контента (включая NavHost)
+            InAppNotificationBanner(
+                message = inAppNotification,
+                onDismiss = {
+                    println("InAppNotificationBanner onDismiss вызван")
+                    // Очищаем уведомление через NotificationService
+                    notificationService?.clearInAppNotification()
+                },
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopCenter)
+                    .padding(top = 16.dp) // Отступ от верха для видимости
+            )
+
+            // Дебаг информация
+            LaunchedEffect(inAppNotification) {
+                println("InAppNotificationBanner получил сообщение: '$inAppNotification'")
+            }
+        } // Конец основного Box
+    } // Конец Scaffold
 }
 
 //@Composable

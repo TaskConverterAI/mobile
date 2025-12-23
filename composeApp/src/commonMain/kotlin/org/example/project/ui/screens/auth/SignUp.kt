@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,13 +43,25 @@ fun RegistrationScreen(
 
     // Ошибка (показываем короткий тост/снэкбар снизу)
     LaunchedEffect(signUpUiState.state) {
-        // Показываем тост только если была попытка (валидация) и неуспех
-        if (signUpUiState.state == 0 && (signUpUiState.username.isNotEmpty() || signUpUiState.email.isNotEmpty())) {
-            snackbarHostState.showSnackbar(
-                message = "Ошибка регистрации. Проверьте введённые данные",
-                withDismissAction = false,
-                duration = SnackbarDuration.Short
-            )
+        when (signUpUiState.state) {
+            0 -> {
+                // Показываем тост только если была попытка (валидация) и неуспех
+                if (signUpUiState.username.isNotEmpty() || signUpUiState.email.isNotEmpty()) {
+                    snackbarHostState.showSnackbar(
+                        message = "Ошибка регистрации. Проверьте введённые данные",
+                        withDismissAction = false,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+            2 -> {
+                // Серверная ошибка - данные пользователя сохраняются
+                snackbarHostState.showSnackbar(
+                    message = "Произошла внутренняя ошибка, попробуйте позже",
+                    withDismissAction = false,
+                    duration = SnackbarDuration.Long
+                )
+            }
         }
     }
 
@@ -81,7 +94,8 @@ fun RegistrationScreen(
                 loginErrMsg = signUpUiState.usernameErrMsg,
                 emailErrMsg = signUpUiState.emailErrMsg,
                 passwordErrMsg = signUpUiState.passwordErrMsg,
-                confirmPasswordErrMsg = signUpUiState.confirmPasswordErrMsg
+                confirmPasswordErrMsg = signUpUiState.confirmPasswordErrMsg,
+                isLoading = signUpUiState.isLoading
             )
         }
     }
@@ -106,7 +120,8 @@ private fun RegistrationContent(
     loginErrMsg: String,
     emailErrMsg: String,
     passwordErrMsg: String,
-    confirmPasswordErrMsg: String
+    confirmPasswordErrMsg: String,
+    isLoading: Boolean
 ) {
     Box(
         modifier = Modifier
@@ -148,7 +163,16 @@ private fun RegistrationContent(
         ) {
             RegistrationButtonsSection(
                 onRegister = onRegister,
-                onLogin = onLogin
+                onLogin = onLogin,
+                isLoginValid = isLoginValid,
+                isEmailValid = isEmailValid,
+                isPasswordValid = isPasswordValid,
+                isConfirmPasswordValid = isConfirmPasswordValid,
+                login = login,
+                email = email,
+                password = password,
+                confirmPassword = confirmPassword,
+                isLoading = isLoading
             )
         }
     }
@@ -310,23 +334,46 @@ private fun LabeledTextField(
 @Composable
 private fun RegistrationButtonsSection(
     onRegister: () -> Unit,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
+    isLoginValid: Boolean,
+    isEmailValid: Boolean,
+    isPasswordValid: Boolean,
+    isConfirmPasswordValid: Boolean,
+    login: String,
+    email: String,
+    password: String,
+    confirmPassword: String,
+    isLoading: Boolean
 ) {
+    // Проверяем, что все поля заполнены и валидны
+    val allFieldsValid = isLoginValid && isEmailValid && isPasswordValid && isConfirmPasswordValid
+    val allFieldsFilled = login.isNotBlank() && email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank()
+    val enableRegisterButton = allFieldsValid && allFieldsFilled && !isLoading // Блокируем при загрузке
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        RegisterButton(onRegister)
-        LoginButton(onLogin)
+        RegisterButton(
+            onClick = onRegister,
+            enabled = enableRegisterButton,
+            isLoading = isLoading
+        )
+        LoginButton(onLogin, enabled = !isLoading) // Блокируем кнопку входа при загрузке
     }
 }
 
 @Composable
-private fun RegisterButton(onClick: () -> Unit) {
+private fun RegisterButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    isLoading: Boolean = false
+) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -335,26 +382,49 @@ private fun RegisterButton(onClick: () -> Unit) {
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Зарегистрироваться",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.align(Alignment.Center)
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = "next",
-                modifier = Modifier
-                    .size(20.dp)
-                    .align(Alignment.CenterEnd)
-            )
+            if (isLoading) {
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = "Регистрация...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            } else {
+                Text(
+                    text = "Зарегистрироваться",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "next",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .align(Alignment.CenterEnd)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun LoginButton(onClick: () -> Unit) {
+private fun LoginButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -387,20 +457,21 @@ private fun RegistrationPreviewWithErrors() {
                 isEmailValid = false,
                 isPasswordValid = false,
                 isConfirmPasswordValid = false,
-                {},
-                {},
-                {},
-                {},
-                "",
-                "",
-                "",
-                "",
-                {},
-                {},
-                "",
-                "",
-                "",
-                ""
+                onLoginChange = {},
+                onEmailChange = {},
+                onPasswordChange = {},
+                onConfirmPasswordChange = {},
+                login = "",
+                email = "",
+                password = "",
+                confirmPassword = "",
+                onRegister = {},
+                onLogin = {},
+                loginErrMsg = "Неверный логин",
+                emailErrMsg = "Неверная почта",
+                passwordErrMsg = "Слабый пароль",
+                confirmPasswordErrMsg = "Пароли не совпадают",
+                isLoading = false
             )
         }
     }
