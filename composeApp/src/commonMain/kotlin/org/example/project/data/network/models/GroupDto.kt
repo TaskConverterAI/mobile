@@ -65,6 +65,7 @@ data class CreateGroupRequest (
 
 @Serializable
 data class LeaveGroupRequest (
+    val id: Long,
     val transferOwnershipTo: Long
 )
 

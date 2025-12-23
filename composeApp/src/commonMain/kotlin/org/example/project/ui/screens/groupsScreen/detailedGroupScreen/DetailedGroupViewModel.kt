@@ -18,7 +18,7 @@ import org.example.project.data.commonData.Privileges
 import org.example.project.data.commonData.User
 import org.example.project.data.database.repository.GroupRepository
 
-data class GroupUiDetails (
+data class GroupUiDetails(
     val groupId: Long = 0L,
     val name: String = "",
     val description: String = "",
@@ -29,7 +29,8 @@ data class GroupUiDetails (
     val ownerId: Long = 0L,
     val users: List<User> = listOf(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val successLeave: Boolean = false
 )
 
 open class DetailedGroupViewModel(
@@ -54,7 +55,7 @@ open class DetailedGroupViewModel(
                 if (group != null) {
                     // Определяем, является ли текущий пользователь админом или владельцем
                     val currentUserInGroup = group.members.find { it.id == userId }
-                    val isAdmin = currentUserInGroup?.privileges == Privileges.admin
+                    val isAdmin = userId == group.ownerId
                     val isOwner = group.ownerId == userId
 
                     _groupDetails.update {
@@ -99,6 +100,13 @@ open class DetailedGroupViewModel(
                 val currentUsers = _groupDetails.value.users
                 if (idx in currentUsers.indices) {
                     val userToRemove = currentUsers[idx]
+                    val userId = authRepository.getUserIdByToken()
+
+                    if (userToRemove.id == userId) {
+                        _groupDetails.update { it.copy(showLeaveDialog = true) }
+                        return@launch
+                    }
+
                     val groupId = _groupDetails.value.groupId
 
                     // Вызываем API для удаления участника
@@ -150,7 +158,7 @@ open class DetailedGroupViewModel(
                         )
 
                     }
-                    Logger.d { "User ${addedMember.email} added to group successfully" }
+                    Logger.d("MY_APP_TAG") { "User ${addedMember.email} added to group successfully" }
 
                 } else {
                     _groupDetails.update { it.copy(error = "Не удалось добавить участника") }
@@ -168,29 +176,62 @@ open class DetailedGroupViewModel(
         }
     }
 
-    fun dismissLeaveGroupDialog() {
-        _groupDetails.update { currentState ->
-            currentState.copy(showLeaveDialog = true)
-        }
-    }
-
     fun setLeave(leave: Boolean) {
         _groupDetails.update { currentState ->
             currentState.copy(showLeaveDialog = leave)
         }
     }
 
-    fun leaveGroup() {
+    fun leaveMyOwnGroup(accessorEmail: String) {
         viewModelScope.launch {
             try {
                 val groupId = _groupDetails.value.groupId
                 val userId = authRepository.getUserIdByToken()
+                var accessorId: Long? = null
 
+                groupDetails.value.users.forEach { member ->
+                    if (member.email == accessorEmail)
+                        accessorId = member.id
+                }
+
+                if (accessorId == null) {
+                    throw Exception("Наследник не найден")
+                }
+                setLeave(false)
                 // Вызываем API для выхода из группы
-                groupRepository.leaveGroup(groupId, userId)
+                if (groupRepository.leaveGroup(groupId, userId, accessorId)) {
+                    Logger.d { "User left the group successfully" }
+                    _groupDetails.update { it.copy(successLeave = true) }
+                } else {
+                    throw Exception("Внутренняя ошибка")
+                }
+            } catch (e: Exception) {
+                Logger.e("DetailedGroupViewModel", e) { "Error leaving group: ${e.message}" }
+                _groupDetails.update { it.copy(error = "Ошибка при выходе из группы: ${e.message}", showLeaveDialog = false) }
+            }
+        }
+    }
 
-                Logger.d { "User left the group successfully" }
-                // Здесь можно добавить навигацию назад или обновление UI
+    fun leaveGroup() {
+        setLeave(false)
+        viewModelScope.launch {
+            try {
+                val groupId = _groupDetails.value.groupId
+                val userId = authRepository.getUserIdByToken()
+                Logger.d("DetailedGroupViewModel") { "Start leaving" }
+
+                if (groupDetails.value.ownerId == userId ) {
+                    groupRepository.deleteGroup(groupId, userId)
+                    _groupDetails.update { it.copy(successLeave = true) }
+                    return@launch
+                }
+                // Вызываем API для выхода из группы
+                if (groupRepository.leaveGroup(groupId, userId, userId)) {
+                    Logger.d("DetailedGroupViewModel") { "User left the group successfully" }
+                    _groupDetails.update { it.copy(successLeave = true) }
+                } else {
+                    throw Exception("Внутренняя ошибка")
+                }
             } catch (e: Exception) {
                 Logger.e("DetailedGroupViewModel", e) { "Error leaving group: ${e.message}" }
                 _groupDetails.update { it.copy(error = "Ошибка при выходе из группы") }

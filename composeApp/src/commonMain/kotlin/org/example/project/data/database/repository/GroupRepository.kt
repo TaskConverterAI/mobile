@@ -206,7 +206,11 @@ class GroupRepository (private val groupApiService: GroupApiService? = null) {
 
     }
 
-    suspend fun leaveGroup(groupId: Long, userId: Long) {
-        groupApiService?.leaveGroup(groupId = groupId, LeaveGroupRequest(userId))
+    suspend fun leaveGroup(groupId: Long, myId: Long, userId: Long): Boolean {
+        val result = groupApiService?.leaveGroup(groupId = groupId, LeaveGroupRequest(myId, userId))
+        if (result?.isSuccess ?: false) {
+            Logger.d("DetailedGroupViewModel"){ "result is ${result.getOrNull()?.message}"}
+        }
+        return result?.isSuccess ?: false
     }
 }
