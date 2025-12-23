@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,13 +20,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,10 +52,17 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import kotlinx.serialization.Serializable
 
 import org.example.project.ui.theme.LightGray
+import org.example.project.AppDependencies
+import org.example.project.data.geo.GeoTagPreset
 
 @Serializable
 data class StartAnalysisScreenArgs(
@@ -88,12 +98,28 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
     ) { paddingValues ->
         val title by viewModel.name.collectAsState()
         val location by viewModel.location.collectAsState()
-        val group by viewModel.group.collectAsState()
         val date by viewModel.date.collectAsState()
 
-        var showMapPicker by remember { mutableStateOf(false) }
         var showDatePicker by remember { mutableStateOf(false) }
+        var showTimePicker by remember { mutableStateOf(false) }
         val datePickerState = rememberDatePickerState()
+        val timePickerState = rememberTimePickerState()
+
+        // Обработка результатов от MapPicker
+        LaunchedEffect(navController.currentBackStackEntry) {
+            val handle = navController.currentBackStackEntry?.savedStateHandle
+            val lat: Double? = handle?.get("map_lat")
+            val lon: Double? = handle?.get("map_lon")
+            val name: String? = handle?.get("map_name")
+            if (lat != null && lon != null) {
+                viewModel.updateCoords(lat, lon)
+                viewModel.updateLocation(name ?: "Выбранная точка")
+                handle.remove<Double>("map_lat")
+                handle.remove<Double>("map_lon")
+                handle.remove<String>("map_name")
+                handle.remove<Long>("map_color")
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -153,8 +179,8 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                 OutlinedTextField(
                     value = date,
                     onValueChange = { },
-                    label = { Text("Дата") },
-                    placeholder = { Text("ДД.ММ.ГГГГ") },
+                    label = { Text("Дата и время") },
+                    placeholder = { Text("ДД.ММ.ГГГГ ЧЧ:ММ") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
@@ -171,7 +197,7 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                             IconButton(onClick = { showDatePicker = true }) {
                                 Icon(
                                     imageVector = Icons.Default.CalendarToday,
-                                    contentDescription = "Выбрать дату",
+                                    contentDescription = "Выбрать дату и время",
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -191,31 +217,32 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                 Spacer(modifier = Modifier.height(16.dp))
 
 
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = { viewModel.updateLocation(it) },
-                    label = { Text("Геометка") },
-                    placeholder = { Text("Например: Офис, Новосибирск") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .clickable { showMapPicker = true },
-                    readOnly = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledBorderColor = LightGray,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = LightGray
-                    ),
-                    trailingIcon = {
-                        Row {
-                            IconButton(onClick = { showMapPicker = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = "Выбрать место",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                // Геометка (опциональное поле)
+                val geoRepo = remember { AppDependencies.container.geoTagRepository }
+                var presets by remember { mutableStateOf<List<GeoTagPreset>>(emptyList()) }
+                var presetsExpanded by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    geoRepo.presetsFlow().collect { presets = it }
+                }
+
+                Box {
+                    OutlinedTextField(
+                        value = location,
+                        onValueChange = { /* read-only via dropdown */ },
+                        label = { Text("Геометка (опционально)") },
+                        placeholder = { Text("Выберите из списка или создайте на карте") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        readOnly = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledBorderColor = LightGray,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = LightGray
+                        ),
+                        trailingIcon = {
                             if (location.isNotEmpty()) {
                                 IconButton(onClick = {
                                     viewModel.updateLocation("")
@@ -229,8 +256,56 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                                 }
                             }
                         }
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { presetsExpanded = true }
+                    )
+
+                    DropdownMenu(
+                        expanded = presetsExpanded,
+                        onDismissRequest = { presetsExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        presets.forEach { preset ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier.size(16.dp).background(
+                                                pastelColorForKey(preset.name),
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = preset.name,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    viewModel.updateLocation(preset.name)
+                                    viewModel.updateCoords(preset.latitude, preset.longitude)
+                                    presetsExpanded = false
+                                },
+                                colors = MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Создать новый на карте") },
+                            onClick = {
+                                presetsExpanded = false
+                                navController.navigate("map_picker")
+                            },
+                            colors = MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.primary)
+                        )
                     }
-                )
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -271,20 +346,14 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                         Button(
                             onClick = {
                                 datePickerState.selectedDateMillis?.let { millis ->
-                                    val selectedDate = Instant.fromEpochMilliseconds(millis)
-                                    val localDate = selectedDate.toLocalDateTime(TimeZone.UTC).date
-                                    val date = "${
-                                        localDate.day.toString().padStart(2, '0')
-                                    }.${
-                                        localDate.month.number.toString().padStart(2, '0')
-                                    }.${localDate.year}"
-
-                                    viewModel.updateDate(date)
+                                    showDatePicker = false
+                                    showTimePicker = true
+                                } ?: run {
+                                    showDatePicker = false
                                 }
-                                showDatePicker = false
                             }
                         ) {
-                            Text("Ok")
+                            Text("Далее")
                         }
                     },
                     dismissButton = {
@@ -304,7 +373,61 @@ fun StartAnalysisScreen(navController: NavController, viewModel: StartAnalysisVi
                 }
             }
 
-            // ToDo: Map Picker Dialog
+            if (showTimePicker) {
+                TimePickerDialog(
+                    title = { Text("Выберите время") },
+                    onDismissRequest = { showTimePicker = false },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    val selectedDate = kotlin.time.Instant.fromEpochMilliseconds(millis)
+                                    val localDate = selectedDate.toLocalDateTime(TimeZone.UTC).date
+                                    val hour = timePickerState.hour
+                                    val minute = timePickerState.minute
+                                    val dateTime = "${
+                                        localDate.day.toString().padStart(2, '0')
+                                    }.${
+                                        localDate.month.number.toString().padStart(2, '0')
+                                    }.${localDate.year} ${
+                                        hour.toString().padStart(2, '0')
+                                    }:${
+                                        minute.toString().padStart(2, '0')
+                                    }"
+                                    viewModel.updateDate(dateTime)
+                                }
+                                showTimePicker = false
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showTimePicker = false }) {
+                            Text("Отмена")
+                        }
+                    }
+                ) {
+                    TimePicker(state = timePickerState)
+                }
+            }
         }
     }
 }
+
+private fun pastelColorForKey(key: String): androidx.compose.ui.graphics.Color {
+    val colors = listOf(
+        androidx.compose.ui.graphics.Color(0xFFFFCDD2), // Light Red
+        androidx.compose.ui.graphics.Color(0xFFC8E6C9), // Light Green
+        androidx.compose.ui.graphics.Color(0xFFBBDEFB), // Light Blue
+        androidx.compose.ui.graphics.Color(0xFFF8BBD9), // Light Pink
+        androidx.compose.ui.graphics.Color(0xFFE1BEE7), // Light Purple
+        androidx.compose.ui.graphics.Color(0xFFFFF9C4), // Light Yellow
+        androidx.compose.ui.graphics.Color(0xFFFFE0B2), // Light Orange
+        androidx.compose.ui.graphics.Color(0xFFD7CCC8), // Light Brown
+        androidx.compose.ui.graphics.Color(0xFFB2DFDB), // Light Teal
+        androidx.compose.ui.graphics.Color(0xFFF0F4C3)  // Light Lime
+    )
+    return colors[key.hashCode().let { if (it < 0) -it else it } % colors.size]
+}
+

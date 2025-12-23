@@ -26,6 +26,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import co.touchlab.kermit.Logger
 import kotlinx.serialization.Serializable
 import org.example.project.data.commonData.Deadline
 import kotlin.time.ExperimentalTime
@@ -72,9 +74,11 @@ import org.example.project.ui.viewComponents.taskScreenComponents.HighPriority
 import org.example.project.ui.viewComponents.taskScreenComponents.LowPriority
 import org.example.project.ui.viewComponents.taskScreenComponents.MediumPriority
 import org.example.project.ui.viewComponents.taskScreenComponents.ToDoStatus
-import org.example.project.ui.viewComponents.taskScreenComponents.InProgressStatus
 import org.example.project.ui.viewComponents.taskScreenComponents.DoneStatus
-import kotlin.time.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.toInstant
+import kotlin.math.absoluteValue
 import kotlin.math.absoluteValue
 
 @Serializable
@@ -639,9 +643,11 @@ fun DetailTaskScreen(
             // Due Date
             if (isInEditMode) {
                 var showDatePicker by remember { mutableStateOf(false) }
+                var showTimePicker by remember { mutableStateOf(false) }
                 val datePickerState = rememberDatePickerState(
                     initialSelectedDateMillis = editableDueDate
                 )
+                val timePickerState = rememberTimePickerState()
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -651,7 +657,7 @@ fun DetailTaskScreen(
                         OutlinedTextField(
                             value = formatDate(editableDueDate),
                             onValueChange = { },
-                            label = { Text("Дедлайн") },
+                            label = { Text("Дедлайн (дата и время)") },
                             modifier = Modifier.fillMaxWidth(),
                             readOnly = true
                         )
@@ -667,7 +673,7 @@ fun DetailTaskScreen(
                     IconButton(onClick = { showDatePicker = true }) {
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
-                            contentDescription = "Выбрать дату",
+                            contentDescription = "Выбрать дату и время",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -679,13 +685,15 @@ fun DetailTaskScreen(
                         confirmButton = {
                             Button(
                                 onClick = {
-                                    datePickerState.selectedDateMillis?.let {
-                                        editableDueDate = it
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        showDatePicker = false
+                                        showTimePicker = true
+                                    } ?: run {
+                                        showDatePicker = false
                                     }
-                                    showDatePicker = false
                                 }
                             ) {
-                                Text("OK")
+                                Text("Далее")
                             }
                         },
                         dismissButton = {
@@ -703,6 +711,50 @@ fun DetailTaskScreen(
                                 containerColor = MaterialTheme.colorScheme.surface
                             )
                         )
+                    }
+                }
+
+                if (showTimePicker) {
+                    TimePickerDialog(
+                        title = { Text("Выберите время") },
+                        onDismissRequest = { showTimePicker = false },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        val hour = timePickerState.hour
+                                        val minute = timePickerState.minute
+
+                                        // Преобразуем выбранную дату в локальную дату
+                                        val selectedDate = kotlin.time.Instant.fromEpochMilliseconds(millis)
+                                        val localDate = selectedDate.toLocalDateTime(TimeZone.UTC).date
+
+                                        // Создаем новую дату со временем
+                                        val dateTime = kotlinx.datetime.LocalDateTime(
+                                            localDate.year,
+                                            localDate.month,
+                                            localDate.day,
+                                            hour,
+                                            minute
+                                        )
+
+                                        // Преобразуем в миллисекунды через Instant
+                                        val instant = dateTime.toInstant(TimeZone.UTC)
+                                        editableDueDate = instant.toEpochMilliseconds()
+                                    }
+                                    showTimePicker = false
+                                }
+                            ) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            Button(onClick = { showTimePicker = false }) {
+                                Text("Отмена")
+                            }
+                        }
+                    ) {
+                        TimePicker(state = timePickerState)
                     }
                 }
             } else {
